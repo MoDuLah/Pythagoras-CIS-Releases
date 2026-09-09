@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.1.4
+// @version      3.1.5
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
 // @author       MoDuL [4022159]
 // @match        https://www.torn.com/companies.php*
@@ -50,7 +50,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.1.4',
+    version: '3.1.5',
     popupName: 'pythagoras-cis-popup'
   };
 
@@ -1374,8 +1374,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           wages: Math.max(0, Math.round(wages === null ? 0 : wages)),
           // Older releases backfilled these totals from the current roster. They
           // cannot establish historical pay, even when labelled wagesKnown.
-          wagesKnown: wages !== null && wagesKnownFlag !== false && (raw.wageEvidenceVersion ?? rawMeta.wageEvidenceVersion) === 2,
-          wageEvidenceVersion: (raw.wageEvidenceVersion ?? rawMeta.wageEvidenceVersion) === 2 ? 2 : 0,
+          wagesKnown: wages !== null && wagesKnownFlag !== false && !(raw.wagesInvalidated ?? rawMeta.wagesInvalidated) && (raw.wageEvidenceVersion ?? rawMeta.wageEvidenceVersion) === 3,
+          wagesInvalidated: !!(raw.wagesInvalidated ?? rawMeta.wagesInvalidated),
+          wageEvidenceVersion: (raw.wageEvidenceVersion ?? rawMeta.wageEvidenceVersion) === 3 ? 3 : 0,
           adBudget: Math.max(0, Math.round(adBudget === null ? 0 : adBudget)),
           adBudgetKnown: adBudget !== null && adBudgetKnownFlag !== false,
           source: String(raw.source || rawMeta.source || 'daily-operating-snapshot').trim() || 'daily-operating-snapshot'
@@ -1386,7 +1387,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           return;
         }
         if (Utils.dateTimestamp(row.observedAt) < Utils.dateTimestamp(existing.observedAt)) return;
-        if (!row.wagesKnown && existing.wagesKnown) {
+        if (!row.wagesKnown && existing.wagesKnown && !row.wagesInvalidated) {
           row.wages = existing.wages;
           row.wagesKnown = true;
           row.wageEvidenceVersion = existing.wageEvidenceVersion;
@@ -3073,6 +3074,14 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         return rows.sort((a, b) => Utils.dateTimestamp(a.at) - Utils.dateTimestamp(b.at));
       }
       rows.push({ at, previousWage: previous, newWage: next });
+      return rows.sort((a, b) => Utils.dateTimestamp(a.at) - Utils.dateTimestamp(b.at));
+    },
+    hireHistoryWithJoin(person, changedAt, id) {
+      const timestamp = Utils.dateTimestamp(changedAt);
+      const rows = Utils.clone(person && person.hireHistory || []);
+      if (timestamp && !rows.some((row) => Utils.dateTimestamp(row.at) === timestamp)) {
+        rows.push({ at: new Date(timestamp * 1000).toISOString(), id: String(id || '') });
+      }
       return rows.sort((a, b) => Utils.dateTimestamp(a.at) - Utils.dateTimestamp(b.at));
     },
     identityMaps(state) {
@@ -4791,7 +4800,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           companyId: actionCompany,
           title: details.title || 'Company application accept send'
         };
-        if (logId === 6265) return {
+        if (logId === 6265 && Utils.num(rowData.previous_wage, null) !== null && Utils.num(rowData.new_wage, null) !== null) return {
           type: 'wage_change',
           id: String(item.id || id),
           timestamp,
@@ -8440,6 +8449,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const profile = UI.state.company.profile || {};
       const directorId = profile.directorId || UI.state.settings.userId || '';
       const snapshots = Store.normaliseEmployeeDailyHistory(UI.state.staff.efficiencyHistory || []);
+      const coverage = UI.state.company.staffLogSync && UI.state.company.staffLogSync.wageHistory || {};
+      const covered = coverage.complete === true && coverage.companyId === String(UI.state.settings.companyId || profile.id || '') && coverage.userId === String(UI.state.settings.userId || '');
       return Company.staffEmployees(Company.dedupePeople([]
         .concat(profile.employees || [])
         .concat(UI.state.staff.past || [])
@@ -8456,6 +8467,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             _balanceWageKnown: wageKnown,
             _balanceWageObservedAt: person.currentRosterObservedAt || '',
             _balanceWageSnapshots: snapshots.filter((row) => row.userId === String(person.id || person.userId || '')),
+            _balanceWageHistoryThrough: covered ? Utils.num(coverage.through, 0) : 0,
             _balanceWageHistory: wageHistory
           });
         });
@@ -8470,19 +8482,34 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     },
     balancePersonWageOn(person, date) {
       const at = Utils.dateTimestamp(`${date}T18:10:00Z`);
-      const history = Array.isArray(person && person._balanceWageHistory) ? person._balanceWageHistory : [];
+      const started = Utils.num(person && person._balanceStartTs, 0);
+      const history = (Array.isArray(person && person._balanceWageHistory) ? person._balanceWageHistory : [])
+        .filter((row) => !started || Utils.dateTimestamp(row.at) >= started);
       if (!person) return null;
       // A date-only legacy change cannot say which side of closing it happened.
       if (history.some((row) => String(row.at) === date)) return null;
-      let wage = history.length ? Utils.num(history[0].previousWage, null) : null;
+      // A known join is a $0 anchor, but absence of changes is only evidence
+      // after every available hire/wage page has been retrieved for this account.
+      const through = Utils.num(person._balanceWageHistoryThrough, 0);
+      const covered = started && through >= Math.min(at, Math.floor(Date.now() / 1000));
+      let wage = covered ? 0 : history.length && Utils.num(history[0].previousWage, null) === 0 ? 0 : null;
       let evidenceAt = 0;
-      history.forEach((row) => {
+      let nextChange = null;
+      for (const row of history) {
         const changed = Utils.dateTimestamp(row.at);
         if (changed && changed < at) {
           wage = Utils.num(row.newWage, null);
           evidenceAt = changed;
+        } else if (changed) {
+          nextChange = row;
+          break;
         }
-      });
+      }
+      // A mismatching next "previous wage" exposes a missing change somewhere
+      // in this interval; its timing must not be guessed.
+      if (nextChange && wage !== Utils.num(nextChange.previousWage, null)) wage = null;
+      const currentObserved = Utils.dateTimestamp(person._balanceWageObservedAt);
+      if (!nextChange && covered && person._balanceWageKnown && currentObserved >= Math.max(started, evidenceAt) && currentObserved <= through && person._balanceWage !== wage) wage = null;
       // Observations establish only their own company day, never earlier days.
       const observations = (person._balanceWageSnapshots || []).slice();
       if (person._balanceWageKnown && person._balanceWageObservedAt) observations.push({ observedAt: person._balanceWageObservedAt, wage: person._balanceWage });
@@ -8501,6 +8528,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const wages = staff.filter((person) => UI.balancePersonActiveOn(person, date))
         .map((person) => UI.balancePersonWageOn(person, date));
       return !wages.length || wages.some((wage) => wage === null) ? null : wages.reduce((sum, wage) => sum + wage, 0);
+    },
+    wageHistoryGapOn(date, context) {
+      return context.staff.some((person) => UI.balancePersonActiveOn(person, date) && person._balanceWageHistory.length && UI.balancePersonWageOn(person, date) === null);
     },
     balanceRatingOn(date, context) {
       const at = Utils.dateTimestamp(`${date}T23:59:59`);
@@ -8601,7 +8631,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           observedAt: Utils.nowIso(),
           wages,
           wagesKnown: wages !== null,
-          wageEvidenceVersion: 2,
+          wagesInvalidated: wages === null && UI.wageHistoryGapOn(date, context),
+          wageEvidenceVersion: 3,
           adBudget: adBudget === null ? 0 : adBudget,
           adBudgetKnown: adBudget !== null,
           source: source || 'daily-operating-snapshot'
@@ -8641,7 +8672,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const calculatedWages = UI.dailyWageTotalOn(row.date, context);
         const wages = UI.state.ui.dailyBalanceIncludeWages === false
           ? 0
-          : (calculatedWages !== null ? calculatedWages : (saved && saved.wagesKnown ? Utils.num(saved.wages, 0) : null));
+          : (calculatedWages !== null ? calculatedWages : (saved && saved.wagesKnown && !UI.wageHistoryGapOn(row.date, context) ? Utils.num(saved.wages, 0) : null));
         const observedAdBudget = UI.balanceAdBudgetOn(row.date);
         const adBudget = saved && saved.adBudgetKnown ? Utils.num(saved.adBudget, 0) : observedAdBudget;
         const rating = UI.balanceRatingOn(row.date, context);
@@ -10040,9 +10071,12 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     },
     wageHistoryView(person) {
       const history = Array.isArray(person.wageHistory) ? person.wageHistory.slice().sort((a, b) => Utils.dateTimestamp(a.at) - Utils.dateTimestamp(b.at)) : [];
-      if (!history.length) return '<div class="pp-empty">Wage history will appear after a staff log sync.</div>';
-      const rows = history.map((entry) => `<div><strong>${Utils.money(entry.previousWage)} &rarr; ${Utils.money(entry.newWage)}</strong><br><span class="pp-note">${Utils.esc(Utils.dateShort(entry.at))}</span></div>`);
-      return `<div class="pp-role-history">${rows.join('')}</div>`;
+      const hires = Array.isArray(person.hireHistory) && person.hireHistory.length ? person.hireHistory : [{ at: UI.personHireValue(person) }].filter((row) => row.at);
+      const entries = history.map((entry) => Object.assign({type: 'change'}, entry)).concat(hires.map((entry) => ({type:'hire', at:entry.at})))
+        .sort((a, b) => Utils.dateTimestamp(a.at) - Utils.dateTimestamp(b.at) || (a.type === 'hire' ? -1 : 1));
+      if (!entries.length) return '<div class="pp-empty">Sync all to retrieve joining dates and wage changes.</div>';
+      const rows = entries.map((entry) => `<div><strong>${entry.type === 'hire' ? 'Joined &mdash; salary $0' : `${Utils.money(entry.previousWage)} &rarr; ${Utils.money(entry.newWage)}`}</strong><br><span class="pp-note">${Utils.esc(String(entry.at).length === 10 ? Utils.dateShort(entry.at) : Utils.dateTime(entry.at))}</span></div>`);
+      return `<div class="pp-role-history">${rows.join('')}</div><p class="pp-note">Starting salary is $0 at each join; subsequent changes come from Torn logs. Sync all retrieves all available hire/wage pages. Another director's changes or missing logs may leave gaps.</p>`;
     },
     strikeHistoryView(person) {
       const history = Array.isArray(person && person.strikeHistory)
@@ -12300,6 +12334,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.1.5 - Wage history from joining</summary>
+              <ul><li>Staff wage history starts with Joined &mdash; salary $0, followed by each dated salary change.</li><li>Sync all retrieves every available hire/wage log page; subsequent syncs fetch new changes and retain the earlier history.</li><li>Zero-pay periods can be reconstructed from the joining date after log coverage is established. Missing or contradictory history is not silently replaced with zero.</li><li>Rehires retain separate joining records and reset their starting salary. Failed syncs preserve stored history and current pay.</li></ul>
+            </details>
+            <details>
               <summary>v3.1.4 - Historical Balance wages</summary>
               <ul><li>Current wages no longer backfill older Balance dates. Dated zero wages remain zero.</li><li>Wage-change logs retain their exact time and use the 18:10 TCT company-day boundary; re-sync upgrades older date-only entries.</li><li>Unreliable totals saved by older versions are ignored. Unknown historical wages and profit stay blank in Balance, reports, and graphs.</li><li>Loading older staff logs preserves current pay. Use Sync all and older staff logs to recover missing wage history.</li></ul>
             </details>
@@ -13414,8 +13452,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           const trainingRows = Timeline.trainingRowsFromStaffActions(actions, person);
           actions.forEach((action) => {
             if (action.type === 'hire' && action.timestamp) {
-              updated.hiredAt = action.timestamp;
-              updated.joinedDate = action.timestamp;
+              updated.hireHistory = Company.hireHistoryWithJoin(updated, action.timestamp, action.id);
+              if (action.timestamp >= Utils.dateTimestamp(Company.employmentStart(updated))) {
+                updated.hiredAt = action.timestamp;
+                updated.joinedDate = action.timestamp;
+              }
             }
             if (action.type === 'rank_change') {
               updated.rankHistory = Company.rankHistoryWithChange(updated, action.previousRank, action.newRank, action.timestamp || Utils.todayInput());
@@ -13439,6 +13480,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           };
           if (updated.hiredAt) updates.hiredAt = updated.hiredAt;
           if (updated.joinedDate) updates.joinedDate = updated.joinedDate;
+          if (updated.hireHistory) updates.hireHistory = updated.hireHistory;
           if (updated.rankHistory) updates.rankHistory = updated.rankHistory;
           if (updated.wageHistory) updates.wageHistory = updated.wageHistory;
           UI.updatePersonByKey(personKey, updates);
@@ -14205,14 +14247,71 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       }
     },
 
+    async fetchCompanyWageHistory() {
+      const state = UI.state;
+      const companyId = String(state.settings.companyId || state.company.profile.id || '');
+      const userId = String(state.settings.userId || '');
+      if (!companyId || !userId) throw new Error('Sync Business Profile before retrieving wage history.');
+      const previous = state.company.staffLogSync && state.company.staffLogSync.wageHistory || {};
+      const reusable = previous.companyId === companyId && previous.userId === userId && Array.isArray(previous.events);
+      const from = previous.complete === true && reusable
+        ? Math.max(0, Utils.num(previous.through, 0) - 1) : 0;
+      const through = Math.floor(Date.now() / 1000);
+      // Retain events even for staff not yet present in the local roster.
+      const actions = new Map((reusable ? previous.events : []).map((action) => [action.id, action]));
+      const seen = new Set();
+      let nextUrl = '';
+      let cursorTo = through;
+      let pages = 0;
+      do {
+        UI.syncStep('staff-history', `Reading hire/wage history page ${pages + 1}${from ? ' (new changes)' : ' (back to joining dates)'}.`, Math.min(85, 25 + pages));
+        const data = nextUrl ? await ApiClient.requestV2Url(nextUrl, state.settings.apiKey)
+          : await ApiClient.companyLog('6242,6265', state.settings.apiKey, Object.assign({sort:'DESC', limit:100, to:through}, from ? {from} : {}));
+        if (UI.state !== state || String(state.settings.companyId || state.company.profile.id || '') !== companyId || String(state.settings.userId || '') !== userId) throw new Error('Company or account changed during wage sync. Please sync again.');
+        if (!data || data.error || !data.log || typeof data.log !== 'object') throw new Error('Torn did not return hire/wage logs. Existing history was kept.');
+        const rawRows = Timeline.userLogRows(data);
+        for (const [, row] of rawRows) {
+          const kind = Utils.int(row && row.details && row.details.id, 0);
+          const value = row && row.data || {};
+          if (![6242, 6265].includes(kind) || !Utils.int(row.timestamp, 0) || !value.company || !(value.receiver || value.employee) || (kind === 6265 && (Utils.num(value.previous_wage, null) === null || Utils.num(value.new_wage, null) === null || Utils.num(value.previous_wage, 0) < 0 || Utils.num(value.new_wage, 0) < 0))) throw new Error('A hire/wage log is incomplete. History has not been marked complete.');
+        }
+        Timeline.staffActionsFromUserLog(data, {}, state).forEach((action) => {
+          if (action.timestamp >= from && action.timestamp <= through) actions.set(action.id, action);
+        });
+        pages += 1;
+        const rawNext = ApiClient.nextLink(data);
+        nextUrl = ApiClient.safeNextLink(data);
+        if (rawNext && !nextUrl) throw new Error('Unsupported hire/wage pagination link.');
+        if (nextUrl) {
+          const url = new URL(nextUrl);
+          if (url.protocol !== 'https:' || url.pathname.replace(/\/$/, '') !== '/v2/user/log' || url.searchParams.has('target') || String(url.searchParams.get('log') || '').split(',').sort().join(',') !== '6242,6265') throw new Error('Unexpected hire/wage history endpoint.');
+          const olderTo = Utils.num(url.searchParams.get('to'), null);
+          if (olderTo === null || olderTo >= cursorTo || olderTo < 0) throw new Error('Hire/wage pagination did not advance to older records.');
+          cursorTo = olderTo;
+          if (from) url.searchParams.set('from', String(from));
+          nextUrl = url.toString();
+          if (seen.has(nextUrl)) throw new Error('Torn repeated a hire/wage history cursor. Existing history was kept.');
+          seen.add(nextUrl);
+        }
+      } while (nextUrl);
+      const events = Array.from(actions.values()).sort((a, b) => a.timestamp - b.timestamp);
+      return { actions: events, coverage: {complete:true, companyId, userId, through, pages, events} };
+    },
+
     async syncCompanyStaffLogs() {
       const syncId = 'staff-history';
       if (UI.apiKeyMissing()) return { ok: false, message: 'Add an API key first.' };
+      const state = UI.state;
+      const scope = `${state.settings.companyId}:${state.settings.userId}`;
       UI.beginSync(syncId, 'Sync staff history');
       try {
         UI.syncStep(syncId, 'Requesting training, wage, and role history from Torn.', 20);
         const data = await ApiClient.companyLog('6263,6265,6267', UI.state.settings.apiKey, { sort: 'DESC', limit: 100 });
-        const actions = Timeline.staffActionsFromUserLog(data, {}, UI.state);
+        if (UI.state !== state || `${state.settings.companyId}:${state.settings.userId}` !== scope) throw new Error('Company or account changed during staff sync.');
+        if (!data || data.error || !data.log || typeof data.log !== 'object') throw new Error('Torn did not return staff logs. Existing history was kept.');
+        const wageHistory = await UI.fetchCompanyWageHistory();
+        const actions = Timeline.staffActionsFromUserLog(data, {}, UI.state).filter((action) => action.type !== 'wage_change')
+          .concat(wageHistory.actions).sort((a, b) => a.timestamp - b.timestamp);
         const people = [].concat(UI.state.staff.current || [], UI.state.staff.past || []);
         const byId = new Map(people.map((person) => [String(person && person.id || '').trim(), person]).filter(([id]) => id));
         const grouped = new Map();
@@ -14225,6 +14324,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         let trainingRows = 0;
         let wageChanges = 0;
         let roleChanges = 0;
+        let joins = 0;
         grouped.forEach((memberActions, id) => {
           const person = byId.get(id);
           const updates = {};
@@ -14239,6 +14339,13 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
               // A historical log may predate the current employee snapshot.
               // Preserve today's wage; dated balance calculations use this history.
               wageChanges += 1;
+            } else if (action.type === 'hire') {
+              updates.hireHistory = Company.hireHistoryWithJoin(Object.assign({}, person, updates), action.timestamp, action.id);
+              if (action.timestamp >= Utils.dateTimestamp(Company.employmentStart(Object.assign({}, person, updates)))) {
+                updates.hiredAt = action.timestamp;
+                updates.joinedDate = action.timestamp;
+              }
+              joins += 1;
             } else if (action.type === 'rank_change') {
               updates.rankHistory = Company.rankHistoryWithChange(Object.assign({}, person, updates), action.previousRank, action.newRank, action.timestamp || Utils.todayInput());
               roleChanges += 1;
@@ -14252,17 +14359,18 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         Ledger.syncTrainingLog(UI.state);
         Planner.build(UI.state);
         UI.state.company.staffLogSync = Object.assign({}, UI.state.company.staffLogSync || {}, {
-          lastSynced: Utils.nowIso(), fetched: actions.length, pages: 1,
-          trainingRows, wageChanges, roleChanges, lastError: ''
+          lastSynced: Utils.nowIso(), fetched: actions.length, pages: 1 + wageHistory.coverage.pages,
+          trainingRows, wageChanges, roleChanges, joins, wageHistory: wageHistory.coverage, lastError: ''
         });
+        UI.captureOperatingCostHistory('hire-wage-history-sync');
         Store.save(UI.state);
         Store.updateSyncCache(UI.state, ['employees', 'trainingLog', 'planner']);
-        const message = `Latest staff history page checked: ${trainingRows} training actions, ${wageChanges} wage changes, and ${roleChanges} role changes. Counts are from this page; existing records are merged.`;
+        const message = `Staff history synced: ${joins} joins, ${wageChanges} wage changes across ${wageHistory.coverage.pages} hire/wage pages; ${trainingRows} training actions and ${roleChanges} role changes from the latest staff page. All available hire/wage pages retrieved; existing history merged. Logs unavailable to this account can still leave gaps.`;
         UI.saveRender(message);
         UI.finishSync(syncId, message);
         return { ok: true, message, fetched: actions.length, trainingRows, wageChanges, roleChanges };
       } catch (error) {
-        UI.state.company.staffLogSync = Object.assign({}, UI.state.company.staffLogSync || {}, { lastError: error.message || String(error) });
+        if (UI.state === state && `${state.settings.companyId}:${state.settings.userId}` === scope) state.company.staffLogSync = Object.assign({}, state.company.staffLogSync || {}, { lastError: error.message || String(error) });
         UI.failSync(syncId, error);
         UI.toast(error.message);
         return { ok: false, message: error && error.message ? error.message : String(error) };
