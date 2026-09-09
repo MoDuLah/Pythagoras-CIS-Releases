@@ -1,8 +1,8 @@
-## v3.1.3 - Faster startup, authoritative sync, and role-aware wages
+## v3.1.4 - Historical Balance wages
 
-- Timeline and report-section settings now persist correctly. Timeline loading can be disabled completely, and disabled timelines are omitted from the server bootstrap for faster startup.
-- Routine refreshes are consolidated into one Sync all action covering business details, the authoritative employee roster, stock and services, latest news and reports, exact training actions, wage and role history, advertising changes, and restocking costs.
-- Fresh Torn employee data is authoritative: missing current staff move to Past Staff, rehires return to Current Staff, and local contracts/history are retained.
-- Suggested wages use only each position's primary and secondary working stats. Mechanic Shop Technician/Apprentice/Cleaner use MAN + END; Manager/Receptionist/Trainer use INT + END.
-- Every wage-model value and role requirement accepts decimal input and retains decimal precision until the final suggested wage is rounded.
-- Retains the recruitment-mail hand-off and all behavior present in the previous PE userscript; no old-only methods were removed during reconciliation.
+- Current employee wages are no longer copied into older Balance dates. Wage totals require dated staff wage-change logs or API observations, and explicitly recorded zero wages stay zero.
+- Wage-change logs preserve exact timestamps and use the existing 18:10 TCT company-day boundary, so late-night changes apply to the next closing date. Re-sync upgrades legacy date-only entries; ambiguous change dates stay unknown until their timing is recovered.
+- Ignores unverified wage totals backfilled by older versions while retaining advertising history. Newly reconstructed totals carry evidence metadata, and dated logs can correct previously saved totals.
+- Unknown historical wages and their profit remain blank in Balance and exported reports. Daily and weekly graphs leave gaps instead of plotting unknown costs as zero; company goals disclose missing wage coverage.
+- Loading older individual staff logs no longer overwrites current pay. Fresh staff-card history takes precedence over stale profile copies.
+- Use Sync all and, where necessary, older staff-log pages to recover wage history. Rebuild balance refreshes the displayed calculations; missing historical evidence is not replaced with suggested pay.

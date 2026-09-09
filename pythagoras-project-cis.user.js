@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.1.3
+// @version      3.1.4
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
 // @author       MoDuL [4022159]
 // @match        https://www.torn.com/companies.php*
@@ -50,7 +50,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.1.3',
+    version: '3.1.4',
     popupName: 'pythagoras-cis-popup'
   };
 
@@ -1372,7 +1372,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           date,
           observedAt: String(raw.observedAt || raw.observed_at || raw.updatedAt || raw.updated_at || raw.created_at || rawMeta.observedAt || rawMeta.observed_at || '').trim() || Utils.nowIso(),
           wages: Math.max(0, Math.round(wages === null ? 0 : wages)),
-          wagesKnown: wages !== null && wagesKnownFlag !== false,
+          // Older releases backfilled these totals from the current roster. They
+          // cannot establish historical pay, even when labelled wagesKnown.
+          wagesKnown: wages !== null && wagesKnownFlag !== false && (raw.wageEvidenceVersion ?? rawMeta.wageEvidenceVersion) === 2,
+          wageEvidenceVersion: (raw.wageEvidenceVersion ?? rawMeta.wageEvidenceVersion) === 2 ? 2 : 0,
           adBudget: Math.max(0, Math.round(adBudget === null ? 0 : adBudget)),
           adBudgetKnown: adBudget !== null && adBudgetKnownFlag !== false,
           source: String(raw.source || rawMeta.source || 'daily-operating-snapshot').trim() || 'daily-operating-snapshot'
@@ -1386,6 +1389,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         if (!row.wagesKnown && existing.wagesKnown) {
           row.wages = existing.wages;
           row.wagesKnown = true;
+          row.wageEvidenceVersion = existing.wageEvidenceVersion;
         }
         if (!row.adBudgetKnown && existing.adBudgetKnown) {
           row.adBudget = existing.adBudget;
@@ -3056,12 +3060,18 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       return rows.sort((a, b) => Utils.dateTimestamp(a.at) - Utils.dateTimestamp(b.at));
     },
     wageHistoryWithChange(person, previousWage, nextWage, changedAt) {
-      const at = Utils.dateInput(changedAt || Utils.todayInput()) || Utils.todayInput();
+      const value = changedAt || Utils.nowIso();
+      const timestamp = Utils.dateTimestamp(value);
+      const at = /^\d{4}-\d{2}-\d{2}$/.test(String(value)) || !timestamp
+        ? Utils.dateInput(value) : new Date(timestamp * 1000).toISOString();
       const rows = Array.isArray(person && person.wageHistory) ? Utils.clone(person.wageHistory) : [];
       const previous = Utils.num(previousWage, 0);
       const next = Utils.num(nextWage, 0);
-      const existing = rows.find((row) => String(row.at) === at && Utils.num(row.previousWage, 0) === previous && Utils.num(row.newWage, 0) === next);
-      if (existing) return rows.sort((a, b) => Utils.dateTimestamp(a.at) - Utils.dateTimestamp(b.at));
+      const existing = rows.find((row) => (String(row.at) === at || (String(row.at).length === 10 && row.at === Utils.dateInput(at))) && Utils.num(row.previousWage, 0) === previous && Utils.num(row.newWage, 0) === next);
+      if (existing) {
+        existing.at = at; // Re-sync upgrades legacy date-only entries in place.
+        return rows.sort((a, b) => Utils.dateTimestamp(a.at) - Utils.dateTimestamp(b.at));
+      }
       rows.push({ at, previousWage: previous, newWage: next });
       return rows.sort((a, b) => Utils.dateTimestamp(a.at) - Utils.dateTimestamp(b.at));
     },
@@ -5781,7 +5791,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const rating = Utils.num(state.company.profile.rating, 0);
       return { goals, rating, staffCount: staff.length, roles: Array.from(counts.values()).sort((a, b) => a.role.localeCompare(b.role)),
         start, end, days, profit, complete: days === 7,
-        costsKnown: period.filter(row => row.hasReport).every(row => row.adBudgetKnown === true && row.restockCostKnown === true),
+        costsKnown: period.filter(row => row.hasReport).every(row => row.wagesKnown !== false && row.profit !== null && row.adBudgetKnown === true && row.restockCostKnown === true),
         ratingPercent: goals.target_rating ? Math.min(100, Math.max(0, rating / goals.target_rating * 100)) : 0,
         profitPercent: goals.target_weekly_profit ? Math.min(100, Math.max(0, profit / goals.target_weekly_profit * 100)) : 0 };
     }
@@ -6105,35 +6115,21 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       return `<p>Funds: ${Utils.money(detailed.funds)}. Popularity: ${Utils.esc(detailed.popularity || 0)}%. Efficiency: ${Utils.esc(detailed.efficiency || 0)}%. Environment: ${Utils.esc(detailed.environment || 0)}%. ${storage} Value: ${Utils.money(detailed.value)}.</p>`;
     },
     dailyBalanceTable(state) {
-      const staff = Company.staffEmployees(state.staff.current || [], state.company.profile.directorId || state.settings.userId || '');
-      const includeWages = !state.ui || state.ui.dailyBalanceIncludeWages !== false;
-      const wages = includeWages ? staff.reduce((sum, person) => {
-        const wage = Utils.num(person.wage, 0);
-        return sum + (person.wageFromApi || wage > 0 ? wage : 0);
-      }, 0) : 0;
-      const adBudget = Utils.num(state.company.detailed.advertisingBudget, 0);
-      const restockCosts = Company.restockCosts(state);
-      const rows = [];
-      (Array.isArray(state.analytics.weeks) ? state.analytics.weeks : []).forEach((week) => {
-        (week.days || []).forEach((day) => {
-          if (!day.date || !(day.customers || day.income)) return;
-          const restock = Company.restockCostOn(day.date, restockCosts);
-          rows.push({
-            date: day.date,
-            income: Utils.num(day.income, 0),
-            customers: Utils.num(day.customers, 0),
-            wages,
-            adBudget,
-            restockCost: restock.restockCost,
-            restockCostKnown: restock.restockCostKnown,
-            profit: Utils.num(day.income, 0) - wages - adBudget - restock.restockCost,
-            rating: Utils.int(state.company.profile.rating || state.settings.companyStars, 0)
-          });
-        });
-      });
+      // Reports must use the same historical costs as the on-screen ledger.
+      const previousState = UI.state;
+      const previousMemo = UI.renderMemo;
+      let rows;
+      try {
+        UI.state = state;
+        UI.renderMemo = {};
+        rows = UI.dailyBalanceRows().filter((row) => row.hasReport);
+      } finally {
+        UI.state = previousState;
+        UI.renderMemo = previousMemo;
+      }
       if (!rows.length) return '<p>No balance rows yet.</p>';
       rows.sort((a, b) => String(b.date).localeCompare(String(a.date)));
-      return `<table><thead><tr><th>#</th><th>Date</th><th>Income</th><th>Customers</th><th>Wages</th><th>Ad Budget</th><th>Restocking</th><th>Profit</th><th>Company Rating</th></tr></thead><tbody>${rows.slice(0, 14).map((row, index) => `<tr><td>${index + 1}</td><td>${Utils.esc(Utils.dateShort(row.date))}</td><td>${Utils.money(row.income)}</td><td>${Number(row.customers || 0).toLocaleString()}</td><td>${Utils.money(row.wages)}</td><td>${Utils.money(row.adBudget)}</td><td>${row.restockCostKnown || row.restockCost ? Utils.money(row.restockCost) + (row.restockCostKnown ? '' : '*') : '-'}</td><td>${Utils.money(row.profit)}${row.restockCostKnown ? '' : '*'}</td><td>${Utils.esc(row.rating)} / 10</td></tr>`).join('')}</tbody></table><p>Restocking uses exact purchases in the syncing account's Torn stock-order log, grouped at 18:10 TCT. * Restocking history is incomplete; profit subtracts known purchases only.</p>`;
+      return `<table><thead><tr><th>#</th><th>Date</th><th>Income</th><th>Customers</th><th>Wages</th><th>Ad Budget</th><th>Restocking</th><th>Profit</th><th>Company Rating</th></tr></thead><tbody>${rows.slice(0, 14).map((row, index) => `<tr><td>${index + 1}</td><td>${Utils.esc(Utils.dateShort(row.date))}</td><td>${Utils.money(row.income)}</td><td>${Number(row.customers || 0).toLocaleString()}</td><td>${row.wagesKnown ? Utils.money(row.wages) : '-'}</td><td>${row.adBudgetKnown ? Utils.money(row.adBudget) : '-'}</td><td>${row.restockCostKnown || row.restockCost ? Utils.money(row.restockCost) + (row.restockCostKnown ? '' : '*') : '-'}</td><td>${row.profit !== null ? Utils.money(row.profit) + (row.restockCostKnown ? '' : '*') : '-'}</td><td>${Utils.esc(row.rating)} / 10</td></tr>`).join('')}</tbody></table><p>Unknown historical wages and profit stay blank. Restocking uses exact purchases in the syncing account's Torn stock-order log, grouped at 18:10 TCT. * Restocking history is incomplete; profit subtracts known purchases only.</p>`;
     },
     newsletter(state, sections, options) {
       const choices = Object.assign({}, DEFAULTS.ui.reportSections, sections || {});
@@ -8443,51 +8439,68 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     balanceStaffPool() {
       const profile = UI.state.company.profile || {};
       const directorId = profile.directorId || UI.state.settings.userId || '';
+      const snapshots = Store.normaliseEmployeeDailyHistory(UI.state.staff.efficiencyHistory || []);
       return Company.staffEmployees(Company.dedupePeople([]
-        .concat(UI.state.staff.current || [])
+        .concat(profile.employees || [])
         .concat(UI.state.staff.past || [])
-        .concat(profile.employees || [])), directorId).map((person) => {
+        .concat(UI.state.staff.current || [])), directorId).map((person) => {
           const wageHistory = Array.isArray(person && person.wageHistory)
             ? person.wageHistory.slice().sort((a, b) => Utils.dateTimestamp(a.at) - Utils.dateTimestamp(b.at))
             : [];
           const wage = Utils.num(person && person.wage, 0);
-          const wageKnown = !!(person && person.wageFromApi) || wage > 0 || !!wageHistory.length;
+          const wageKnown = !!(person && person.wageFromApi);
           return Object.assign({}, person, {
             _balanceStartTs: Utils.dateTimestamp(UI.personHireValue(person) || Company.employmentStart(person)),
             _balanceLeftTs: Utils.dateTimestamp(UI.personLeftValue(person) || person && (person.leftDate || person.leftTimestamp)),
             _balanceWage: wageKnown ? wage : 0,
             _balanceWageKnown: wageKnown,
+            _balanceWageObservedAt: person.currentRosterObservedAt || '',
+            _balanceWageSnapshots: snapshots.filter((row) => row.userId === String(person.id || person.userId || '')),
             _balanceWageHistory: wageHistory
           });
         });
     },
     balancePersonActiveOn(person, date) {
-      const dayStart = Utils.dateTimestamp(`${date}T00:00:00`);
-      const dayEnd = Utils.dateTimestamp(`${date}T23:59:59`);
+      const dayEnd = Utils.dateTimestamp(`${date}T18:10:00Z`);
       const started = Utils.int(person && person._balanceStartTs, 0);
       const left = Utils.int(person && person._balanceLeftTs, 0);
-      if (started && started > dayEnd) return false;
-      if (left && left < dayStart) return false;
-      if (!started && left && left < dayEnd) return false;
+      if (started && started >= dayEnd) return false;
+      if (left && left < dayEnd) return false;
       return true;
     },
     balancePersonWageOn(person, date) {
-      const at = Utils.dateTimestamp(`${date}T23:59:59`);
+      const at = Utils.dateTimestamp(`${date}T18:10:00Z`);
       const history = Array.isArray(person && person._balanceWageHistory) ? person._balanceWageHistory : [];
-      if (!person || (!person._balanceWageKnown && !history.length)) return 0;
-      let wage = Utils.num(person && person._balanceWage, 0);
-      if (history.length) wage = Utils.num(history[0].previousWage, wage);
+      if (!person) return null;
+      // A date-only legacy change cannot say which side of closing it happened.
+      if (history.some((row) => String(row.at) === date)) return null;
+      let wage = history.length ? Utils.num(history[0].previousWage, null) : null;
+      let evidenceAt = 0;
       history.forEach((row) => {
-        if (Utils.dateTimestamp(row.at) <= at) wage = Utils.num(row.newWage, wage);
+        const changed = Utils.dateTimestamp(row.at);
+        if (changed && changed < at) {
+          wage = Utils.num(row.newWage, null);
+          evidenceAt = changed;
+        }
+      });
+      // Observations establish only their own company day, never earlier days.
+      const observations = (person._balanceWageSnapshots || []).slice();
+      if (person._balanceWageKnown && person._balanceWageObservedAt) observations.push({ observedAt: person._balanceWageObservedAt, wage: person._balanceWage });
+      observations.forEach((row) => {
+        const observed = Utils.dateTimestamp(row.observedAt);
+        if (row.wage !== null && row.wage !== undefined && observed && observed < at && observed >= evidenceAt && Utils.tctCompanyDayKey(new Date(observed * 1000)) === date && !Utils.tctCalculationInProgress(new Date(observed * 1000))) {
+          wage = Utils.num(row.wage, null);
+          evidenceAt = observed;
+        }
       });
       return wage;
     },
     dailyWageTotalOn(date, context, options) {
       if (!(options && options.force) && UI.state.ui.dailyBalanceIncludeWages === false) return 0;
       const staff = context && context.staff ? context.staff : UI.balanceStaffPool();
-      return staff
-        .filter((person) => UI.balancePersonActiveOn(person, date))
-        .reduce((sum, person) => sum + UI.balancePersonWageOn(person, date), 0);
+      const wages = staff.filter((person) => UI.balancePersonActiveOn(person, date))
+        .map((person) => UI.balancePersonWageOn(person, date));
+      return !wages.length || wages.some((wage) => wage === null) ? null : wages.reduce((sum, wage) => sum + wage, 0);
     },
     balanceRatingOn(date, context) {
       const at = Utils.dateTimestamp(`${date}T23:59:59`);
@@ -8582,11 +8595,13 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       dates.add(Utils.todayInput());
       const rows = Array.from(dates).map((date) => {
         const adBudget = UI.balanceAdBudgetOn(date);
+        const wages = UI.dailyWageTotalOn(date, context, { force: true });
         return {
           date,
           observedAt: Utils.nowIso(),
-          wages: UI.dailyWageTotalOn(date, context, { force: true }),
-          wagesKnown: context.staff.some((person) => person && person._balanceWageKnown),
+          wages,
+          wagesKnown: wages !== null,
+          wageEvidenceVersion: 2,
           adBudget: adBudget === null ? 0 : adBudget,
           adBudgetKnown: adBudget !== null,
           source: source || 'daily-operating-snapshot'
@@ -8626,18 +8641,19 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const calculatedWages = UI.dailyWageTotalOn(row.date, context);
         const wages = UI.state.ui.dailyBalanceIncludeWages === false
           ? 0
-          : (saved && saved.wagesKnown ? Utils.num(saved.wages, 0) : calculatedWages);
+          : (calculatedWages !== null ? calculatedWages : (saved && saved.wagesKnown ? Utils.num(saved.wages, 0) : null));
         const observedAdBudget = UI.balanceAdBudgetOn(row.date);
         const adBudget = saved && saved.adBudgetKnown ? Utils.num(saved.adBudget, 0) : observedAdBudget;
         const rating = UI.balanceRatingOn(row.date, context);
         const restock = Company.restockCostOn(row.date, restockCosts);
         return Object.assign({}, row, {
           wages,
+          wagesKnown: wages !== null,
           adBudget: adBudget === null ? 0 : adBudget,
           adBudgetKnown: adBudget !== null,
           rating,
           ratingKnown: !!rating,
-          profit: row.hasReport ? row.income - wages - (adBudget || 0) - restock.restockCost : 0
+          profit: !row.hasReport ? 0 : wages !== null ? row.income - wages - (adBudget || 0) - restock.restockCost : null
         }, restock);
       }).sort((a, b) => String(b.date).localeCompare(String(a.date)));
       if (UI.renderMemo) UI.renderMemo.dailyBalanceRows = rows;
@@ -8710,15 +8726,15 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
               <td>${Utils.esc(Utils.dateShort(row.date))}</td>
               <td>${hasReport ? Utils.money(row.income) : '-'}</td>
               <td>${hasReport ? Number(row.customers || 0).toLocaleString() : '-'}</td>
-              <td>${hasReport ? Utils.money(row.wages) : '-'}</td>
+              <td title="Dated wage evidence only; sync staff wage history to fill missing dates.">${hasReport && row.wagesKnown ? Utils.money(row.wages) : '-'}</td>
               <td>${hasReport && row.adBudgetKnown ? Utils.money(row.adBudget) : '-'}</td>
               <td data-mh-table-part="cell">${row.restockCostKnown || row.restockCost ? Utils.money(row.restockCost) + (row.restockCostKnown ? '' : '*') : '-'}</td>
-              <td title="${row.restockCostKnown ? 'Includes synced stock purchases.' : 'Partial profit: restocking history is not fully synced for this day.'}">${hasReport ? UI.deltaMoney(row.profit) + (row.restockCostKnown ? '' : '*') : '-'}</td>
+              <td title="${!row.wagesKnown ? 'Profit unavailable: historical wages are unknown.' : row.restockCostKnown ? 'Includes synced stock purchases.' : 'Partial profit: restocking history is not fully synced for this day.'}">${hasReport && row.wagesKnown ? UI.deltaMoney(row.profit) + (row.restockCostKnown ? '' : '*') : '-'}</td>
               <td>${row.ratingKnown ? `${Utils.esc(row.rating)} / 10` : '-'}</td>
             </tr>`;
           }, 9, `${UI.state.ui.dailyBalanceMode}:${UI.state.ui.dailyBalanceStart}`)}
         </table></div>
-        <p class="pp-note">Income and customers come from daily company report rows. ${UI.state.ui.dailyBalanceIncludeWages === false ? 'Wages are disabled for Balance, so profit treats wages as $0.' : 'Wages use current synced employee wages and saved wage history only; estimates are not included.'} Advertising budget uses dated Business Profile sync history; dates before the first observed budget stay blank. Rating uses dated news history where available.</p>
+        <p class="pp-note">Income and customers come from daily company report rows. ${UI.state.ui.dailyBalanceIncludeWages === false ? 'Wages are disabled for Balance, so profit treats wages as $0.' : 'Wages use dated staff wage-change logs and API observations, grouped at 18:10 TCT. Current wages are never backfilled into older dates. Unknown wages and their profit stay blank; use Sync all (and older staff logs where needed) to recover history. Recorded $0 wages remain $0.'} Advertising budget uses dated Business Profile sync history; dates before the first observed budget stay blank. Rating uses dated news history where available.</p>
         <p class="pp-note">Restocking deducts each purchase once using Torn stock-order log costs and the 18:10 TCT company-day boundary. Sync restock costs requires a Full Access key or user log permission; load older pages to fill history. Only orders in the syncing account's log are available. * Restocking history is incomplete; profit subtracts known purchases only. Pending and suggested orders are not charged again.</p>`;
     },
 
@@ -8744,10 +8760,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         existing.timestamp = Math.max(existing.timestamp, Utils.dateTimestamp(row.date));
         existing.income += Utils.num(row.income, 0);
         existing.customers += Utils.num(row.customers, 0);
-        existing.wages += Utils.num(row.wages, 0);
+        existing.wages = existing.wages === null || row.wages === null ? null : existing.wages + Utils.num(row.wages, 0);
         existing.adBudget += Utils.num(row.adBudget, 0);
         existing.restockCost += Utils.num(row.restockCost, 0);
-        existing.profit += Utils.num(row.profit, 0);
+        existing.profit = existing.profit === null || row.profit === null ? null : existing.profit + Utils.num(row.profit, 0);
         grouped.set(key, existing);
       });
       return Array.from(grouped.values()).sort((a, b) => a.timestamp - b.timestamp).slice(-12);
@@ -8758,10 +8774,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       return [
         { key: 'income', label: 'Income', axis: 'money', color: vars.graphIncome, value: (row) => Utils.num(row.income, 0), format: Utils.money, compact: Utils.compactMoney },
         { key: 'customers', label: 'Customers', axis: 'count', color: vars.graphCustomers, value: (row) => Utils.num(row.customers, 0), format: Utils.formatNumber, compact: Utils.compactNumber },
-        { key: 'wages', label: 'Wages', axis: 'money', color: vars.graphWages, value: (row) => Utils.num(row.wages, 0), format: Utils.money, compact: Utils.compactMoney },
+        { key: 'wages', label: 'Wages', axis: 'money', color: vars.graphWages, value: (row) => Utils.num(row.wages, null), format: Utils.money, compact: Utils.compactMoney },
         { key: 'adBudget', label: 'Ad Budget', axis: 'money', color: vars.graphAdBudget, value: (row) => Utils.num(row.adBudget, 0), format: Utils.money, compact: Utils.compactMoney },
         { key: 'restockCost', label: 'Restocking', axis: 'money', color: vars.graphServices, value: (row) => Utils.num(row.restockCost, 0), format: Utils.money, compact: Utils.compactMoney },
-        { key: 'profit', label: 'Profit', axis: 'money', color: vars.graphProfit, value: (row) => Utils.num(row.profit, 0), format: Utils.money, compact: Utils.compactMoney }
+        { key: 'profit', label: 'Profit', axis: 'money', color: vars.graphProfit, value: (row) => Utils.num(row.profit, null), format: Utils.money, compact: Utils.compactMoney }
       ];
     },
 
@@ -8919,14 +8935,15 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const values = rows.map((row) => series.value(row));
         const axis = axisFor(series);
         if (!axis) return '';
-        const points = values.map((value, index) => pointFor(value, axis.min, axis.max, index));
-        const path = points.map((point, index) => `${index ? 'L' : 'M'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' ');
+        const points = values.map((value, index) => Number.isFinite(value) ? pointFor(value, axis.min, axis.max, index) : null);
+        const path = points.map((point, index) => point ? `${index && points[index - 1] ? 'L' : 'M'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}` : '').join(' ');
         const color = Utils.esc(series.color);
         const isCount = series.axis === 'count';
         const seriesClass = isCount ? ' is-count' : '';
         return `<g style="--series-color:${color}">
           <path class="pp-line-path${seriesClass}" d="${path}"></path>
           ${points.map((point, index) => {
+            if (!point) return '';
             const value = values[index];
             const skipCountLabel = isCount && points.length > 4 && index !== 0 && index !== points.length - 1 && index % 2;
             const labelY = isCount
@@ -10647,7 +10664,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           <div class="pp-field span-6"><button class="pp-btn mh-button" type="button" data-action="save-company-goals">Save goals</button></div>
         </div>
         <p>Rating: ${progress.rating} / ${goals.target_rating || 'Not set'}${goals.target_rating ? ` (${Math.round(progress.ratingPercent)}%)` : ''}</p>
-        ${progress.end ? `<p>Operating profit: ${Utils.money(progress.profit)} / ${goals.target_weekly_profit ? Utils.money(goals.target_weekly_profit) : 'Not set'} · ${Utils.esc(progress.start)} to ${Utils.esc(progress.end)} · ${progress.days}/7 report days.</p><p class="mh-muted">${progress.complete && progress.costsKnown ? 'Report and advertising/restocking coverage is complete; wages use saved staff history.' : 'Partial figures: report days or advertising/restocking history are missing.'} Profit includes wages and known stock purchases, excludes training sales, and is based on the displayed dates.</p>` : '<p class="mh-muted">Sync company news to calculate progress toward a weekly profit target.</p>'}
+        ${progress.end ? `<p>Operating profit: ${Utils.money(progress.profit)} / ${goals.target_weekly_profit ? Utils.money(goals.target_weekly_profit) : 'Not set'} · ${Utils.esc(progress.start)} to ${Utils.esc(progress.end)} · ${progress.days}/7 report days.</p><p class="mh-muted">${progress.complete && progress.costsKnown ? 'Report and operating-cost coverage is complete; wages use dated staff history.' : 'Partial figures: report days or wage/advertising/restocking history are missing. Days with unknown wages are excluded from profit.'} Profit includes wages and known stock purchases, excludes training sales, and is based on the displayed dates.</p>` : '<p class="mh-muted">Sync company news to calculate progress toward a weekly profit target.</p>'}
         <div class="pp-wrap"><table class="pp-table mh-table"><thead><tr><th>Role</th><th>Current</th><th>Target</th><th>Staffing gap</th></tr></thead><tbody>${progress.roles.map(row => `<tr><td>${Utils.esc(row.role)}</td><td>${row.current}</td><td>${row.target === null ? 'Not set' : row.target}</td><td>${row.target === null ? '—' : row.current < row.target ? `${row.target - row.current} needed` : row.current > row.target ? `${row.current - row.target} above target` : 'Met'}</td></tr>`).join('') || '<tr><td colspan="4">No staff or targets yet.</td></tr>'}</tbody></table></div>
       </div></section>`;
     },
@@ -12283,6 +12300,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.1.4 - Historical Balance wages</summary>
+              <ul><li>Current wages no longer backfill older Balance dates. Dated zero wages remain zero.</li><li>Wage-change logs retain their exact time and use the 18:10 TCT company-day boundary; re-sync upgrades older date-only entries.</li><li>Unreliable totals saved by older versions are ignored. Unknown historical wages and profit stay blank in Balance, reports, and graphs.</li><li>Loading older staff logs preserves current pay. Use Sync all and older staff logs to recover missing wage history.</li></ul>
+            </details>
+            <details>
               <summary>v3.1.3 - Faster startup, authoritative sync, and role-aware wages</summary>
               <ul><li>Timeline loading can be disabled persistently, and disabled timelines are omitted from the server bootstrap for faster startup.</li><li>Sync all replaces the routine sync buttons and refreshes business, the authoritative employee roster, stock, news, training actions, wage and role history, advertising changes, and restocking costs.</li><li>Employees missing from a fresh Torn roster move to Past Staff while rehires and local staff fields remain intact.</li><li>Suggested wages now use only each role&apos;s primary and secondary working stats. All wage settings and role requirements accept decimal values.</li></ul>
             </details>
@@ -13401,7 +13422,6 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             }
             if (action.type === 'wage_change') {
               updated.wageHistory = Company.wageHistoryWithChange(updated, action.previousWage, action.newWage, action.timestamp || Utils.todayInput());
-              updated.wage = action.newWage;
             }
           });
           if (trainingRows.length) {
@@ -13421,7 +13441,6 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           if (updated.joinedDate) updates.joinedDate = updated.joinedDate;
           if (updated.rankHistory) updates.rankHistory = updated.rankHistory;
           if (updated.wageHistory) updates.wageHistory = updated.wageHistory;
-          if (updated.wage !== undefined) updates.wage = updated.wage;
           UI.updatePersonByKey(personKey, updates);
           Planner.build(UI.state);
           const counts = actions.reduce((sum, action) => {
