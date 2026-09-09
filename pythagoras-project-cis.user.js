@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.1.2
+// @version      3.1.3
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
 // @author       MoDuL [4022159]
 // @match        https://www.torn.com/companies.php*
@@ -24,8 +24,6 @@
 // @connect      api.torn.com
 // @connect      pp-api.sokin.xyz
 // @run-at       document-start
-// @downloadURL https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.user.js
-// @updateURL https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.meta.js
 // ==/UserScript==
 
 /*
@@ -52,7 +50,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.1.2',
+    version: '3.1.3',
     popupName: 'pythagoras-cis-popup'
   };
 
@@ -307,7 +305,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       },
       wageRoleRequirements: {}
     },
-    ui: { tab: 'timeline', staffTab: 'current', directorTab: 'current', settingsSection: 'core', timelineFilter: 'all', timelineGrouped: true, analyticsYear: 'all', analyticsExpanded: {}, dailyBalanceMode: 'week', dailyBalanceStart: '', dailyBalanceIncludeWages: true, graphIndex: 0, graphScale: 'daily', graphSeries: { income: true, customers: true, wages: true, adBudget: true, profit: true }, staffEeMode: 'total', staffEeMetric: 'workingStats', staffEeRange: '30', staffEeEmployee: 'all', trainingLogStart: '', trainingLogYear: 'all', profileSort: 'name', profileSortDir: 'asc', tableSorts: {}, showApiKey: false, privacyMode: false, tourActive: false, tourStep: 0, startMinimized: false, minimized: false, mode: 'embedded', editMode: false, editPersonKey: '', editDirectorKey: '', personSaveExit: false, plannerQueueHidden: false, collapsedPanels: {}, detailOpenState: {}, panelSizes: {}, reportSections: { summary: true, ledger: true, trainingLog: true, planner: true, analytics: true, balance: true, stock: true, staff: true, pastStaff: false, directors: false, timeline: true, profile: true, details: true, settings: true }, left: '', top: '', restoreWidth: '', restoreHeight: '' }
+    ui: { tab: 'timeline', staffTab: 'current', directorTab: 'current', settingsSection: 'core', timelineFilter: 'all', timelineGrouped: true, timelineEnabled: true, analyticsYear: 'all', analyticsExpanded: {}, dailyBalanceMode: 'week', dailyBalanceStart: '', dailyBalanceIncludeWages: true, graphIndex: 0, graphScale: 'daily', graphSeries: { income: true, customers: true, wages: true, adBudget: true, profit: true }, staffEeMode: 'total', staffEeMetric: 'workingStats', staffEeRange: '30', staffEeEmployee: 'all', trainingLogStart: '', trainingLogYear: 'all', profileSort: 'name', profileSortDir: 'asc', tableSorts: {}, showApiKey: false, privacyMode: false, tourActive: false, tourStep: 0, startMinimized: false, minimized: false, mode: 'embedded', editMode: false, editPersonKey: '', editDirectorKey: '', personSaveExit: false, plannerQueueHidden: false, collapsedPanels: {}, detailOpenState: {}, panelSizes: {}, reportSections: { summary: true, ledger: true, trainingLog: true, planner: true, analytics: true, balance: true, stock: true, staff: true, pastStaff: false, directors: false, timeline: true, profile: true, details: true, settings: true }, left: '', top: '', restoreWidth: '', restoreHeight: '' }
   };
 
   const CSS = `
@@ -807,6 +805,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       state.settings.userName = state.settings.userName || PageData.userName();
       state.settings.companyId = state.settings.companyId || state.company.profile.id || PageData.companyId();
       state = Store.applyLedgerPending(Store.applyStaffEditCache(state, staffEditCache), ledgerPending);
+      Store.applyUiPreferences(state, uiPreferences);
       const cloudState = await Store.loadCloudWorkspace(state);
       // Startup reclassifies once, in batches, before the first interactive render.
       const cachedState = Store.applySyncCache(cloudState, { deferReclassify: true });
@@ -842,15 +841,23 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
         const source = parsed && parsed.ui && typeof parsed.ui === 'object' && !Array.isArray(parsed.ui) ? parsed.ui : parsed;
         if (!source || typeof source !== 'object' || Array.isArray(source)) return {};
-        return {
+        const preferences = {
           collapsedPanels: source.collapsedPanels && typeof source.collapsedPanels === 'object' && !Array.isArray(source.collapsedPanels) ? source.collapsedPanels : {},
           graphScale: source.graphScale === 'weekly' ? 'weekly' : 'daily',
           dailyBalanceMode: source.dailyBalanceMode === 'all' ? 'all' : 'week',
           staffEeMode: ['total', 'component', 'both'].includes(source.staffEeMode) ? source.staffEeMode : 'total',
           staffEeMetric: String(source.staffEeMetric || 'workingStats'),
           staffEeRange: ['7', '14', '30', '90', 'all'].includes(String(source.staffEeRange)) ? String(source.staffEeRange) : '30',
-          startMinimized: source.startMinimized === true
+          startMinimized: source.startMinimized === true,
+          timelineEnabled: source.timelineEnabled !== false
         };
+        if (source.reportSections && typeof source.reportSections === 'object' && !Array.isArray(source.reportSections)) {
+          preferences.reportSections = Object.keys(DEFAULTS.ui.reportSections).reduce((next, key) => {
+            next[key] = Object.prototype.hasOwnProperty.call(source.reportSections, key) ? source.reportSections[key] !== false : DEFAULTS.ui.reportSections[key];
+            return next;
+          }, {});
+        }
+        return preferences;
       } catch (error) {
         console.warn('[Pythagoras Project - CIS] Could not read local UI preferences.', error);
         return {};
@@ -873,6 +880,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (source.staffEeMetric) state.ui.staffEeMetric = source.staffEeMetric;
       if (source.staffEeRange) state.ui.staffEeRange = source.staffEeRange;
       if (Object.prototype.hasOwnProperty.call(source, 'startMinimized')) state.ui.startMinimized = source.startMinimized === true;
+      if (Object.prototype.hasOwnProperty.call(source, 'timelineEnabled')) state.ui.timelineEnabled = source.timelineEnabled !== false;
+      if (source.reportSections) state.ui.reportSections = Object.assign({}, DEFAULTS.ui.reportSections, source.reportSections);
       return state;
     },
     saveUiPreferences(state) {
@@ -885,7 +894,12 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           staffEeMode: ['total', 'component', 'both'].includes(ui.staffEeMode) ? ui.staffEeMode : 'total',
           staffEeMetric: String(ui.staffEeMetric || 'workingStats'),
           staffEeRange: ['7', '14', '30', '90', 'all'].includes(String(ui.staffEeRange)) ? String(ui.staffEeRange) : '30',
-          startMinimized: ui.startMinimized === true
+          startMinimized: ui.startMinimized === true,
+          timelineEnabled: ui.timelineEnabled !== false,
+          reportSections: Object.keys(DEFAULTS.ui.reportSections).reduce((next, key) => {
+            next[key] = ui.reportSections && Object.prototype.hasOwnProperty.call(ui.reportSections, key) ? ui.reportSections[key] !== false : DEFAULTS.ui.reportSections[key];
+            return next;
+          }, {})
         },
         updatedAt: Utils.nowIso()
       }));
@@ -1735,7 +1749,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       }
       const news = cloneSlice('news');
       if (news) {
-        if (Array.isArray(news.timeline)) {
+        if (state.ui.timelineEnabled !== false && Array.isArray(news.timeline)) {
           const merged = Timeline.mergeTimeline(state.staff.timeline || [], news.timeline);
           state.staff.timeline = options && options.deferReclassify ? merged : Timeline.reclassify(merged);
         }
@@ -1851,7 +1865,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (!Store.canUseCloudWorkspace(state)) return state;
       try {
         const base = Store.workspaceBaseUrl(state);
-        const data = await ApiClient.postJson(`${base}/api/cis/bootstrap`, Store.workspacePayload(state, { company: state.company.profile || {} }), 30000);
+        const data = await ApiClient.postJson(`${base}/api/cis/bootstrap`, Store.workspacePayload(state, {
+          company: state.company.profile || {},
+          includeTimeline: state.ui.timelineEnabled !== false
+        }), 30000);
         if (!data || !data.ok || !data.data) return state;
         return Store.applyCloudBootstrap(state, data);
       } catch (error) {
@@ -2179,11 +2196,18 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       next.staff.efficiencyHistory = Store.mergeEmployeeDailyHistory(next.staff.efficiencyHistory || [], data.employeeDailyHistory || data.employee_daily_history || []);
       next.staff.localEdits = localStaffEdits;
       next.staff.localEditVersion = localStaffEditVersion;
-      const timeline = (data.events || []).map((row) => Store.dbEventToTimeline(row));
-      const reports = (data.dailyReports || []).map((row) => Store.reportToTimeline(row));
-      next.staff.timeline = Timeline.mergeTimeline(timeline, reports);
-      next.trainingLog = Timeline.mergeTrainingRows(Timeline.trainingLogsFromEvents(timeline, next).concat(localTrainingLogRows), next);
-      next.analytics.weeks = Timeline.analyticsFromEvents(next.staff.timeline, next);
+      if (next.ui.timelineEnabled !== false) {
+        const timeline = (data.events || []).map((row) => Store.dbEventToTimeline(row));
+        const reports = (data.dailyReports || []).map((row) => Store.reportToTimeline(row));
+        next.staff.timeline = Timeline.mergeTimeline(timeline, reports);
+        next.trainingLog = Timeline.mergeTrainingRows(Timeline.trainingLogsFromEvents(timeline, next).concat(localTrainingLogRows), next);
+        next.analytics.weeks = Timeline.analyticsFromEvents(next.staff.timeline, next);
+      } else {
+        const reports = (data.dailyReports || []).map((row) => Store.reportToTimeline(row));
+        next.staff.timeline = [];
+        next.trainingLog = Timeline.mergeTrainingRows(localTrainingLogRows, next);
+        next.analytics.weeks = Timeline.analyticsFromEvents(reports, next);
+      }
       next.ledger = Store.mergeLedgerRows((data.trainingOrders || []).map((row) => Store.dbOrderToLedger(row)), Store.loadLedgerPending().orders);
       if (watermarks.events) {
         next.company.newsSync.latestTimestamp = Math.max(Utils.int(next.company.newsSync.latestTimestamp, 0), Utils.int(watermarks.events.latestTimestamp, 0));
@@ -3152,7 +3176,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const next = Company.mergePeople(current, past);
       if (past && past.leftAt && !next.previousLeftAt) next.previousLeftAt = past.leftAt;
       const pastLeft = past && !Company.hasStaleLeftDate(past) ? (past.leftAt || past.endedAt || past.leftDate || past.leftTimestamp || '') : '';
-      if (Company.shouldBePastStaff(past) && pastLeft) {
+      const currentObserved = Utils.dateTimestamp(current && current.currentRosterObservedAt);
+      const currentStarted = Utils.dateTimestamp(Company.employmentStart(current));
+      const pastLeftTimestamp = Utils.dateTimestamp(pastLeft);
+      const currentRosterIsNewer = !!(pastLeftTimestamp && ((currentObserved && currentObserved > pastLeftTimestamp) || (currentStarted && currentStarted > pastLeftTimestamp)));
+      if (Company.shouldBePastStaff(past) && pastLeft && !currentRosterIsNewer) {
         next.leftAt = pastLeft;
         next.endedAt = next.endedAt || pastLeft;
         next.exitType = past.exitType || 'left';
@@ -3240,6 +3268,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     },
     timelineSaysPast(state, person) {
       const event = Company.latestEmploymentEvent(state, person);
+      if (event && Utils.dateTimestamp(person && person.currentRosterObservedAt) > Utils.int(event.timestamp, 0)) return null;
       return event && ['left', 'fired'].includes(String(event.type || '').toLowerCase()) ? event : null;
     },
     applyTimelineDepartures(state) {
@@ -3351,6 +3380,65 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         merged.set(Company.personKey(next), next);
       });
       return Array.from(merged.values()).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    },
+    reconcileEmployeeRoster(state, employees, options) {
+      const opts = options || {};
+      const observedAt = String(opts.observedAt || Utils.nowIso());
+      const source = String(opts.source || 'Torn API employee sync');
+      const incoming = Company.dedupePeople(employees || []);
+      const previousCurrent = Company.dedupePeople(state.staff.current || []);
+      const previousPool = Company.dedupePeople(previousCurrent.concat(state.company.profile.employees || []));
+      const byId = new Map();
+      const byName = new Map();
+      previousPool.forEach((person) => {
+        const keys = Company.identityKeys(person);
+        keys.ids.forEach((id) => byId.set(id, person));
+        keys.names.forEach((name) => byName.set(name, person));
+      });
+      const active = incoming.map((employee) => {
+        const keys = Company.identityKeys(employee);
+        let previous = null;
+        keys.ids.forEach((id) => { if (!previous && byId.has(id)) previous = byId.get(id); });
+        keys.names.forEach((name) => { if (!previous && byName.has(name)) previous = byName.get(name); });
+        const merged = Company.mergeStaff(previous ? [previous] : [], [employee])[0] || employee;
+        return Company.clearStaleLeftDate(Object.assign({}, merged, {
+          status: 'current',
+          leftAt: '',
+          endedAt: '',
+          leftDate: '',
+          leftTimestamp: '',
+          exitType: ['left', 'fired', 'terminated'].includes(String(merged.exitType || '').toLowerCase()) ? '' : merged.exitType,
+          currentRosterObservedAt: observedAt,
+          source: employee.source || source
+        }));
+      });
+      const activeIds = new Set();
+      const activeNames = new Set();
+      active.forEach((person) => {
+        const keys = Company.identityKeys(person);
+        keys.ids.forEach((id) => activeIds.add(id));
+        keys.names.forEach((name) => activeNames.add(name));
+      });
+      const isActive = (person) => {
+        const keys = Company.identityKeys(person);
+        return Array.from(keys.ids).some((id) => activeIds.has(id)) || Array.from(keys.names).some((name) => activeNames.has(name));
+      };
+      const retired = previousCurrent.filter((person) => !isActive(person)).map((person) => {
+        const departure = Company.timelineSaysPast(state, person);
+        const leftAt = departure && Utils.int(departure.timestamp, 0) || person.leftAt || person.endedAt || observedAt;
+        return Object.assign({}, person, {
+          status: 'past',
+          exitType: departure && departure.type || person.exitType || 'left',
+          leftAt,
+          endedAt: person.endedAt || leftAt,
+          source: `${source} roster reconciliation`
+        });
+      });
+      state.staff.current = active;
+      state.staff.past = Company.dedupePeople((state.staff.past || []).concat(retired));
+      state.company.profile.employees = active.slice();
+      Company.dedupeStaff(state);
+      return { current: state.staff.current, retired };
     },
     hasTrainerRole(rows) {
       return (rows || []).some((person) => String(person && person.role || '').toLowerCase().includes('trainer'));
@@ -5700,13 +5788,55 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
   };
 
   const Wages = {
-    estimate(employee, settings) {
+    statKeys: ['man', 'int', 'end'],
+    roleRequirements(employee, settings, requirements) {
+      if (requirements && typeof requirements === 'object') return requirements;
+      const roleKey = Planner.roleKey(employee && employee.role);
+      return settings && settings.wageRoleRequirements && settings.wageRoleRequirements[roleKey]
+        ? settings.wageRoleRequirements[roleKey]
+        : {};
+    },
+    knownRoleStatKeys(employee, settings) {
+      const roleKey = Planner.roleKey(employee && employee.role);
+      const typeId = String(settings && settings.companyTypeId || '').trim();
+      const typeName = String(settings && settings.companyTypeName || '').toLowerCase();
+      if (typeId !== '30' && !typeName.includes('mechanic shop')) return [];
+      if (['technician', 'apprentice-technician', 'cleaner'].includes(roleKey)) return ['man', 'end'];
+      if (['manager', 'receptionist', 'trainer'].includes(roleKey)) return ['int', 'end'];
+      return [];
+    },
+    effectiveStatKeys(employee, settings, requirements) {
+      const req = Wages.roleRequirements(employee, settings, requirements);
+      const configured = Wages.statKeys.filter((key) => Utils.num(req[key], 0) > 0);
+      if (configured.length === 2) return configured;
+      const known = Wages.knownRoleStatKeys(employee, settings);
+      if (known.length === 2) return known;
+      if (configured.length > 2) {
+        return configured.slice().sort((a, b) => Utils.num(req[b], 0) - Utils.num(req[a], 0) || Wages.statKeys.indexOf(a) - Wages.statKeys.indexOf(b)).slice(0, 2);
+      }
+      return configured.length ? configured : Wages.statKeys.slice();
+    },
+    weightedStats(employee, settings, requirements) {
       const wage = settings.wage;
-      const stats = Utils.num(employee.man, 0) * Utils.num(wage.manWeight, 1) + Utils.num(employee.int, 0) * Utils.num(wage.intWeight, 1) + Utils.num(employee.end, 0) * Utils.num(wage.endWeight, 1);
+      const effectiveStatKeys = Wages.effectiveStatKeys(employee, settings, requirements);
+      const weights = { man: 'manWeight', int: 'intWeight', end: 'endWeight' };
+      const contributions = effectiveStatKeys.reduce((next, key) => {
+        next[key] = Utils.num(employee && employee[key], 0) * Utils.num(wage[weights[key]], 1);
+        return next;
+      }, {});
+      return {
+        effectiveStatKeys,
+        contributions,
+        total: effectiveStatKeys.reduce((sum, key) => sum + Utils.num(contributions[key], 0), 0)
+      };
+    },
+    estimate(employee, settings, requirements) {
+      const wage = settings.wage;
+      const stats = Wages.weightedStats(employee, settings, requirements).total;
       let value = Utils.num(wage.baseWage, 0) + stats * Utils.num(wage.statCashRate, 1);
       value *= 1 + (Utils.int(employee.merits, 0) * Utils.percent(wage.meritBonusPercent, 0) / 100);
       if (Utils.num(employee.addiction, 0) > 0) value *= 1 - (Utils.percent(wage.addictionPenaltyPercent, 0) / 100);
-      if (Utils.int(employee.inactiveDays, 0) >= Utils.int(wage.inactiveDaysThreshold, 3)) value *= 1 - (Utils.percent(wage.inactivityPenaltyPercent, 0) / 100);
+      if (Utils.num(employee.inactiveDays, 0) >= Utils.num(wage.inactiveDaysThreshold, 3)) value *= 1 - (Utils.percent(wage.inactivityPenaltyPercent, 0) / 100);
       return Math.max(0, Math.round(value));
     },
     matchingRows(person, state) {
@@ -5755,24 +5885,24 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (actualRow) merged.wage = Utils.num(actualRow.wage, 0);
       return merged;
     },
-    breakdownForEmployee(employee, settings) {
+    breakdownForEmployee(employee, settings, requirements) {
       const wage = settings.wage;
-      const man = Utils.num(employee && employee.man, 0);
-      const int = Utils.num(employee && employee.int, 0);
-      const end = Utils.num(employee && employee.end, 0);
-      const weightedStats = man * Utils.num(wage.manWeight, 1) + int * Utils.num(wage.intWeight, 1) + end * Utils.num(wage.endWeight, 1);
+      const weighted = Wages.weightedStats(employee, settings, requirements);
+      const weightedStats = weighted.total;
       const base = Utils.num(wage.baseWage, 0) + weightedStats * Utils.num(wage.statCashRate, 1);
       const meritBonus = Utils.int(employee && employee.merits, 0) * Utils.percent(wage.meritBonusPercent, 0);
       const addictionPenalty = Utils.num(employee && employee.addiction, 0) > 0 ? Utils.percent(wage.addictionPenaltyPercent, 0) : 0;
-      const inactivityPenalty = Utils.int(employee && employee.inactiveDays, 0) >= Utils.int(wage.inactiveDaysThreshold, 3) ? Utils.percent(wage.inactivityPenaltyPercent, 0) : 0;
+      const inactivityPenalty = Utils.num(employee && employee.inactiveDays, 0) >= Utils.num(wage.inactiveDaysThreshold, 3) ? Utils.percent(wage.inactivityPenaltyPercent, 0) : 0;
       return {
         employee,
         weightedStats,
+        effectiveStatKeys: weighted.effectiveStatKeys,
+        statContributions: weighted.contributions,
         base,
         meritBonus,
         addictionPenalty,
         inactivityPenalty,
-        suggested: Wages.estimate(employee, settings)
+        suggested: Wages.estimate(employee, settings, requirements)
       };
     },
     breakdown(person, state) {
@@ -5788,6 +5918,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (!breakdown) return 'No wage breakdown available.';
       const parts = [
         `Base ${Utils.money(breakdown.base)}`,
+        `Effective stats ${(breakdown.effectiveStatKeys || Wages.statKeys).map((key) => key.toUpperCase()).join(' + ')}`,
         `Weighted stats ${Math.round(Utils.num(breakdown.weightedStats, 0)).toLocaleString('en-US')}`
       ];
       if (breakdown.meritBonus) parts.push(`Merit bonus +${breakdown.meritBonus}%`);
@@ -6081,7 +6212,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       UI.state = await Store.loadAsync();
       const loadedAt = Date.now();
       UI.root.querySelector('[role="status"]').textContent = 'CIS: preparing saved history...';
-      if (UI.state.staff.timeline.length) {
+      if (UI.state.ui.timelineEnabled !== false && UI.state.staff.timeline.length) {
         UI.state.staff.timeline = await Timeline.reclassifyAsync(UI.state.staff.timeline);
         Timeline.rebuildPeople(UI.state);
         await new Promise((resolve) => setTimeout(resolve, 0));
@@ -6869,12 +7000,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     topBarSyncButtons() {
       const disabled = UI.apiKeyMissing() || UI.isSyncBusy() ? ' disabled' : '';
       return `<div class="pp-title-sync" aria-label="Sync controls">
-        <button class="pp-btn is-primary ${UI.syncProgressClass('smart-sync')}" style="${UI.syncProgressStyle('smart-sync')}" type="button" data-action="smart-sync" data-sync-action="smart-sync" title="Run Smart sync, including restocking costs"${disabled}>Smart</button>
-        <button class="${UI.syncButtonClass('business', true)} ${UI.syncProgressClass('business')}" style="${UI.syncProgressStyle('business')}" type="button" data-action="sync-business" data-sync-action="business" title="Sync business profile, stock, employees, and restocking costs"${disabled}>Business</button>
-        <button class="${UI.syncButtonClass('news', false)} ${UI.syncProgressClass('news')}" style="${UI.syncProgressStyle('news')}" type="button" data-action="sync-news" data-sync-action="news" title="Sync latest company news"${disabled}>News</button>
-        <button class="${UI.syncButtonClass('employees', false)} ${UI.syncProgressClass('employees')}" style="${UI.syncProgressStyle('employees')}" type="button" data-action="sync-employees" data-sync-action="employees" title="Sync employees"${disabled}>Employees</button>
-        <button class="${UI.syncButtonClass('stock', false)} ${UI.syncProgressClass('stock')}" style="${UI.syncProgressStyle('stock')}" type="button" data-action="sync-stock" data-sync-action="stock" title="Sync services sold, stock, and restocking costs"${disabled}>Stock</button>
-        <button class="pp-btn ${UI.syncProgressClass('training-log')}" style="${UI.syncProgressStyle('training-log')}" type="button" data-action="sync-training-log" data-sync-action="training-log" title="Sync training log"${disabled}>Training</button>
+        <button class="pp-btn is-primary ${UI.syncProgressClass('sync-all')}" style="${UI.syncProgressStyle('sync-all')}" type="button" data-action="sync-all" data-sync-action="sync-all" title="Sync business, employees, stock, latest news, training actions, wages, roles, and restocking costs"${disabled}>Sync all</button>
       </div>`;
     },
 
@@ -7319,46 +7445,13 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         },
         {
           tab: 'settings',
-          selector: '[data-tour="sync-center"]',
-          title: 'Sync center order',
-          text: 'Use the sync center as your normal maintenance checklist. Each button is one explicit user action.',
+          selector: '[data-tour="sync-all"]',
+          title: 'Sync all',
+          text: 'Sync all refreshes the normal day-to-day company data in one action.',
           notes: [
-            'Recommended first setup: Check key, Sync business, Sync employees, Sync latest news, Fetch older news, Sync training log, Sync past staff, Sync services sold.',
-            'Freshness warnings turn sync buttons yellow or red based on your notification settings.',
-            'Staff-card log sync stays inside each card because it targets one employee at a time.'
-          ]
-        },
-        {
-          tab: 'settings',
-          selector: '[data-tour="sync-business"]',
-          title: 'Sync business',
-          text: 'Sync business pulls profile, detailed, stock, and employees in one company request.',
-          notes: [
-            'It updates rating, type, director, employee count, storage, funds, company health bars, stock rows, and staff effectiveness data.',
-            'Company type controls business-specific UI such as racing details for Mechanic Shop and Car Dealership.',
-            'Training setup auto-detects company rating and Trainer bonus from this synced context.'
-          ]
-        },
-        {
-          tab: 'settings',
-          selector: '[data-tour="sync-employees"]',
-          title: 'Sync employees',
-          text: 'Sync employees refreshes the live staff roster from Torn employee data.',
-          notes: [
-            'It updates stats, wages, roles, effectiveness, last action, merits, addiction and inactivity values.',
-            'Local contract type is preserved, so paid/sponsored choices do not reset to paid.',
-            'These synced values feed staff cards, wage suggestions, planner risk priority, and Balance wages.'
-          ]
-        },
-        {
-          tab: 'settings',
-          selector: '[data-tour="sync-news"]',
-          title: 'Sync latest news',
-          text: 'Sync latest news fetches recent company news and reclassifies it into timeline events.',
-          notes: [
-            'It detects hires, applications, leaves, fires, director changes, rating changes, funds, daily reports, and training news.',
-            'Daily reports feed Weekly Analytics and Balance.',
-            'Training news can later be converted into local training log rows.'
+            'It refreshes business details, the authoritative employee roster, stock, services sold, latest news, reports, and operating costs.',
+            'It also checks exact training, wage, and role actions when the API key has user-log permission.',
+            'Older-news and older-restock pagination remain separate history tools.'
           ]
         },
         {
@@ -7374,18 +7467,6 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         },
         {
           tab: 'settings',
-          selector: '[data-tour="sync-training-log"]',
-          title: 'Sync training log',
-          text: 'Sync training log combines company news with Torn\'s exact training-action log into structured local train records.',
-          notes: [
-            'Rows are linked by Torn user ID where possible, not just by name.',
-            'The action log prevents same-second trains from being collapsed by the company-news feed and requires Full/custom user log access.',
-            'Training counts feed STR and PTR columns based on each staff member contract type.',
-            'The Training log view groups recent days into pill-style daily entries.'
-          ]
-        },
-        {
-          tab: 'settings',
           selector: '[data-tour="sync-past-staff"]',
           title: 'Sync past staff',
           text: 'Sync past staff rebuilds old employee rows from stored timeline data and training records.',
@@ -7393,17 +7474,6 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             'It is useful after a full news backfill.',
             'Past staff cards are intentionally simpler than current staff cards.',
             'Tenure uses hire and left dates, with company founding date as a fallback when a hire date is missing.'
-          ]
-        },
-        {
-          tab: 'settings',
-          selector: '[data-tour="sync-stock"]',
-          title: 'Sync services sold',
-          text: 'Sync services sold refreshes stock/service sales from Torn stock data.',
-          notes: [
-            'It updates cost, RRP, price, in stock, on order, sold quantity, and sold worth.',
-            'Services with cost 0 are treated as non-restockable services.',
-            'Restockable products drive low-stock alerts, storage planning, and service graphs.'
           ]
         },
         {
@@ -7910,6 +7980,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
 
     timelinePage() {
       const state = UI.state;
+      if (state.ui.timelineEnabled === false) {
+        return `<div class="pp-grid"><section class="pp-panel"><div class="pp-head"><div><h2>Company timeline disabled</h2><p>Company-news history is not loaded or processed at startup.</p></div></div><div class="pp-content"><p class="pp-note">Your saved history is unchanged. Enable <strong>Load timeline at startup</strong> in Settings and refresh the page to use it again.</p></div></section></div>`;
+      }
       const weeks = UI.filteredAnalytics(Timeline.compareWeeks(UI.visibleAnalyticsWeeks()));
       const events = Timeline.accessEvents(state.staff.timeline || [], state);
       return `
@@ -10405,7 +10478,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
                 <h2>Identity</h2>
                 <p>Local identity, API key handling, date format, and display theme.</p>
               </div>
-              <label class="pp-title-switch" title="Apply this preference the next time the userscript loads"><input type="checkbox" data-ui-check="startMinimized" ${state.ui.startMinimized === true ? 'checked' : ''}> Start minimized</label>
+              <div class="pp-row-actions">
+                <label class="pp-title-switch" title="Skip loading and processing saved company-news history for a faster startup"><input type="checkbox" data-ui-check="timelineEnabled" ${state.ui.timelineEnabled !== false ? 'checked' : ''}> Load timeline at startup</label>
+                <label class="pp-title-switch" title="Apply this preference the next time the userscript loads"><input type="checkbox" data-ui-check="startMinimized" ${state.ui.startMinimized === true ? 'checked' : ''}> Start minimized</label>
+              </div>
             </div>
             <div class="pp-content">
               <form data-settings-form class="pp-form pp-identity-settings">
@@ -10507,15 +10583,15 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           </div>
         </div>
         <div class="pp-content"><form data-wage-form class="pp-form">
-          ${UI.field('Base wage', `<input class="pp-input" name="baseWage" inputmode="numeric" value="${Utils.esc(state.settings.wage.baseWage)}">`, 'span-2')}
-          ${UI.field('MAN weight', `<input class="pp-input" name="manWeight" inputmode="decimal" value="${Utils.esc(state.settings.wage.manWeight)}">`)}
-          ${UI.field('INT weight', `<input class="pp-input" name="intWeight" inputmode="decimal" value="${Utils.esc(state.settings.wage.intWeight)}">`)}
-          ${UI.field('END weight', `<input class="pp-input" name="endWeight" inputmode="decimal" value="${Utils.esc(state.settings.wage.endWeight)}">`)}
-          ${UI.field('Cash / stat', `<input class="pp-input" name="statCashRate" inputmode="decimal" value="${Utils.esc(state.settings.wage.statCashRate)}">`)}
-          ${UI.field('Merit bonus %', `<input class="pp-input" name="meritBonusPercent" inputmode="decimal" value="${Utils.esc(state.settings.wage.meritBonusPercent)}">`)}
-          ${UI.field('Addiction penalty %', `<input class="pp-input" name="addictionPenaltyPercent" inputmode="decimal" value="${Utils.esc(state.settings.wage.addictionPenaltyPercent)}">`)}
-          ${UI.field('Inactivity penalty %', `<input class="pp-input" name="inactivityPenaltyPercent" inputmode="decimal" value="${Utils.esc(state.settings.wage.inactivityPenaltyPercent)}">`)}
-          ${UI.field('Inactive days', `<input class="pp-input" name="inactiveDaysThreshold" inputmode="numeric" value="${Utils.esc(state.settings.wage.inactiveDaysThreshold)}">`)}
+          ${UI.field('Base wage', `<input class="pp-input" type="number" step="any" name="baseWage" inputmode="decimal" value="${Utils.esc(state.settings.wage.baseWage)}">`, 'span-2')}
+          ${UI.field('MAN weight', `<input class="pp-input" type="number" step="any" name="manWeight" inputmode="decimal" value="${Utils.esc(state.settings.wage.manWeight)}">`)}
+          ${UI.field('INT weight', `<input class="pp-input" type="number" step="any" name="intWeight" inputmode="decimal" value="${Utils.esc(state.settings.wage.intWeight)}">`)}
+          ${UI.field('END weight', `<input class="pp-input" type="number" step="any" name="endWeight" inputmode="decimal" value="${Utils.esc(state.settings.wage.endWeight)}">`)}
+          ${UI.field('Cash / stat', `<input class="pp-input" type="number" step="any" name="statCashRate" inputmode="decimal" value="${Utils.esc(state.settings.wage.statCashRate)}">`)}
+          ${UI.field('Merit bonus %', `<input class="pp-input" type="number" step="any" name="meritBonusPercent" inputmode="decimal" value="${Utils.esc(state.settings.wage.meritBonusPercent)}">`)}
+          ${UI.field('Addiction penalty %', `<input class="pp-input" type="number" step="any" name="addictionPenaltyPercent" inputmode="decimal" value="${Utils.esc(state.settings.wage.addictionPenaltyPercent)}">`)}
+          ${UI.field('Inactivity penalty %', `<input class="pp-input" type="number" step="any" name="inactivityPenaltyPercent" inputmode="decimal" value="${Utils.esc(state.settings.wage.inactivityPenaltyPercent)}">`)}
+          ${UI.field('Inactive days', `<input class="pp-input" type="number" step="any" name="inactiveDaysThreshold" inputmode="decimal" value="${Utils.esc(state.settings.wage.inactiveDaysThreshold)}">`)}
           ${UI.wageRoleCalculator()}
         </form></div>
       </section>${UI.wageRoiPanel()}</div>`;
@@ -11096,8 +11172,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const man = Utils.num(req.man, 0);
         const int = Utils.num(req.int, 0);
         const end = Utils.num(req.end, 0);
-        const preview = Wages.estimate({ man, int, end, merits: 0, addiction: 0, inactiveDays: 0 }, UI.state.settings);
-        return { key, label, man, int, end, preview, total: man + int + end };
+        const employee = { role: label, man, int, end, merits: 0, addiction: 0, inactiveDays: 0 };
+        const effectiveStatKeys = Wages.effectiveStatKeys(employee, UI.state.settings, req);
+        const preview = Wages.estimate(employee, UI.state.settings, req);
+        const total = effectiveStatKeys.reduce((sum, stat) => sum + Utils.num(employee[stat], 0), 0);
+        return { key, label, man, int, end, effectiveStatKeys, preview, total };
       });
       const sorted = UI.sortedRows('wageRoles', rows, {
         role: (row) => String(row.label || '').toLowerCase(),
@@ -11107,10 +11186,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         total: (row) => row.total,
         preview: (row) => row.preview
       }, 'role', 'asc');
-      return `<div class="pp-field span-6"><span>Role wage calculator</span><div class="pp-wrap"><table class="pp-table"><thead><tr><th>#</th><th>${UI.tableSortHeader('wageRoles', 'role', 'Role')}</th><th>${UI.tableSortHeader('wageRoles', 'man', 'Min MAN')}</th><th>${UI.tableSortHeader('wageRoles', 'int', 'Min INT')}</th><th>${UI.tableSortHeader('wageRoles', 'end', 'Min END')}</th><th>${UI.tableSortHeader('wageRoles', 'total', 'Total stat sum')}</th><th>${UI.tableSortHeader('wageRoles', 'preview', 'Preview')}</th></tr></thead><tbody>${sorted.map((row, index) => {
+      return `<div class="pp-field span-6"><span>Role wage calculator</span><div class="pp-wrap"><table class="pp-table"><thead><tr><th>#</th><th>${UI.tableSortHeader('wageRoles', 'role', 'Role')}</th><th>${UI.tableSortHeader('wageRoles', 'man', 'Min MAN')}</th><th>${UI.tableSortHeader('wageRoles', 'int', 'Min INT')}</th><th>${UI.tableSortHeader('wageRoles', 'end', 'Min END')}</th><th>Effective stats</th><th>${UI.tableSortHeader('wageRoles', 'total', 'Effective total')}</th><th>${UI.tableSortHeader('wageRoles', 'preview', 'Preview')}</th></tr></thead><tbody>${sorted.map((row, index) => {
         const key = row.key;
-        return `<tr data-wage-role="${Utils.esc(key)}"><td>${index + 1}</td><td>${Utils.esc(row.label)}</td><td><input class="pp-inline" name="wageRole:${Utils.esc(key)}:man" inputmode="numeric" value="${Utils.esc(row.man)}"></td><td><input class="pp-inline" name="wageRole:${Utils.esc(key)}:int" inputmode="numeric" value="${Utils.esc(row.int)}"></td><td><input class="pp-inline" name="wageRole:${Utils.esc(key)}:end" inputmode="numeric" value="${Utils.esc(row.end)}"></td><td>${Utils.esc(row.total)}</td><td>${Utils.money(row.preview)}</td></tr>`;
-      }).join('')}</tbody></table></div><span class="pp-note">Edits save automatically. Wage previews refresh as values change.</span></div>`;
+        return `<tr data-wage-role="${Utils.esc(key)}"><td>${index + 1}</td><td>${Utils.esc(row.label)}</td><td><input class="pp-inline" type="number" step="any" name="wageRole:${Utils.esc(key)}:man" inputmode="decimal" value="${Utils.esc(row.man)}"></td><td><input class="pp-inline" type="number" step="any" name="wageRole:${Utils.esc(key)}:int" inputmode="decimal" value="${Utils.esc(row.int)}"></td><td><input class="pp-inline" type="number" step="any" name="wageRole:${Utils.esc(key)}:end" inputmode="decimal" value="${Utils.esc(row.end)}"></td><td>${Utils.esc(row.effectiveStatKeys.map((stat) => stat.toUpperCase()).join(' + '))}</td><td>${Utils.esc(row.total)}</td><td>${Utils.money(row.preview)}</td></tr>`;
+      }).join('')}</tbody></table></div><span class="pp-note">Edits save automatically. All wage values accept decimals. Previews use only the role's primary and secondary stats; the ineffective third stat is excluded.</span></div>`;
     },
     apiKeyControl() {
       const state = UI.state;
@@ -11149,6 +11228,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     runSyncAction(action, button) {
       const personKey = button && button.dataset ? button.dataset.personKey || '' : '';
       const handlers = {
+        'sync-all': () => UI.syncAll(),
         'smart-sync': () => UI.smartSync(),
         'sync-training-log': () => UI.syncTrainingLog(),
         'sync-staff-history': () => UI.syncCompanyStaffLogs(),
@@ -11735,16 +11815,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const backfillTitle = UI.canUseHistoricalBackfill() ? 'Fetch older company news within your entitlement window' : UI.historyWindowMessage();
       return `<div class="pp-sync-center" data-tour="sync-center">
         <div class="pp-sync-groups">
-        <div class="pp-sync-group">
+        <div class="pp-sync-group" data-tour="sync-all">
           <span class="pp-sync-group-title">Daily sync</span>
-          <span class="pp-note mh-muted">Smart, Business, and Stock sync also fetch the latest restocking costs.</span>
-          <button class="pp-btn is-primary ${UI.syncProgressClass('smart-sync')}" style="${UI.syncProgressStyle('smart-sync')}" type="button" data-action="smart-sync" data-sync-action="smart-sync"${disabled}>Smart sync</button>
-          <button class="${UI.syncButtonClass('business', true)} ${UI.syncProgressClass('business')}" style="${UI.syncProgressStyle('business')}" type="button" data-action="sync-business" data-sync-action="business" data-tour="sync-business"${disabled}>Sync business</button>
-          <button class="${UI.syncButtonClass('news', false)} ${UI.syncProgressClass('news')}" style="${UI.syncProgressStyle('news')}" type="button" data-action="sync-news" data-sync-action="news" data-tour="sync-news"${disabled}>Sync latest news</button>
-          <button class="${UI.syncButtonClass('employees', false)} ${UI.syncProgressClass('employees')}" style="${UI.syncProgressStyle('employees')}" type="button" data-action="sync-employees" data-sync-action="employees" data-tour="sync-employees"${disabled}>Sync employees</button>
-          <button class="${UI.syncButtonClass('stock', false)} ${UI.syncProgressClass('stock')}" style="${UI.syncProgressStyle('stock')}" type="button" data-action="sync-stock" data-sync-action="stock" data-tour="sync-stock"${disabled}>Sync services sold</button>
-          <button class="pp-btn ${UI.syncProgressClass('training-log')}" style="${UI.syncProgressStyle('training-log')}" type="button" data-action="sync-training-log" data-sync-action="training-log" data-tour="sync-training-log"${disabled}>Sync training log</button>
-          <button class="pp-btn ${UI.syncProgressClass('staff-history')}" style="${UI.syncProgressStyle('staff-history')}" type="button" data-action="sync-staff-history" data-sync-action="staff-history" title="Sync company-wide training, wage, and role history"${disabled}>Sync staff history</button>
+          <span class="pp-note mh-muted">Refreshes business, current employees, services sold, latest news, exact training actions, wage and role history, advertising changes, and restocking costs.</span>
+          <button class="pp-btn is-primary ${UI.syncProgressClass('sync-all')}" style="${UI.syncProgressStyle('sync-all')}" type="button" data-action="sync-all" data-sync-action="sync-all"${disabled}>Sync all</button>
         </div>
         <div class="pp-sync-group">
           <span class="pp-sync-group-title">History tools</span>
@@ -12209,6 +12283,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.1.3 - Faster startup, authoritative sync, and role-aware wages</summary>
+              <ul><li>Timeline loading can be disabled persistently, and disabled timelines are omitted from the server bootstrap for faster startup.</li><li>Sync all replaces the routine sync buttons and refreshes business, the authoritative employee roster, stock, news, training actions, wage and role history, advertising changes, and restocking costs.</li><li>Employees missing from a fresh Torn roster move to Past Staff while rehires and local staff fields remain intact.</li><li>Suggested wages now use only each role&apos;s primary and secondary working stats. All wage settings and role requirements accept decimal values.</li></ul>
+            </details>
+            <details>
               <summary>v3.1.2 - Screenshot privacy coverage</summary>
               <ul><li>Privacy mode now masks staff names and dates in Training log, Train Schedule, Staff, Directors, and Employee Efficiency history.</li><li>Business identity, director, age, founded date, staff metrics, customer counts, chart axes, stock restock quantities, and wage calculator values are covered.</li><li>SVG chart labels, tooltips, and accessibility labels are replaced so hidden values cannot remain readable in screenshots or hover text.</li></ul>
             </details>
@@ -12951,6 +13029,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           ? (uiCheck.checked ? 'Balance wages enabled.' : 'Balance wages set to $0.')
           : uiCheck.dataset.uiCheck === 'startMinimized'
             ? (uiCheck.checked ? 'CIS will start minimized after the next page refresh.' : 'CIS will start expanded after the next page refresh.')
+            : uiCheck.dataset.uiCheck === 'timelineEnabled'
+              ? (uiCheck.checked ? 'Timeline will load after the next page refresh.' : 'Timeline startup loading disabled; saved history is unchanged.')
             : undefined;
         UI.saveRender(message);
         return;
@@ -14170,6 +14250,53 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       }
     },
 
+    async syncAll() {
+      const syncId = 'sync-all';
+      UI.saveSettings({ silent: true });
+      UI.readStockSettings(UI.currentRoot());
+      if (UI.apiKeyMissing()) {
+        const message = 'Add an API key first.';
+        UI.toast(message);
+        return { ok: false, message };
+      }
+      UI.beginSync(syncId, 'Sync all');
+      try {
+        UI.syncStep(syncId, 'Loading the saved workspace.', 5);
+        UI.state.settings.userId = UI.state.settings.userId || PageData.userId();
+        UI.state.settings.userName = UI.state.settings.userName || PageData.userName();
+        UI.state.settings.companyId = UI.state.settings.companyId || UI.state.company.profile.id || PageData.companyId();
+        UI.state = await Store.loadCloudWorkspace(UI.state);
+        Company.dedupeStaff(UI.state);
+        Company.removeDirectorsFromStaff(UI.state);
+        Ledger.prepare(UI.state);
+
+        UI.syncStep(syncId, 'Refreshing business, employees, stock, and operating costs.', 15);
+        const businessResult = await UI.syncBusiness();
+        if (!businessResult || !businessResult.ok) throw new Error(businessResult && businessResult.message || 'Business sync did not complete.');
+
+        UI.syncStep(syncId, 'Refreshing latest company news and reports.', 55);
+        const newsResult = await UI.syncNews();
+        if (!newsResult || !newsResult.ok) throw new Error(newsResult && newsResult.message || 'Company news sync did not complete.');
+
+        UI.syncStep(syncId, 'Refreshing exact training, wage, and role history.', 78);
+        const staffHistoryResult = await UI.syncCompanyStaffLogs();
+        const warnings = [];
+        if (!staffHistoryResult || !staffHistoryResult.ok) warnings.push(staffHistoryResult && staffHistoryResult.message || 'Staff history was unavailable for this key.');
+        if (businessResult.partial) warnings.push('Some optional operating-cost history was unavailable.');
+
+        Store.save(UI.state);
+        Store.updateSyncCache(UI.state, ['business', 'employees', 'stock', 'news', 'trainingLog']);
+        const message = `Sync all complete.${warnings.length ? ` ${warnings.join(' ')}` : ''}`;
+        UI.saveRender(message);
+        UI.finishSync(syncId, message);
+        return { ok: true, partial: warnings.length > 0, message, business: businessResult, news: newsResult, staffHistory: staffHistoryResult };
+      } catch (error) {
+        UI.failSync(syncId, error);
+        UI.toast(error.message);
+        return { ok: false, message: error && error.message ? error.message : String(error) };
+      }
+    },
+
     async smartSync() {
       const syncId = 'smart-sync';
       UI.saveSettings({ silent: true });
@@ -14620,7 +14747,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           const message = `Fetch older news is not available. ${UI.historyWindowMessage()}`;
           UI.finishSync(syncId, message);
           UI.toast(message);
-          return;
+          return { ok: false, message };
         }
         if (!opts.backfill) {
           UI.syncStep(syncId, 'Requesting latest company news from Torn.', 15);
@@ -14641,7 +14768,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           const message = `Synced ${incoming.length} company news entries.`;
           UI.saveRender(message);
           UI.finishSync(syncId, message);
-          return;
+          return { ok: true, message, fetched: incoming.length };
         }
 
         let pages = 0;
@@ -14734,28 +14861,20 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const message = `Fetched ${pages} older news page${pages === 1 ? '' : 's'} (${totalIncoming} kept entr${totalIncoming === 1 ? 'y' : 'ies'})${suffix}.${filteredText}`;
         UI.saveRender(message);
         UI.finishSync(syncId, message);
+        return { ok: true, message, pages, fetched: totalIncoming };
       } catch (error) {
         UI.failSync(syncId, error);
         UI.toast(error.message);
+        return { ok: false, message: error && error.message ? error.message : String(error) };
       }
     },
 
     applyBusinessData(data) {
       const observedAt = Utils.nowIso();
-      const previousProfileEmployees = UI.state.company.profile.employees || [];
       const result = Company.profile(data, UI.state);
       const employees = Company.dedupePeople((result.profile.employees || []).concat(Timeline.employeesFromApi(data)));
       const profile = Object.assign({}, UI.state.company.profile, result.profile);
-      const currentContracts = new Map();
-      (UI.state.staff.current || []).forEach((person) => {
-        const key = UI.personRowKey(person);
-        if (key) currentContracts.set(key, person.contractType || '');
-      });
-      profile.employees = Company.mergeStaff(previousProfileEmployees, employees).map((person) => {
-        const key = UI.personRowKey(person);
-        if (!key || !currentContracts.has(key)) return person;
-        return Object.assign({}, person, { contractType: currentContracts.get(key) });
-      });
+      profile.employees = employees;
       if (employees.some((person) => person.wageFromApi)) profile.employeeWagesSyncedAt = Utils.nowIso();
       UI.state.company.profile = profile;
       UI.state.company.detailed = Company.detailed(data, UI.state);
@@ -14781,19 +14900,18 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (profile.directorId && !UI.state.settings.userId) UI.state.settings.userId = profile.directorId;
       if (profile.rating) UI.state.settings.companyStars = Utils.clamp(profile.rating, 1, 10);
       if (result.earliestTimestamp) UI.state.company.newsSync.earliestTimestamp = result.earliestTimestamp;
-      if (profile.employees.length) UI.state.staff.current = Company.mergeStaff(UI.state.staff.current, profile.employees);
+      const roster = Company.reconcileEmployeeRoster(UI.state, employees, { observedAt, source: 'Torn API business sync' });
       if (UI.state.settings.userId) {
-        const account = profile.employees.find((employee) => String(employee.id) === String(UI.state.settings.userId));
+        const account = UI.state.company.profile.employees.find((employee) => String(employee.id) === String(UI.state.settings.userId));
         if (account) UI.state.settings.userName = account.name || UI.state.settings.userName;
       }
       if (profile.directorId) {
-        const director = profile.employees.find((employee) => String(employee.id) === String(profile.directorId));
+        const director = UI.state.company.profile.employees.find((employee) => String(employee.id) === String(profile.directorId));
         if (director) {
           UI.state.settings.userName = UI.state.settings.userName || director.name;
           UI.state.staff.directorsCurrent = Company.mergeStaff(UI.state.staff.directorsCurrent || [], [Object.assign({}, director, { role: 'Director', source: 'Torn API business sync' })]);
         }
       }
-      Company.dedupeStaff(UI.state);
       Company.removeDirectorsFromStaff(UI.state);
       const riskStrikes = UI.recordStaffRiskStrikes('Business sync');
       UI.state.company.profile.currentEmployees = Company.profileHeadcount(UI.state.company.profile);
@@ -14802,7 +14920,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       Planner.build(UI.state);
       UI.prepareTrainingQueue({ force: true });
       const dailyHistory = UI.recordEmployeeDailyHistory(employees, observedAt);
-      return { riskStrikes, dailyHistory, observedAt };
+      return { riskStrikes, dailyHistory, observedAt, retiredEmployees: roster.retired.length };
     },
 
     async syncBusiness() {
@@ -15031,12 +15149,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const data = await ApiClient.companyEmployees(UI.state.settings.apiKey);
         UI.syncStep(syncId, 'Parsing employee rows.', 50);
         const employees = Timeline.employeesFromApi(data);
-        const dailyHistory = UI.recordEmployeeDailyHistory(employees, Utils.nowIso());
-        UI.state.staff.current = Company.mergeStaff(UI.state.staff.current, employees);
-        UI.state.company.profile.employees = Company.mergeStaff(UI.state.company.profile.employees, employees);
-        UI.state.company.profile.lastSynced = Utils.nowIso();
+        const observedAt = Utils.nowIso();
+        const dailyHistory = UI.recordEmployeeDailyHistory(employees, observedAt);
+        const roster = Company.reconcileEmployeeRoster(UI.state, employees, { observedAt, source: 'Torn API employee sync' });
+        UI.state.company.profile.lastSynced = observedAt;
         if (employees.some((person) => person.wageFromApi)) UI.state.company.profile.employeeWagesSyncedAt = Utils.nowIso();
-        Company.dedupeStaff(UI.state);
         Company.removeDirectorsFromStaff(UI.state);
         UI.state.company.profile.currentEmployees = Company.profileHeadcount(UI.state.company.profile);
         const riskStrikes = UI.recordStaffRiskStrikes('Employee sync');
@@ -15045,7 +15162,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         Store.save(UI.state);
         Store.updateSyncCache(UI.state, ['employees', 'business', 'trainingLog']);
         await UI.uploadSyncState(syncId, { business: true, staff: UI.staffPayloadForApi({ dailyHistory }) });
-        const message = `Synced ${UI.state.staff.current.length} employees.${riskStrikes ? ` ${riskStrikes} staff risk strike${riskStrikes === 1 ? '' : 's'} recorded.` : ''}`;
+        const message = `Synced ${UI.state.staff.current.length} employees.${roster.retired.length ? ` Moved ${roster.retired.length} departed employee${roster.retired.length === 1 ? '' : 's'} to Past staff.` : ''}${riskStrikes ? ` ${riskStrikes} staff risk strike${riskStrikes === 1 ? '' : 's'} recorded.` : ''}`;
         UI.saveRender(message);
         UI.finishSync(syncId, message);
         return { ok: true, message };
