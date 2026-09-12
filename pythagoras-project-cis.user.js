@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.1.5
+// @version      3.1.6
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
 // @author       MoDuL [4022159]
 // @match        https://www.torn.com/companies.php*
@@ -50,7 +50,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.1.5',
+    version: '3.1.6',
     popupName: 'pythagoras-cis-popup'
   };
 
@@ -1409,13 +1409,17 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       (Array.isArray(rows) ? rows : []).forEach((raw) => {
         if (!raw || typeof raw !== 'object') return;
         const userId = String(raw.userId || raw.user_id || raw.id || raw.playerId || '').trim();
-        const date = Utils.dateInput(raw.date || raw.historyDate || raw.history_date || raw.snapshotDate || raw.snapshot_date);
+        const storedDate = Utils.dateInput(raw.date || raw.historyDate || raw.history_date || raw.snapshotDate || raw.snapshot_date);
+        const rawObservedAt = String(raw.observedAt || raw.observed_at || raw.syncedAt || raw.synced_at || raw.updatedAt || raw.updated_at || '').trim();
+        // Employee snapshots belong to the company day that most recently
+        // opened at 18:10 TCT, even when a stale stored date says otherwise.
+        const date = Utils.dateTimestamp(rawObservedAt) ? Utils.tctWorkingDayKey(rawObservedAt) : storedDate;
         if (!/^\d+$/.test(userId) || !date) return;
         const row = {
           date,
           userId,
           username: String(raw.username || raw.name || raw.playerName || userId).trim() || userId,
-          observedAt: String(raw.observedAt || raw.observed_at || raw.syncedAt || raw.synced_at || raw.updatedAt || raw.updated_at || '').trim() || `${date}T18:10:00.000Z`,
+          observedAt: rawObservedAt || `${date}T18:10:00.000Z`,
           efficiency: numberFrom(raw, 'efficiency', 'employee_efficiency'),
           workingStats: numberFrom(raw, 'workingStats', 'working_stats'),
           settledIn: numberFrom(raw, 'settledIn', 'settled_in'),
@@ -1984,6 +1988,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         customers: row.customers || meta.customers || 0,
         income: row.income || meta.income || 0,
         trainCount: Utils.int(meta.trainCount || meta.count, 0),
+        exactCount: Utils.int(meta.exactCount || meta.exact_count, 0),
+        exactEvents: Array.isArray(meta.exactEvents) ? meta.exactEvents.map((event) => Object.assign({}, event)) : [],
+        source: meta.source || '',
+        exactTraining: meta.exactTraining === true || meta.exact_training === true,
         plainText: meta.plainText || meta.text || meta.message || ''
       };
       if (Store.isDailyReportLike(event)) {
@@ -5284,6 +5292,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const identity = userId || person.id ? `id:${userId || person.id}` : Company.personKey({ name });
         const position = event.position || person.role || 'Employee';
         const key = `${date}:${identity}`;
+        const embeddedExactEvents = Array.isArray(event.exactEvents) ? event.exactEvents.filter(Boolean) : [];
+        const exact = event.exactTraining === true || event.source === 'user_log' || Utils.int(event.exactCount, 0) > 0 || embeddedExactEvents.length > 0 || /^user-log:/i.test(Timeline.sourceEventId(event));
+        const eventCount = Math.max(1, Utils.int(event.trainCount, 1));
         const row = byKey.get(key) || {
           id: key,
           date,
@@ -5294,17 +5305,53 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           position,
           contractType: '',
           count: 0,
+          newsCount: 0,
+          exactCount: 0,
+          exactEvents: [],
+          source: '',
           eventIds: []
         };
         if (userId && !row.userId) row.userId = userId;
         if (person.name) row.playerName = person.name;
         row.timestamp = Math.max(row.timestamp || 0, event.timestamp || 0);
         row.position = row.position || position;
-        row.count += Math.max(1, Utils.int(event.trainCount, 1));
+        if (exact) {
+          const exactEvents = embeddedExactEvents.length ? embeddedExactEvents : [{
+            id: String(Timeline.sourceEventId(event) || event.id || '').replace(/^user-log:/i, ''),
+            timestamp: Utils.int(event.timestamp, 0),
+            userId: userId || person.id || '',
+            playerName: person.name || name,
+            position,
+            count: eventCount
+          }];
+          row.exactEvents.push(...exactEvents.map((item) => Object.assign({}, item)));
+          row.exactCount += embeddedExactEvents.length
+            ? embeddedExactEvents.reduce((sum, item) => sum + Math.max(1, Utils.int(item.count, 1)), 0)
+            : Math.max(eventCount, Utils.int(event.exactCount, 0));
+          row.source = row.newsCount ? 'mixed' : 'user_log';
+        } else {
+          row.newsCount += eventCount;
+          if (row.exactCount) row.source = 'mixed';
+        }
+        row.count = row.exactCount || row.newsCount;
         row.eventIds.push(event.id);
         byKey.set(key, row);
       });
-      return Array.from(byKey.values()).sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(a.playerName).localeCompare(String(b.playerName)));
+      return Array.from(byKey.values()).map((row) => {
+        const exactEvents = new Map();
+        (row.exactEvents || []).forEach((event, index) => {
+          const id = String(event && event.id || '').trim();
+          const key = id ? `id:${id}` : `event:${Utils.int(event && event.timestamp, 0)}:${String(event && event.userId || '')}:${index}`;
+          exactEvents.set(key, event);
+        });
+        row.exactEvents = Array.from(exactEvents.values()).sort((a, b) => Utils.int(a.timestamp, 0) - Utils.int(b.timestamp, 0));
+        row.exactCount = row.exactEvents.length
+          ? row.exactEvents.reduce((sum, event) => sum + Math.max(1, Utils.int(event.count, 1)), 0)
+          : row.exactCount;
+        row.count = row.exactCount || row.newsCount;
+        if (row.exactCount) row.source = row.newsCount ? 'mixed' : 'user_log';
+        return row;
+      }).sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(a.playerName).localeCompare(String(b.playerName)));
     },
     mergeTrainingRows(rows, state) {
       const byKey = new Map();
@@ -5555,6 +5602,56 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const identity = Company.resolveIdentity(subject || {}, state, identityMaps);
       return identity ? `${date}:${identity}` : '';
     },
+    eventsFromExactTrainingRow(row) {
+      if (!row) return [];
+      const exactCount = Math.max(0, Utils.int(row.exactCount, 0) || Utils.int(row.count, 0));
+      if (!exactCount) return [];
+      const exactEvents = [];
+      const seen = new Set();
+      (Array.isArray(row.exactEvents) ? row.exactEvents : []).forEach((event) => {
+        if (!event) return;
+        const eventId = String(event.id || '').trim();
+        const dedupeKey = eventId || `${Utils.int(event.timestamp, 0)}:${String(event.userId || '')}:${exactEvents.length}`;
+        if (seen.has(dedupeKey)) return;
+        seen.add(dedupeKey);
+        exactEvents.push(event);
+      });
+      const exactEventCount = exactEvents.reduce((sum, event) => sum + Math.max(1, Utils.int(event.count, 1)), 0);
+      if (exactEvents.length && exactEventCount === exactCount) {
+        return exactEvents.map((event, index) => {
+          const eventId = String(event.id || `${row.date || 'training'}:${row.userId || ''}:${index + 1}`);
+          return {
+            id: `user-log:${eventId}`,
+            sourceEventId: `user-log:${eventId}`,
+            timestamp: Utils.int(event.timestamp, 0) || Utils.int(row.timestamp, 0),
+            type: 'training',
+            category: 'training',
+            userId: String(event.userId || row.userId || ''),
+            playerName: event.playerName || row.playerName || '',
+            position: event.position || row.position || 'Employee',
+            trainCount: Math.max(1, Utils.int(event.count, 1)),
+            source: 'user_log',
+            exactTraining: true,
+            createdAt: Utils.nowIso()
+          };
+        });
+      }
+      const summaryId = String(row.id || `${row.date || 'training'}:${row.userId || ''}`).replace(/[^a-z0-9:_-]+/gi, '-');
+      return [{
+        id: `user-log-summary:${summaryId}`,
+        sourceEventId: `user-log-summary:${summaryId}`,
+        timestamp: Utils.int(row.timestamp, 0) || Utils.dateTimestamp(`${row.date}T12:00:00`),
+        type: 'training',
+        category: 'training',
+        userId: String(row.userId || ''),
+        playerName: row.playerName || '',
+        position: row.position || 'Employee',
+        trainCount: exactCount,
+        source: 'user_log',
+        exactTraining: true,
+        createdAt: Utils.nowIso()
+      }];
+    },
     accessEvents(events, state) {
       const storedEvents = Array.isArray(events) ? events : [];
       if (!state || !state.staff) return storedEvents;
@@ -5574,54 +5671,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         if (Timeline.displayType(event) !== 'training') return true;
         return !exactByKey.has(Timeline.trainingAccessKey(event, state, identityMaps));
       });
-      exactByKey.forEach(({ row, exactCount }, key) => {
-        const exactEvents = [];
-        const seen = new Set();
-        (Array.isArray(row.exactEvents) ? row.exactEvents : []).forEach((event) => {
-          if (!event) return;
-          const eventId = String(event.id || '').trim();
-          const dedupeKey = eventId || `${Utils.int(event.timestamp, 0)}:${String(event.userId || '')}:${exactEvents.length}`;
-          if (seen.has(dedupeKey)) return;
-          seen.add(dedupeKey);
-          exactEvents.push(event);
-        });
-        const exactEventCount = exactEvents.reduce((sum, event) => sum + Math.max(1, Utils.int(event.count, 1)), 0);
-        if (exactEvents.length && exactEventCount === exactCount) {
-          exactEvents.forEach((event, index) => {
-            const eventId = String(event.id || `${key}:${index + 1}`);
-            reconciled.push({
-              id: `user-log:${eventId}`,
-              sourceEventId: `user-log:${eventId}`,
-              timestamp: Utils.int(event.timestamp, 0) || Utils.int(row.timestamp, 0),
-              type: 'training',
-              category: 'training',
-              userId: String(event.userId || row.userId || ''),
-              playerName: event.playerName || row.playerName || '',
-              position: event.position || row.position || 'Employee',
-              trainCount: Math.max(1, Utils.int(event.count, 1)),
-              source: 'user_log',
-              exactTraining: true,
-              createdAt: Utils.nowIso()
-            });
-          });
-          return;
-        }
-        const summaryId = String(row.id || key).replace(/[^a-z0-9:_-]+/gi, '-');
-        reconciled.push({
-          id: `user-log-summary:${summaryId}`,
-          sourceEventId: `user-log-summary:${summaryId}`,
-          timestamp: Utils.int(row.timestamp, 0) || Utils.dateTimestamp(`${row.date}T12:00:00`),
-          type: 'training',
-          category: 'training',
-          userId: String(row.userId || ''),
-          playerName: row.playerName || '',
-          position: row.position || 'Employee',
-          trainCount: exactCount,
-          source: 'user_log',
-          exactTraining: true,
-          createdAt: Utils.nowIso()
-        });
-      });
+      exactByKey.forEach(({ row }) => reconciled.push(...Timeline.eventsFromExactTrainingRow(row)));
       return reconciled.sort((a, b) => Utils.int(b.timestamp, 0) - Utils.int(a.timestamp, 0));
     },
     analyticsFromEvents(events, state) {
@@ -8510,7 +8560,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (nextChange && wage !== Utils.num(nextChange.previousWage, null)) wage = null;
       const currentObserved = Utils.dateTimestamp(person._balanceWageObservedAt);
       if (!nextChange && covered && person._balanceWageKnown && currentObserved >= Math.max(started, evidenceAt) && currentObserved <= through && person._balanceWage !== wage) wage = null;
-      // Observations establish only their own company day, never earlier days.
+      // Observations establish their company day. A same-calendar-day sync
+      // after closing can also recover that closing wage when logs cover the
+      // observation: undo every subsequent change instead of using tomorrow's pay.
       const observations = (person._balanceWageSnapshots || []).slice();
       if (person._balanceWageKnown && person._balanceWageObservedAt) observations.push({ observedAt: person._balanceWageObservedAt, wage: person._balanceWage });
       observations.forEach((row) => {
@@ -8518,6 +8570,20 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         if (row.wage !== null && row.wage !== undefined && observed && observed < at && observed >= evidenceAt && Utils.tctCompanyDayKey(new Date(observed * 1000)) === date && !Utils.tctCalculationInProgress(new Date(observed * 1000))) {
           wage = Utils.num(row.wage, null);
           evidenceAt = observed;
+        } else if (row.wage !== null && row.wage !== undefined && observed >= at && through >= observed && Utils.dayKey(observed) === date) {
+          let closingWage = Utils.num(row.wage, null);
+          const laterChanges = history.filter((change) => {
+            const changed = Utils.dateTimestamp(change.at);
+            return changed >= at && changed <= observed;
+          });
+          for (const change of laterChanges.slice().reverse()) {
+            if (closingWage === null || closingWage !== Utils.num(change.newWage, null)) {
+              closingWage = null;
+              break;
+            }
+            closingWage = Utils.num(change.previousWage, null);
+          }
+          wage = closingWage;
         }
       });
       return wage;
@@ -11591,8 +11657,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     employeeDailyHistoryForApi(people, observedAt) {
       const at = String(observedAt || Utils.nowIso());
       if (Utils.tctCalculationInProgress(at)) return [];
-      // Name the 24-hour company period by its next 18:00 TCT closing date.
-      const date = Utils.tctCompanyDayKey(at);
+      // Before 18:10 TCT the visible employee values still belong to the
+      // company day that began at 18:10 on the previous calendar date.
+      const date = Utils.tctWorkingDayKey(at);
       return Company.dedupePeople(people || []).map((person) => {
         const userId = String(person && (person.id || person.userId || person.playerId) || '').trim();
         const effectiveness = person && person.effectiveness && typeof person.effectiveness === 'object' ? person.effectiveness : {};
@@ -11615,7 +11682,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           addiction: Utils.num(details.addiction, null),
           inactivity: Utils.num(details.inactivity, null),
           wage: person.wageFromApi ? Utils.num(person.wage, 0) : null,
-          periodLabel: 'next-closing-date',
+          periodLabel: 'working-day-start-date',
           source: 'torn-company-employees'
         };
       }).filter(Boolean);
@@ -12334,6 +12401,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.1.6 - Accurate daily records and event timing</summary>
+              <ul><li>Sync all after 18:10 TCT can recover today's closing wages from fresh employee pay and the retrieved wage logs, restoring profit in Balance and operating-performance graphs.</li><li>Pay changes after closing are reversed for today's report. Older days still require dated evidence; incomplete or contradictory history stays unknown.</li><li>Employee-efficiency observations before 18:10 TCT belong to the previous company day, and stored rows with reliable timestamps repair themselves.</li><li>Timeline training entries use exact Torn log times and keep those exact events across cloud reloads.</li><li>Corrected operating costs, reports, staff history, and exact training events are uploaded after staff history finishes syncing.</li></ul>
+            </details>
+            <details>
               <summary>v3.1.5 - Wage history from joining</summary>
               <ul><li>Staff wage history starts with Joined &mdash; salary $0, followed by each dated salary change.</li><li>Sync all retrieves every available hire/wage log page; subsequent syncs fetch new changes and retain the earlier history.</li><li>Zero-pay periods can be reconstructed from the joining date after log coverage is established. Missing or contradictory history is not silently replaced with zero.</li><li>Rehires retain separate joining records and reset their starting salary. Failed syncs preserve stored history and current pay.</li></ul>
             </details>
@@ -14325,12 +14396,14 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         let wageChanges = 0;
         let roleChanges = 0;
         let joins = 0;
+        const exactTrainingRows = [];
         grouped.forEach((memberActions, id) => {
           const person = byId.get(id);
           const updates = {};
           const training = Timeline.trainingRowsFromStaffActions(memberActions, person);
           if (training.length) {
             UI.state.trainingLog = Timeline.mergeTrainingRows((UI.state.trainingLog || []).concat(training), UI.state);
+            exactTrainingRows.push(...training);
             trainingRows += training.reduce((sum, row) => sum + Utils.int(row.count, 0), 0);
           }
           memberActions.forEach((action) => {
@@ -14356,6 +14429,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             UI.updateProfileEmployeeByKey(id, updates);
           }
         });
+        const exactTrainingEvents = exactTrainingRows.flatMap((row) => Timeline.eventsFromExactTrainingRow(row));
+        UI.state.staff.timeline = Timeline.mergeTimeline(UI.state.staff.timeline || [], exactTrainingEvents);
         Ledger.syncTrainingLog(UI.state);
         Planner.build(UI.state);
         UI.state.company.staffLogSync = Object.assign({}, UI.state.company.staffLogSync || {}, {
@@ -14364,7 +14439,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         });
         UI.captureOperatingCostHistory('hire-wage-history-sync');
         Store.save(UI.state);
-        Store.updateSyncCache(UI.state, ['employees', 'trainingLog', 'planner']);
+        Store.updateSyncCache(UI.state, ['business', 'employees', 'trainingLog', 'planner']);
+        await UI.uploadSyncState(syncId, { business: true, staff: true, events: exactTrainingEvents, reports: UI.reportDailyRows().filter((row) => row.hasReport) });
         const message = `Staff history synced: ${joins} joins, ${wageChanges} wage changes across ${wageHistory.coverage.pages} hire/wage pages; ${trainingRows} training actions and ${roleChanges} role changes from the latest staff page. All available hire/wage pages retrieved; existing history merged. Logs unavailable to this account can still leave gaps.`;
         UI.saveRender(message);
         UI.finishSync(syncId, message);
