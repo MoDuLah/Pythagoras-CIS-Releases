@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.1.6
+// @version      3.1.7
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
 // @author       MoDuL [4022159]
 // @match        https://www.torn.com/companies.php*
@@ -50,7 +50,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.1.6',
+    version: '3.1.7',
     popupName: 'pythagoras-cis-popup'
   };
 
@@ -8530,6 +8530,34 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (left && left < dayEnd) return false;
       return true;
     },
+    balancePersonWageAcrossSingleMissedDay(person, date, history, observations) {
+      // Bridge only one missing company day, using matching per-employee
+      // observations on both sides and wage logs that cover the later one.
+      const at = Utils.dateTimestamp(`${date}T18:10:00Z`);
+      const through = Utils.num(person && person._balanceWageHistoryThrough, 0);
+      if (!at || !through) return null;
+      const previousDay = Utils.addDays(date, -1);
+      const nextDay = Utils.addDays(date, 1);
+      let previous = null;
+      let next = null;
+      (observations || []).forEach((row) => {
+        const observed = Utils.dateTimestamp(row && row.observedAt);
+        const wage = Utils.num(row && row.wage, null);
+        if (!observed || wage === null || Utils.tctCalculationInProgress(observed * 1000)) return;
+        const companyDay = Utils.tctCompanyDayKey(observed * 1000);
+        if (observed < at && companyDay === previousDay && (!previous || observed > previous.observed)) previous = { observed, wage };
+        if (observed >= at && companyDay === nextDay && (!next || observed < next.observed)) next = { observed, wage };
+      });
+      if (!previous || !next || previous.wage !== next.wage || through < next.observed) return null;
+      const started = Utils.num(person && person._balanceStartTs, 0);
+      const left = Utils.num(person && person._balanceLeftTs, 0);
+      if ((started && started > previous.observed) || (left && left <= next.observed)) return null;
+      const changedBetween = (history || []).some((row) => {
+        const changed = Utils.dateTimestamp(row && row.at);
+        return changed > previous.observed && changed <= next.observed;
+      });
+      return changedBetween ? null : previous.wage;
+    },
     balancePersonWageOn(person, date) {
       const at = Utils.dateTimestamp(`${date}T18:10:00Z`);
       const started = Utils.num(person && person._balanceStartTs, 0);
@@ -8586,6 +8614,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           wage = closingWage;
         }
       });
+      if (wage === null) wage = UI.balancePersonWageAcrossSingleMissedDay(person, date, history, observations);
       return wage;
     },
     dailyWageTotalOn(date, context, options) {
@@ -10684,7 +10713,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             <div class="pp-field span-6"><div class="pp-row-actions"><button class="pp-btn" type="button" data-action="add-loyalty-tier">Add loyalty tier</button></div></div>
             <div class="pp-form-title">Log trigger</div>
             ${UI.field('Trigger text', `<input class="pp-input" name="logTrigger" value="${Utils.esc(state.settings.logTrigger || '!train')}" placeholder="!train">`, 'span-2 pp-compact-field')}
-            <div class="pp-field span-4"><span class="pp-note">Import from log scans the latest 100 matching Torn log rows and imports only rows containing this trigger.</span></div>
+            <div class="pp-field span-4"><span class="pp-note">Import from log scans the latest 100 matching Torn log rows. Extra message text is allowed, and a leading trigger symbol such as ! may be omitted.</span></div>
           </form>
         </div>
       </section>`;
@@ -12401,6 +12430,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.1.7 - More reliable train payments and closing wages</summary>
+              <ul><li>Training Ledger imports now recognize <strong>!train</strong> or <strong>!trains</strong> at the start of a transfer message even when instructions follow.</li><li>A missing exclamation mark is tolerated in message text, while unrelated words such as training and restrains remain excluded.</li><li>One isolated missing Balance wage day can be recovered when the surrounding verified closing days have the same wage evidence, restoring that day's profit without inventing wider history.</li></ul>
+            </details>
+            <details>
               <summary>v3.1.6 - Accurate daily records and event timing</summary>
               <ul><li>Sync all after 18:10 TCT can recover today's closing wages from fresh employee pay and the retrieved wage logs, restoring profit in Balance and operating-performance graphs.</li><li>Pay changes after closing are reversed for today's report. Older days still require dated evidence; incomplete or contradictory history stays unknown.</li><li>Employee-efficiency observations before 18:10 TCT belong to the previous company day, and stored rows with reliable timestamps repair themselves.</li><li>Timeline training entries use exact Torn log times and keep those exact events across cloud reloads.</li><li>Corrected operating costs, reports, staff history, and exact training events are uploaded after staff history finishes syncing.</li></ul>
             </details>
@@ -14717,6 +14750,64 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       return String(UI.state.settings.logTrigger || DEFAULTS.settings.logTrigger || '!train').trim() || '!train';
     },
 
+    logImportNormalisedTriggerText(value) {
+      return String(value || '')
+        .normalize('NFKC')
+        .replace(/[\u200B-\u200D\u2060\uFEFF]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+    },
+
+    logImportMessageTexts(item) {
+      const messages = [];
+      const messageKey = /^(?:message|note|comment|memo|reference)$/i;
+      const walk = (value) => {
+        if (!value || typeof value !== 'object') return;
+        Object.entries(value).forEach(([key, child]) => {
+          if (messageKey.test(key) && (typeof child === 'string' || typeof child === 'number')) {
+            const text = String(child).trim();
+            if (text) messages.push(text);
+          }
+          if (child && typeof child === 'object') walk(child);
+        });
+      };
+      walk(item);
+      return Array.from(new Set(messages));
+    },
+
+    logImportTextContainsTrigger(text, trigger) {
+      const haystack = UI.logImportNormalisedTriggerText(text);
+      const needle = UI.logImportNormalisedTriggerText(trigger);
+      if (!haystack || !needle) return false;
+      let index = haystack.indexOf(needle);
+      while (index >= 0) {
+        const before = index > 0 ? haystack[index - 1] : '';
+        const afterIndex = index + needle.length;
+        const after = afterIndex < haystack.length ? haystack[afterIndex] : '';
+        if ((!before || !/[a-z0-9_]/i.test(before)) && (!after || !/[a-z0-9_]/i.test(after))) return true;
+        index = haystack.indexOf(needle, index + 1);
+      }
+      return false;
+    },
+
+    logImportMatchesTrigger(item, text, trigger) {
+      const configured = UI.logImportNormalisedTriggerText(trigger);
+      if (!configured) return false;
+      const variants = (value) => {
+        const rows = [value];
+        if (/[a-z]$/i.test(value) && !/s$/i.test(value)) rows.push(`${value}s`);
+        return rows;
+      };
+      const messageTexts = UI.logImportMessageTexts(item);
+      const configuredVariants = variants(configured);
+      if (messageTexts.some((message) => configuredVariants.some((candidate) => UI.logImportTextContainsTrigger(message, candidate)))) return true;
+      const withoutLeadingSymbol = configured.replace(/^[^a-z0-9_]+/i, '');
+      if (withoutLeadingSymbol && withoutLeadingSymbol !== configured
+        && messageTexts.some((message) => variants(withoutLeadingSymbol).some((candidate) => UI.logImportTextContainsTrigger(message, candidate)))) return true;
+      return configuredVariants.some((candidate) => UI.logImportTextContainsTrigger(text, candidate));
+    },
+
     logImportText(item) {
       const strings = [];
       const walk = (value) => {
@@ -14815,7 +14906,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     buildTrainingOrderFromLog(item, rowId, options) {
       const trigger = UI.logImportTrigger();
       const text = UI.logImportText(item);
-      if (!text.toLowerCase().includes(trigger.toLowerCase())) return { skipped: 'trigger' };
+      if (!UI.logImportMatchesTrigger(item, text, trigger)) return { skipped: 'trigger' };
       const sourceLogKey = UI.logImportKey(item, rowId);
       const exists = UI.state.ledger.some((entry) => entry.sourceLogKey === sourceLogKey || entry.sourceLogId === sourceLogKey);
       if (exists) return { skipped: 'duplicate' };
