@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.1.7
+// @version      3.1.8
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
 // @author       MoDuL [4022159]
 // @match        https://www.torn.com/companies.php*
@@ -50,7 +50,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.1.7',
+    version: '3.1.8',
     popupName: 'pythagoras-cis-popup'
   };
 
@@ -59,9 +59,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     - Local browser storage is limited to apiKey, userId, username, and companyId.
     - Company data, staff data, analytics, planner data, stock history,
       notifications, and persistent UI preferences belong in the Pythagoras backend.
-    - The Torn API key is sent only to verify the current user/company and to process
-      explicit sync actions. The script does not run background scraping or automatic
-      multi-request chains.
+    - The Torn API key is sent at startup to verify the current user, company, and
+      director role before a workspace is loaded, and again for explicit sync actions.
+      The script does not run background scraping.
     - Older company data can be archived/compressed server-side.
   */
 
@@ -151,7 +151,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     staff: { current: [], past: [], directorsCurrent: [], directorsPast: [], timeline: [], efficiencyHistory: [], localEdits: {}, localEditVersion: 0 },
     analytics: { weeks: [] },
     testimonials: { threadId: APP.testimonialThreadId, posts: [], lastSynced: '', nextUrl: '' },
-    sync: { endpointStatus: {}, lastSummary: '' },
+    sync: { endpointStatus: {}, lastSummary: '', companyTransition: null, workspaceLoadError: '' },
     company: {
       profile: {
         lastSynced: '',
@@ -785,7 +785,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     async loadAsync() {
       const profile = await Store.loadProfileAsync();
       let state = Store.applyProfile(Store.applyAdminConfig(Store.migrate(Utils.clone(DEFAULTS))), profile);
-      const [staffEditCache, ledgerPending, uiPreferences, stockLocalEdits, legacyRaw, dismissals, localTestimonials] = await Promise.all([
+      let [staffEditCache, ledgerPending, uiPreferences, stockLocalEdits, legacyRaw, dismissals, localTestimonials] = await Promise.all([
         Store.loadStaffLocalEditsAsync(), Store.loadLedgerPendingAsync(), Store.loadUiPreferencesAsync(),
         Store.loadStockLocalEditsAsync(), Store.rawGetAsync(APP.storageKey), Store.loadNotificationDismissalsAsync(), Store.loadTestimonialsLocalAsync()
       ]);
@@ -804,11 +804,42 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       state.settings.userId = state.settings.userId || PageData.userId();
       state.settings.userName = state.settings.userName || PageData.userName();
       state.settings.companyId = state.settings.companyId || state.company.profile.id || PageData.companyId();
+      const apiKey = String(state.settings.apiKey || '').trim();
+      if (apiKey) {
+        try {
+          const keyData = await ApiClient.keyInfo(apiKey);
+          const reconciled = Store.reconcileVerifiedIdentity(state, keyData);
+          if (reconciled.changed) {
+            if (reconciled.oldCompanyId) Store.saveCompanySnapshot(state);
+            Store.clearCompanyLocalCaches();
+            staffEditCache = {};
+            ledgerPending = { orders: [] };
+            stockLocalEdits = null;
+            dismissals = {};
+          }
+          state = reconciled.state;
+          if (state.settings.companyId) {
+            try {
+              state = await Store.loadCloudWorkspace(state, { strict: true });
+            } catch (error) {
+              state.sync = state.sync || {};
+              state.sync.workspaceLoadError = error && error.message ? error.message : String(error);
+            }
+          }
+        } catch (error) {
+          state.sync = state.sync || {};
+          state.sync.workspaceLoadError = `Current Torn identity could not be verified: ${error && error.message ? error.message : error}`;
+          state.settings.keyInfo = Object.assign({}, state.settings.keyInfo || {}, {
+            lastChecked: Utils.nowIso(),
+            fullAccess: false,
+            accessType: 'Check failed'
+          });
+        }
+      }
       state = Store.applyLedgerPending(Store.applyStaffEditCache(state, staffEditCache), ledgerPending);
       Store.applyUiPreferences(state, uiPreferences);
-      const cloudState = await Store.loadCloudWorkspace(state);
       // Startup reclassifies once, in batches, before the first interactive render.
-      const cachedState = Store.applySyncCache(cloudState, { deferReclassify: true });
+      const cachedState = Store.applySyncCache(state, { deferReclassify: true });
       Store.applyStockLocalEdits(Store.applyUiPreferences(cachedState, uiPreferences), stockLocalEdits);
       cachedState.testimonials = Store.mergeTestimonials(cachedState.testimonials, localTestimonials);
       return Store.applyNotificationDismissals(Store.applyLedgerPending(cachedState, ledgerPending), dismissals);
@@ -1620,6 +1651,110 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       Store.applyLocalSettings(next, data.localSettings);
       return next;
     },
+    keyInfoFromResponse(data) {
+      const info = data && data.info || {};
+      const access = info.access || {};
+      const user = info.user || {};
+      const accessLevel = Utils.int(access.level, 0);
+      const accessType = String(access.type || '').trim();
+      const userId = String(user.id || '').trim();
+      const companyId = String(user.company_id || user.companyId || '').trim();
+      return {
+        userId,
+        userName: cleanDetectedUserName(user.name || user.username || user.playername || user.playerName, userId),
+        companyId,
+        keyInfo: {
+          lastChecked: Utils.nowIso(),
+          accessLevel,
+          accessType,
+          fullAccess: accessLevel >= 4 || /full\s*access/i.test(accessType),
+          companyAccess: Boolean(access.company),
+          factionAccess: Boolean(access.faction),
+          logCustomPermissions: Boolean(access.log && access.log.custom_permissions),
+          userId,
+          companyId
+        }
+      };
+    },
+    portableSettingsFromState(state) {
+      const source = state && state.settings || {};
+      const keys = [
+        'rememberApiKey', 'apiBaseUrl', 'supportUrl', 'bugReportUrl', 'contactUrl',
+        'dateFormat', 'customDateFormat', 'theme', 'customTheme', 'savedThemes',
+        'colors', 'logTrigger', 'notifications'
+      ];
+      return keys.reduce((next, key) => {
+        if (Object.prototype.hasOwnProperty.call(source, key)) next[key] = Utils.clone(source[key]);
+        return next;
+      }, {});
+    },
+    freshWorkspaceForIdentity(state, identity, transition) {
+      const source = state || {};
+      const details = identity || {};
+      let next = Store.applyAdminConfig(Store.migrate(Utils.clone(DEFAULTS)));
+      next.settings = Store.merge(next.settings || {}, Store.portableSettingsFromState(source));
+      next.settings.rememberApiKey = source.settings && source.settings.rememberApiKey !== false;
+      next.settings.apiKey = next.settings.rememberApiKey ? String(source.settings && source.settings.apiKey || '').trim() : '';
+      next.settings.userId = String(details.userId || '').trim();
+      next.settings.userName = String(details.userName || source.settings && source.settings.userName || '').trim();
+      next.settings.companyId = String(details.companyId || '').trim();
+      next.settings.keyInfo = Store.merge(Utils.clone(DEFAULTS.settings.keyInfo), details.keyInfo || {});
+      next.company.profile.id = next.settings.companyId;
+      next.company.detailed.id = next.settings.companyId;
+      next = Store.applyUiPreferences(next, Store.parseUiPreferences({ ui: source.ui || {} }));
+      next.ui.tab = 'data';
+      next.testimonials = Store.mergeTestimonials(next.testimonials, source.testimonials || {});
+      next.sync.companyTransition = transition || null;
+      next.sync.workspaceLoadError = '';
+      return next;
+    },
+    reconcileVerifiedIdentity(state, data) {
+      const source = state || Store.applyAdminConfig(Store.migrate(Utils.clone(DEFAULTS)));
+      const identity = Store.keyInfoFromResponse(data);
+      if (!identity.userId) throw new Error('Torn API key did not return a user ID.');
+      const oldUserId = String(source.settings && source.settings.userId || '').trim();
+      const oldCompanyId = String(source.settings && source.settings.companyId || source.company && source.company.profile && source.company.profile.id || '').trim();
+      const userChanged = !!(oldUserId && oldUserId !== identity.userId);
+      const companyChanged = oldCompanyId !== identity.companyId;
+      if (!userChanged && !companyChanged) {
+        source.settings.userId = identity.userId;
+        source.settings.userName = identity.userName || source.settings.userName || '';
+        source.settings.companyId = identity.companyId;
+        source.settings.keyInfo = identity.keyInfo;
+        if (source.company && source.company.profile && !source.company.profile.id) source.company.profile.id = identity.companyId;
+        if (source.company && source.company.detailed && !source.company.detailed.id) source.company.detailed.id = identity.companyId;
+        source.sync = source.sync || {};
+        source.sync.companyTransition = null;
+        source.sync.workspaceLoadError = '';
+        return { state: source, identity, changed: false, oldUserId, oldCompanyId };
+      }
+      const oldLabel = oldCompanyId ? Store.companyLabel(source) : '';
+      const newLabel = identity.companyId ? `Company #${identity.companyId}` : 'no company';
+      const message = userChanged
+        ? `Torn account changed. Opened a clean workspace for ${identity.userName || `User #${identity.userId}`}${identity.companyId ? ` in ${newLabel}` : ''}.`
+        : oldCompanyId
+          ? `Company changed from ${oldLabel} to ${newLabel}. The old cloud workspace was preserved and a clean workspace was opened.`
+          : `Current company detected as ${newLabel}. A clean workspace was opened.`;
+      const transition = {
+        at: Utils.nowIso(),
+        oldUserId,
+        newUserId: identity.userId,
+        oldCompanyId,
+        newCompanyId: identity.companyId,
+        message
+      };
+      return {
+        state: Store.freshWorkspaceForIdentity(source, identity, transition),
+        identity,
+        changed: true,
+        oldUserId,
+        oldCompanyId,
+        transition
+      };
+    },
+    clearCompanyLocalCaches() {
+      [APP.staffEditsKey, APP.ledgerPendingKey, APP.syncCacheKey, APP.notificationDismissalsKey, APP.stockEditsKey].forEach((key) => Store.rawDelete(key));
+    },
     saveProfile(state) {
       const profile = Store.profileFromState(state);
       try {
@@ -1878,10 +2013,14 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           company: state.company.profile || {},
           includeTimeline: state.ui.timelineEnabled !== false
         }), 30000);
-        if (!data || !data.ok || !data.data) return state;
+        if (!data || !data.ok || !data.data) {
+          if (options && options.strict) throw new Error(data && data.reason || 'Cloud workspace could not be loaded.');
+          return state;
+        }
         return Store.applyCloudBootstrap(state, data);
       } catch (error) {
         console.warn('[Pythagoras Project - CIS] Cloud workspace load failed.', error);
+        if (options && options.strict) throw error;
         return state;
       }
     },
@@ -6254,6 +6393,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     workspaceMirrorTimer: null,
     workspaceMirrorInFlight: false,
     workspaceMirrorReason: 'autosave',
+    identityCheckTask: null,
 
     async init() {
       const startedAt = Date.now();
@@ -6294,6 +6434,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if ((Store.loadLedgerPending().orders || []).length && Store.canUseCloudWorkspace(UI.state)) UI.scheduleLedgerCloudSave(1600);
       const preparedAt = Date.now();
       UI.render(UI.root, document);
+      const transitionNotice = UI.state.sync && UI.state.sync.companyTransition && UI.state.sync.companyTransition.message || '';
+      const workspaceLoadError = UI.state.sync && UI.state.sync.workspaceLoadError || '';
+      if (transitionNotice || workspaceLoadError) {
+        UI.toast([transitionNotice, workspaceLoadError ? `Workspace access was not loaded: ${workspaceLoadError}` : ''].filter(Boolean).join(' '));
+      }
       const renderedAt = Date.now();
       UI.startupTimings = { workspaceMs: loadedAt - startedAt, historyMs: preparedAt - loadedAt, renderMs: renderedAt - preparedAt, totalMs: renderedAt - startedAt };
       console.info('[Pythagoras Project - CIS] Startup timings (ms)', UI.startupTimings);
@@ -7760,11 +7905,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           tab: 'data',
           selector: '[data-tour="company-workspaces"]',
           title: 'Company workspaces',
-          text: 'Company workspaces let one director manage multiple companies without overwriting local history.',
+          text: 'Company workspaces keep each verified current company separate without overwriting historical cloud data.',
           notes: [
-            'Upload current company before switching away.',
+            'The script verifies the current Torn company automatically before loading or syncing.',
             'Each workspace keeps its own ledger, staff history, analytics, and settings.',
-            'Switching restores that company snapshot into the active script state.'
+            'A historical workspace becomes available again only after the account rejoins that company as its director.'
           ]
         },
         {
@@ -10875,18 +11020,18 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-head">
           <div>
             <h2>Company workspaces</h2>
-            <p>Keep separate cloud ledgers, history, and settings for each company.</p>
+            <p>Your verified current company opens automatically. Historical company data stays separate.</p>
           </div>
           <button class="pp-btn is-primary" type="button" data-action="upload-company-workspace">Upload current company</button>
         </div>
         <div class="pp-content">
           ${Store.canUseCloudWorkspace(UI.state) ? `<p class="pp-note">Active workspace: ${Utils.esc(Store.companyLabel(UI.state))}</p>` : '<div class="pp-empty">Cloud workspaces require a saved Torn API key, User ID, and synced Company ID.</div>'}
-          <p class="pp-note">For Free cloud storage, your Torn API key is sent to the Pythagoras API over HTTPS only to verify your Torn user ID and current company ID. The backend does not store the key.</p>
+          <p class="pp-note">For Free cloud storage, your Torn API key is sent to the Pythagoras API over HTTPS only to verify your Torn user ID, current company ID, and current-director role. The backend does not store the key.</p>
           ${rows.length ? `<div class="pp-wrap" style="margin-top:10px"><table class="pp-table is-compact"><thead><tr><th>#</th><th>Company</th><th>Updated</th><th>Actions</th></tr></thead>${UI.pagedTableBody('companyWorkspaces', rows, (row, index) => `<tr>
             <td>${index + 1}</td>
             <td>${Utils.esc(row.label || row.companyName || row.companyId || row.key)}${row.key === activeKey ? ' <span class="pp-note">(active)</span>' : ''}</td>
             <td>${Utils.esc(Utils.dateTime(row.updatedAt))}</td>
-            <td><div class="pp-row-actions"><button class="pp-btn" type="button" data-action="switch-company-workspace" data-company-key="${Utils.esc(row.key)}" ${row.key === activeKey ? 'disabled' : ''}>Switch</button><button class="pp-btn is-danger" type="button" data-action="delete-company-workspace" data-company-key="${Utils.esc(row.key)}" ${row.key === activeKey ? 'disabled' : ''}>Delete</button></div></td>
+            <td><div class="pp-row-actions"><button class="pp-btn" type="button" data-action="switch-company-workspace" data-company-key="${Utils.esc(row.key)}" ${row.key === activeKey ? 'disabled' : ''}>Open</button><button class="pp-btn is-danger" type="button" data-action="delete-company-workspace" data-company-key="${Utils.esc(row.key)}" ${row.key === activeKey ? 'disabled' : ''}>Delete</button></div></td>
           </tr>`, 4)}</table></div>` : '<div class="pp-empty" style="margin-top:10px">No saved company workspaces yet.</div>'}
         </div>
       </section>`;
@@ -11371,6 +11516,69 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const active = UI.runningSyncJobs()[0];
       return active && active.job && active.job.label ? active.job.label : 'Another sync';
     },
+    stopPendingWorkspaceWrites() {
+      [UI.staffCardCloudTimer, UI.settingsCloudTimer, UI.ledgerCloudTimer, UI.workspaceMirrorTimer].forEach((timer) => clearTimeout(timer));
+      UI.staffCardCloudTimer = null;
+      UI.settingsCloudTimer = null;
+      UI.ledgerCloudTimer = null;
+      UI.workspaceMirrorTimer = null;
+    },
+    async applyVerifiedWorkspaceIdentity(data, options) {
+      const opts = options || {};
+      const previous = UI.state;
+      const reconciled = Store.reconcileVerifiedIdentity(previous, data);
+      if (reconciled.changed) {
+        UI.stopPendingWorkspaceWrites();
+        if (reconciled.oldCompanyId) Store.saveCompanySnapshot(previous);
+        Store.clearCompanyLocalCaches();
+      }
+      UI.state = reconciled.state;
+      let workspaceError = '';
+      if (UI.state.settings.companyId) {
+        try {
+          UI.state = await Store.loadCloudWorkspace(UI.state, { strict: true });
+        } catch (error) {
+          workspaceError = error && error.message ? error.message : String(error);
+          UI.state.sync = UI.state.sync || {};
+          UI.state.sync.workspaceLoadError = workspaceError;
+        }
+      } else {
+        workspaceError = 'This Torn account is not currently attached to a company.';
+        UI.state.sync = UI.state.sync || {};
+        UI.state.sync.workspaceLoadError = workspaceError;
+      }
+      Store.save(UI.state, { skipMirror: true });
+      if (reconciled.changed || opts.render) UI.render(UI.currentRoot(), UI.currentRoot().ownerDocument);
+      const transitionMessage = reconciled.transition && reconciled.transition.message || '';
+      const message = [transitionMessage, workspaceError ? `Workspace access was not loaded: ${workspaceError}` : ''].filter(Boolean).join(' ');
+      if (message && opts.notify !== false) UI.toast(message);
+      return Object.assign({}, reconciled, { ok: !workspaceError, workspaceError, state: UI.state });
+    },
+    ensureCurrentWorkspace(options) {
+      if (UI.identityCheckTask) return UI.identityCheckTask;
+      const opts = options || {};
+      const task = (async () => {
+        const key = String(UI.state.settings.apiKey || '').trim();
+        if (!key) return { ok: false, message: 'Add an API key first.' };
+        try {
+          const data = await ApiClient.keyInfo(key);
+          const result = await UI.applyVerifiedWorkspaceIdentity(data, opts);
+          return Object.assign({ message: result.workspaceError || '' }, result);
+        } catch (error) {
+          const message = `Current Torn identity could not be verified: ${error && error.message ? error.message : error}`;
+          UI.state.sync = UI.state.sync || {};
+          UI.state.sync.workspaceLoadError = message;
+          Store.save(UI.state, { skipMirror: true });
+          if (opts.notify !== false) UI.toast(message);
+          return { ok: false, message, error };
+        }
+      })();
+      const pending = task.finally(() => {
+        if (UI.identityCheckTask === pending) UI.identityCheckTask = null;
+      });
+      UI.identityCheckTask = pending;
+      return pending;
+    },
     runSyncAction(action, button) {
       const personKey = button && button.dataset ? button.dataset.personKey || '' : '';
       const handlers = {
@@ -11396,12 +11604,27 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       };
       const handler = handlers[action];
       if (!handler) return false;
+      if (UI.identityCheckTask) {
+        UI.toast('Current company verification is already running. Wait for it to finish before starting another sync.');
+        return true;
+      }
       if (UI.isSyncBusy()) {
         UI.toast(`${UI.activeSyncLabel()} is already running. Wait for it to finish before starting another sync.`);
         return true;
       }
       try {
-        const result = handler();
+        const needsCompanyWorkspace = !['sync-testimonials', 'sync-testimonials-older'].includes(action);
+        const result = (async () => {
+          if (needsCompanyWorkspace) {
+            const identity = await UI.ensureCurrentWorkspace({ notify: true });
+            if (!identity || !identity.ok) return identity;
+          }
+          if (UI.isSyncBusy()) {
+            UI.toast(`${UI.activeSyncLabel()} is already running. Wait for it to finish before starting another sync.`);
+            return { ok: false, message: 'Another sync is already running.' };
+          }
+          return handler();
+        })();
         if (result && typeof result.catch === 'function') {
           result.catch((error) => {
             console.error('[Pythagoras Project - CIS] Unhandled sync action error.', error);
@@ -12430,6 +12653,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.1.8 - Automatic company workspace handover</summary>
+              <ul><li>Startup and company sync actions verify the current Torn account and company before loading or changing workspace data.</li><li>Changing company opens a pristine workspace and preserves the historical cloud workspace without carrying staff, news, stock, wage, ledger, planner, or company settings across.</li><li>Historical workspaces reopen only when the account is currently attached to that company, and ordinary staff are denied company-workspace access instead of being treated as directors.</li></ul>
+            </details>
+            <details>
               <summary>v3.1.7 - More reliable train payments and closing wages</summary>
               <ul><li>Training Ledger imports now recognize <strong>!train</strong> or <strong>!trains</strong> at the start of a transfer message even when instructions follow.</li><li>A missing exclamation mark is tolerated in message text, while unrelated words such as training and restrains remain excluded.</li><li>One isolated missing Balance wage day can be recovered when the surrounding verified closing days have the same wage evidence, restoring that day's profit without inventing wider history.</li></ul>
             </details>
@@ -14497,11 +14724,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       }
       UI.beginSync(syncId, 'Sync all');
       try {
-        UI.syncStep(syncId, 'Loading the saved workspace.', 5);
-        UI.state.settings.userId = UI.state.settings.userId || PageData.userId();
-        UI.state.settings.userName = UI.state.settings.userName || PageData.userName();
-        UI.state.settings.companyId = UI.state.settings.companyId || UI.state.company.profile.id || PageData.companyId();
-        UI.state = await Store.loadCloudWorkspace(UI.state);
+        UI.syncStep(syncId, 'Using the verified current-company workspace.', 5);
         Company.dedupeStaff(UI.state);
         Company.removeDirectorsFromStaff(UI.state);
         Ledger.prepare(UI.state);
@@ -14543,11 +14766,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       }
       UI.beginSync(syncId, 'Smart sync');
       try {
-        UI.syncStep(syncId, 'Loading cached workspace from Pythagoras API.', 8);
-        UI.state.settings.userId = UI.state.settings.userId || PageData.userId();
-        UI.state.settings.userName = UI.state.settings.userName || PageData.userName();
-        UI.state.settings.companyId = UI.state.settings.companyId || UI.state.company.profile.id || PageData.companyId();
-        UI.state = await Store.loadCloudWorkspace(UI.state);
+        UI.syncStep(syncId, 'Using the verified current-company workspace.', 8);
         Company.dedupeStaff(UI.state);
         Company.removeDirectorsFromStaff(UI.state);
         Ledger.prepare(UI.state);
@@ -14702,35 +14921,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       }
       return ApiClient.keyInfo(key)
         .then(async (data) => {
-          const info = data && data.info || {};
-          const access = info.access || {};
-          const user = info.user || {};
-          const accessLevel = Utils.int(access.level, 0);
-          const accessType = String(access.type || '').trim();
-          const fullAccess = accessLevel >= 4 || /full\s*access/i.test(accessType);
-          const userId = String(user.id || '').trim();
-          const companyId = String(user.company_id || user.companyId || '').trim();
-          UI.state.settings.keyInfo = {
-            lastChecked: Utils.nowIso(),
-            accessLevel,
-            accessType,
-            fullAccess,
-            companyAccess: Boolean(access.company),
-            factionAccess: Boolean(access.faction),
-            logCustomPermissions: Boolean(access.log && access.log.custom_permissions),
-            userId,
-            companyId
-          };
-          if (userId) UI.state.settings.userId = userId;
-          if (companyId) UI.state.settings.companyId = companyId;
-          Store.save(UI.state);
-          if (Store.canUseCloudWorkspace(UI.state)) {
-            UI.state = await Store.loadCloudWorkspace(UI.state);
-            Store.save(UI.state);
-          }
-          UI.render(UI.currentRoot(), UI.currentRoot().ownerDocument);
-          const accessText = fullAccess ? 'Full Access key detected.' : `Key access is ${accessType || `level ${accessLevel}` || 'limited'}.`;
-          UI.toast(`${accessText}${userId ? ` User ID ${userId} filled.` : ''}${companyId ? ` Company ID ${companyId} filled.` : ''}`);
+          const identity = Store.keyInfoFromResponse(data);
+          const result = await UI.applyVerifiedWorkspaceIdentity(data, { render: true, notify: true });
+          if (!result.ok) return false;
+          const accessText = identity.keyInfo.fullAccess ? 'Full Access key detected.' : `Key access is ${identity.keyInfo.accessType || `level ${identity.keyInfo.accessLevel}` || 'limited'}.`;
+          UI.toast(`${accessText}${identity.userId ? ` User ID ${identity.userId} filled.` : ''}${identity.companyId ? ` Company ID ${identity.companyId} filled.` : ''}`);
           return true;
         })
         .catch((error) => {
@@ -15166,6 +15361,16 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     applyBusinessData(data) {
       const observedAt = Utils.nowIso();
       const result = Company.profile(data, UI.state);
+      const expectedCompanyId = String(UI.state.settings.companyId || UI.state.company.profile.id || '').trim();
+      const returnedCompanyId = String(result.profile.id || '').trim();
+      const currentUserId = String(UI.state.settings.userId || '').trim();
+      const returnedDirectorId = String(result.profile.directorId || '').trim();
+      if (expectedCompanyId && returnedCompanyId && expectedCompanyId !== returnedCompanyId) {
+        throw new Error(`Company changed during business sync (${expectedCompanyId} to ${returnedCompanyId}). No data was merged; run the sync again.`);
+      }
+      if (currentUserId && returnedDirectorId && currentUserId !== returnedDirectorId) {
+        throw new Error('Pythagoras company workspaces require the current company director. This account is currently a staff member.');
+      }
       const employees = Company.dedupePeople((result.profile.employees || []).concat(Timeline.employeesFromApi(data)));
       const profile = Object.assign({}, UI.state.company.profile, result.profile);
       profile.employees = employees;
@@ -15972,6 +16177,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         UI.toast('Cloud workspaces require a saved Torn API key, User ID, and synced Company ID.');
         return;
       }
+      const identity = await UI.ensureCurrentWorkspace({ notify: true });
+      if (!identity || !identity.ok) return;
       try {
         await Store.saveCloudWorkspace(UI.state, { snapshot: true, snapshotReason: 'manual' });
       } catch (error) {
@@ -15998,21 +16205,18 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         UI.toast('Cloud workspaces require a saved Torn API key.');
         return;
       }
-      try {
-        await Store.saveCloudWorkspace(UI.state, { snapshot: true, snapshotReason: 'switch' });
-        Store.saveCompanySnapshot(UI.state);
-        const next = Utils.clone(UI.state);
-        next.settings.companyId = String(snapshot.companyId || '').trim();
-        next.company.profile.id = String(snapshot.companyId || '').trim();
-        UI.state = await Store.loadCloudWorkspace(next, { companyId: String(snapshot.companyId || '').trim() });
-      } catch (error) {
-        UI.toast(error.message || 'Cloud workspace could not be loaded.');
+      const identity = await UI.ensureCurrentWorkspace({ notify: true });
+      if (!identity || !identity.ok) return;
+      const verifiedCompanyId = String(UI.state.settings.companyId || '').trim();
+      const requestedCompanyId = String(snapshot.companyId || '').trim();
+      if (!requestedCompanyId || requestedCompanyId !== verifiedCompanyId) {
+        UI.toast('That historical workspace is preserved, but it can only be opened after this Torn account is currently attached to that company. Company changes are detected automatically.');
         return;
       }
       UI.state.ui.tab = 'data';
       Store.save(UI.state);
       UI.render(UI.currentRoot(), UI.currentRoot().ownerDocument);
-      UI.toast(`Switched to ${snapshot.label || 'saved company workspace'}.`);
+      UI.toast(`${snapshot.label || 'The verified company workspace'} is already active.`);
     },
 
     async deleteCompanyWorkspace(key) {
