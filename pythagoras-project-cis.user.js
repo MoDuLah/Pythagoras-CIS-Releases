@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.1.8
+// @version      3.1.9
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
 // @author       MoDuL [4022159]
 // @match        https://www.torn.com/companies.php*
@@ -50,7 +50,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.1.8',
+    version: '3.1.9',
     popupName: 'pythagoras-cis-popup'
   };
 
@@ -310,7 +310,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
 
   const CSS = `
     .pp-wrap[data-row-batch-scroll]{max-height:min(64vh,620px);overflow:auto}
-    #pythagoras-cis{--bg:#111313;--panel:#171a1a;--panel2:#1f2422;--line:#343936;--text:#eff2ef;--muted:#a8b0aa;--accent:#46c58f;--warn:#d8a545;--bad:#d95d5d;position:fixed;z-index:999999;top:18px;right:18px;width:min(1120px,calc(100vw - 28px));max-height:calc(100vh - 28px);min-width:340px;min-height:220px;resize:both;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:8px;box-shadow:0 18px 54px rgba(0,0,0,.42);font:13px/1.45 Arial,Helvetica,sans-serif;overflow:hidden;letter-spacing:0;scrollbar-color:var(--accent) var(--panel);scrollbar-width:thin}
+    #pythagoras-cis{--bg:#111313;--panel:#171a1a;--panel2:#1f2422;--line:#343936;--text:#eff2ef;--muted:#a8b0aa;--accent:#46c58f;--warn:#d8a545;--bad:#d95d5d;--pp-text-outline:#000;--pp-muted-outline:#000;position:fixed;z-index:999999;top:18px;right:18px;width:min(1120px,calc(100vw - 28px));max-height:calc(100vh - 28px);min-width:340px;min-height:220px;resize:both;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:8px;box-shadow:0 18px 54px rgba(0,0,0,.42);font:13px/1.45 Arial,Helvetica,sans-serif;overflow:hidden;letter-spacing:0;scrollbar-color:var(--accent) var(--panel);scrollbar-width:thin}
     #pythagoras-cis.pp-theme-carbon{--bg:#0b0d0d;--panel:#151717;--panel2:#202323;--line:#3b4040;--text:#f4f6f4;--muted:#b7beb8;--accent:#d8d1bd;--warn:#e0b85e;--bad:#e26b6b}
     #pythagoras-cis.pp-theme-neon{--bg:#07100d;--panel:#0e1915;--panel2:#14241d;--line:#285545;--text:#f2fff8;--muted:#a8c9b8;--accent:#55e69f;--warn:#f2d264;--bad:#ff6c7a}
     #pythagoras-cis.pp-theme-ruby{--bg:#120d0f;--panel:#1a1215;--panel2:#27191e;--line:#56343e;--text:#fff5f6;--muted:#d4b7bd;--accent:#f06d87;--warn:#e8c35f;--bad:#ff5b66}
@@ -348,8 +348,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     .pp-tab:hover,.pp-subtab:hover,.pp-btn:hover{background:#202624;border-color:#4b534f}.pp-tab:active,.pp-subtab:active,.pp-btn:active{transform:translateY(1px)}
     .pp-tab.is-active,.pp-subtab.is-active,.pp-btn.is-primary{border-color:rgba(70,197,143,.72);background:#173329;color:#effff8}.pp-btn.is-warn{border-color:rgba(216,165,69,.85);background:#2a220f;color:#ffe6a3}.pp-btn.is-danger{border-color:rgba(217,93,93,.75);background:#311d1d}.pp-btn.is-quiet{color:var(--muted);background:transparent}.pp-btn.is-dirty{border-color:var(--warn);box-shadow:0 0 0 1px rgba(216,165,69,.18)}.pp-btn:disabled{opacity:.48;cursor:not-allowed;transform:none}
     #pythagoras-cis.pp-privacy .pp-privacy-input{filter:blur(5px);caret-color:transparent}#pythagoras-cis.pp-privacy .pp-privacy-value{color:transparent!important;text-shadow:0 0 0 var(--muted)!important;user-select:none}#pythagoras-cis.pp-privacy .pp-privacy-note{color:var(--warn)!important}#pythagoras-cis.pp-privacy .pp-privacy-button{border-color:var(--warn);color:var(--warn);box-shadow:0 0 0 1px rgba(216,165,69,.18)}
-    .pp-api-key-missing .pp-input,.pp-tour-target{outline:2px solid var(--warn)!important;outline-offset:2px;box-shadow:0 0 0 4px rgba(216,165,69,.18),0 0 24px rgba(216,165,69,.32)!important}.pp-key-status{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.pp-status-mark{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;border:1px solid currentColor;margin-left:4px;font-size:12px}.pp-sync-center{display:grid;grid-template-columns:minmax(0,1fr) minmax(230px,330px);gap:10px;align-items:start}.pp-sync-groups{display:grid;gap:8px;min-width:0}.pp-sync-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.pp-sync-group-title{flex:0 0 100%;color:var(--muted);font-size:12px;font-weight:700}.pp-sync-center .pp-btn{margin-bottom:4px}.pp-sync-progress{background:linear-gradient(90deg,rgba(70,197,143,.34) var(--sync-progress,0%),#191d1c var(--sync-progress,0%));border-color:rgba(70,197,143,.55)}.pp-sync-progress.is-warn{background:linear-gradient(90deg,rgba(216,165,69,.36) var(--sync-progress,0%),#2a220f var(--sync-progress,0%))}.pp-sync-progress.is-danger{background:linear-gradient(90deg,rgba(217,93,93,.34) var(--sync-progress,0%),#311d1d var(--sync-progress,0%))}.pp-sync-console{min-height:132px;max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:8px;background:#101312;padding:8px;font-size:12px;color:var(--muted)}.pp-sync-console strong{display:block;color:#fff;margin-bottom:4px}.pp-sync-console p{margin:0 0 4px;overflow-wrap:anywhere}.pp-sync-console time{color:var(--accent);font-size:11px;margin-right:5px}.pp-tour-card{position:fixed;left:var(--tour-left,18px);top:var(--tour-top,76px);right:auto;bottom:auto;z-index:28;width:min(460px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;border:1px solid var(--warn);border-radius:8px;background:#171309;color:var(--text);padding:11px 12px;box-shadow:0 14px 36px rgba(0,0,0,.42)}.pp-tour-card strong{display:block;color:#fff;margin-bottom:3px}.pp-tour-card p{margin:0;color:var(--muted)}.pp-tour-card ul{margin:8px 0 0 18px;padding:0;color:var(--muted)}.pp-tour-card li{margin:4px 0}.pp-tour-card .pp-row-actions{margin-top:8px}.pp-tour-step{color:var(--warn);font-weight:700}
-    .pp-body{overflow:auto;padding:14px;background:var(--bg)}#pythagoras-cis.pp-cis-launcher-only{display:none!important}#pythagoras-cis.pp-cis-minimized{width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important;max-width:40px!important;max-height:40px!important;resize:none!important;border:0!important;background:transparent!important;box-shadow:none!important;overflow:visible!important}#pythagoras-cis.pp-cis-minimized.pp-minimized-docked{position:fixed!important}#pythagoras-cis.pp-cis-minimized.pp-footer-button-mounted{display:none!important}#ppcis-footer-wrap{transition:transform linear;display:inline-block!important;visibility:visible!important;opacity:1!important}#ppcis-footer-btn[data-ppcis-alerts]{position:relative;overflow:hidden}#ppcis-footer-btn[data-ppcis-alerts]::after{content:"";position:absolute;inset:2px;border-radius:inherit;pointer-events:none;opacity:0;box-shadow:inset 0 0 0 1px rgba(217,93,93,.72),inset 0 0 10px rgba(217,93,93,.9),inset 0 0 18px rgba(217,93,93,.48);animation:pp-footer-alert-glow 5s ease-in-out infinite}@keyframes pp-footer-alert-glow{0%,82%,100%{opacity:0}88%,94%{opacity:1}}#ppcis-footer-btn .pp-footer-button-icon{display:block!important;width:24px!important;height:24px!important;max-width:24px!important;max-height:24px!important;pointer-events:none!important}#ppcis-footer-btn .pp-footer-button-icon *{pointer-events:none!important}.pp-cis-minimized .pp-shell{display:block;width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important;max-height:none;background:transparent}.pp-cis-minimized .pp-tabs,.pp-cis-minimized .pp-body,.pp-cis-minimized .pp-alerts{display:none}.pp-cis-minimized .pp-titlebar{display:grid;place-items:center;width:40px;height:40px;max-width:40px;gap:0;padding:0;border:1px solid var(--accent);cursor:pointer;background:var(--accent);border-radius:8px;box-shadow:0 2px 0 rgba(255,255,255,.1) inset,0 1px 5px rgba(0,0,0,.36);transition:filter .14s ease,transform .14s ease}.pp-cis-minimized .pp-titlebar:hover{filter:brightness(1.08)}.pp-cis-minimized .pp-titlebar:active{transform:translateY(1px)}.pp-cis-minimized .pp-brand{display:grid;place-items:center;width:100%;height:100%;min-width:0}.pp-cis-minimized .pp-logo-mark{flex-basis:auto;width:30px;height:30px;border:0;border-radius:0;background:transparent;box-shadow:none;filter:drop-shadow(0 0 3px rgba(0,0,0,.5))}.pp-cis-minimized .pp-brand strong,.pp-cis-minimized .pp-brand span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}.pp-cis-minimized .pp-brand:before{display:none}.pp-cis-minimized .pp-actions{display:none}.pp-popup-badge{width:auto;max-width:300px}.pp-popup-badge .pp-shell{display:block;min-height:0;background:transparent}.pp-popup-badge .pp-titlebar{display:flex;cursor:pointer;border:0;padding:8px 10px}.pp-popup-badge .pp-actions{display:flex}.pp-popup-badge .pp-tabs,.pp-popup-badge .pp-body,.pp-popup-badge .pp-alerts{display:none}
+    .pp-api-key-missing .pp-input,.pp-tour-target{outline:2px solid var(--warn)!important;outline-offset:2px;box-shadow:0 0 0 4px rgba(216,165,69,.18),0 0 24px rgba(216,165,69,.32)!important}.pp-key-status{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.pp-status-mark{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;border:1px solid currentColor;margin-left:4px;font-size:12px}.pp-sync-center{display:grid;grid-template-columns:minmax(0,1fr) minmax(230px,330px);gap:10px;align-items:start}.pp-sync-groups{display:grid;gap:8px;min-width:0}.pp-sync-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.pp-sync-group-title{flex:0 0 100%;color:var(--muted);font-size:12px;font-weight:700}.pp-sync-center .pp-btn{margin-bottom:4px}.pp-sync-progress{background:linear-gradient(90deg,rgba(70,197,143,.34) var(--sync-progress,0%),#191d1c var(--sync-progress,0%));border-color:rgba(70,197,143,.55);color:#fff!important;text-shadow:-1px -1px 0 #000,0 -1px 0 #000,1px -1px 0 #000,-1px 0 0 #000,1px 0 0 #000,-1px 1px 0 #000,0 1px 0 #000,1px 1px 0 #000}.pp-sync-progress.is-warn{background:linear-gradient(90deg,rgba(216,165,69,.36) var(--sync-progress,0%),#2a220f var(--sync-progress,0%))}.pp-sync-progress.is-danger{background:linear-gradient(90deg,rgba(217,93,93,.34) var(--sync-progress,0%),#311d1d var(--sync-progress,0%))}.pp-sync-console{min-height:132px;max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:8px;background:#101312;padding:8px;font-size:12px;color:var(--muted)}.pp-sync-console strong{display:block;color:#fff;margin-bottom:4px}.pp-sync-console p{margin:0 0 4px;overflow-wrap:anywhere}.pp-sync-console time{color:var(--accent);font-size:11px;margin-right:5px}.pp-tour-card{position:fixed;left:var(--tour-left,18px);top:var(--tour-top,76px);right:auto;bottom:auto;z-index:28;width:min(460px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;border:1px solid var(--warn);border-radius:8px;background:#171309;color:var(--text);padding:11px 12px;box-shadow:0 14px 36px rgba(0,0,0,.42)}.pp-tour-card strong{display:block;color:#fff;margin-bottom:3px}.pp-tour-card p{margin:0;color:var(--muted)}.pp-tour-card ul{margin:8px 0 0 18px;padding:0;color:var(--muted)}.pp-tour-card li{margin:4px 0}.pp-tour-card .pp-row-actions{margin-top:8px}.pp-tour-step{color:var(--warn);font-weight:700}
+    .pp-body{overflow:auto;padding:14px;background:var(--bg)}#pythagoras-cis.pp-cis-launcher-only{display:none!important}#pythagoras-cis.pp-cis-minimized{width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important;max-width:40px!important;max-height:40px!important;resize:none!important;border:0!important;background:transparent!important;box-shadow:none!important;overflow:visible!important}#pythagoras-cis.pp-cis-minimized.pp-minimized-docked{position:fixed!important}#pythagoras-cis.pp-cis-minimized.pp-footer-button-mounted{display:none!important}#ppcis-footer-wrap{transition:transform linear;display:inline-block!important;visibility:visible!important;opacity:1!important}#ppcis-footer-wrap:empty{display:none!important}#ppcis-footer-btn[data-ppcis-alerts]{position:relative;overflow:hidden}#ppcis-footer-btn[data-ppcis-alerts]::after{content:"";position:absolute;inset:2px;border-radius:inherit;pointer-events:none;opacity:0;box-shadow:inset 0 0 0 1px rgba(217,93,93,.72),inset 0 0 10px rgba(217,93,93,.9),inset 0 0 18px rgba(217,93,93,.48);animation:pp-footer-alert-glow 5s ease-in-out infinite}@keyframes pp-footer-alert-glow{0%,82%,100%{opacity:0}88%,94%{opacity:1}}#ppcis-footer-btn .pp-footer-button-icon{display:block!important;width:24px!important;height:24px!important;max-width:24px!important;max-height:24px!important;pointer-events:none!important}#ppcis-footer-btn .pp-footer-button-icon *{pointer-events:none!important}.pp-cis-minimized .pp-shell{display:block;width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important;max-height:none;background:transparent}.pp-cis-minimized .pp-tabs,.pp-cis-minimized .pp-body,.pp-cis-minimized .pp-alerts{display:none}.pp-cis-minimized .pp-titlebar{display:grid;place-items:center;width:40px;height:40px;max-width:40px;gap:0;padding:0;border:1px solid var(--accent);cursor:pointer;background:var(--accent);border-radius:8px;box-shadow:0 2px 0 rgba(255,255,255,.1) inset,0 1px 5px rgba(0,0,0,.36);transition:filter .14s ease,transform .14s ease}.pp-cis-minimized .pp-titlebar:hover{filter:brightness(1.08)}.pp-cis-minimized .pp-titlebar:active{transform:translateY(1px)}.pp-cis-minimized .pp-brand{display:grid;place-items:center;width:100%;height:100%;min-width:0}.pp-cis-minimized .pp-logo-mark{flex-basis:auto;width:30px;height:30px;border:0;border-radius:0;background:transparent;box-shadow:none;filter:drop-shadow(0 0 3px rgba(0,0,0,.5))}.pp-cis-minimized .pp-brand strong,.pp-cis-minimized .pp-brand span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}.pp-cis-minimized .pp-brand:before{display:none}.pp-cis-minimized .pp-actions{display:none}.pp-popup-badge{width:auto;max-width:300px}.pp-popup-badge .pp-shell{display:block;min-height:0;background:transparent}.pp-popup-badge .pp-titlebar{display:flex;cursor:pointer;border:0;padding:8px 10px}.pp-popup-badge .pp-actions{display:flex}.pp-popup-badge .pp-tabs,.pp-popup-badge .pp-body,.pp-popup-badge .pp-alerts{display:none}
     .pp-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;align-items:start;min-width:0}.pp-panel{position:relative;grid-column:span 12;align-self:start;border:1px solid var(--line);border-radius:8px;background:var(--panel);overflow:hidden;min-width:0;max-width:100%}.pp-edit-mode .pp-panel{resize:both;overflow:auto;min-width:260px;min-height:120px;box-shadow:inset -1px -1px 0 rgba(70,197,143,.4)}.pp-edit-mode .pp-panel:after{content:'';position:absolute;right:5px;bottom:5px;width:13px;height:13px;border-right:2px solid var(--accent);border-bottom:2px solid var(--accent);opacity:.85;pointer-events:none}.pp-panel.is-collapsed .pp-content{display:none}.pp-panel.is-half{grid-column:span 6}.pp-panel.is-third{grid-column:span 4}.pp-collapse-toggle,.pp-hint-toggle{position:absolute;top:8px;z-index:3;display:grid;place-items:center;width:26px;min-width:26px;height:26px;min-height:26px;padding:0;margin:0;border-color:var(--accent);color:var(--accent);line-height:1}.pp-collapse-toggle{right:8px}.pp-hint-toggle{right:40px}
     .pp-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px 82px 14px 14px;border-bottom:1px solid var(--line);background:var(--panel2);min-width:0}.pp-head.is-stack{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}.pp-head.is-stack .pp-row-actions{justify-content:flex-start}.pp-head>*,.pp-field>*,.pp-kv span{min-width:0}.pp-head>div:first-child{flex:1 1 auto}.pp-head>.pp-row-actions{flex:0 1 auto;justify-content:flex-end;align-items:flex-start}.pp-head h2,.pp-head h3{margin:0;font-size:14px;line-height:1.25;color:#fff}.pp-head p,.pp-note{margin:4px 0 0;color:var(--muted);font-size:12px}.pp-content{padding:12px;min-width:0}
     .pp-form{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;align-items:end;min-width:0}.pp-field{display:grid;gap:5px;min-width:0;overflow:hidden}.pp-field.span-2{grid-column:span 2}.pp-field.span-3{grid-column:span 3}.pp-field.span-4{grid-column:span 4}.pp-field.span-6{grid-column:span 6}.pp-field label,.pp-field>span{color:var(--muted);font-size:12px}.pp-priority-grid{display:grid;grid-column:1/-1;grid-template-columns:minmax(190px,1fr) minmax(190px,1fr);gap:9px}.pp-priority-grid .pp-field{border:1px solid var(--line);border-radius:8px;background:#121615;padding:9px 10px}.pp-priority-grid .pp-input,.pp-priority-grid .pp-select{width:min(100%,240px)}.pp-title-switch{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;color:var(--muted);font-size:12px}.pp-discount-row{display:grid;grid-column:1/-1;grid-template-columns:repeat(5,minmax(125px,1fr));gap:9px}.pp-discount-row .pp-field{border:1px solid var(--line);border-radius:8px;background:#121615;padding:9px}.pp-notification-grid{display:grid;grid-column:1/-1;grid-template-columns:repeat(2,minmax(260px,1fr));gap:9px}.pp-notification-rule{display:grid;grid-template-columns:minmax(120px,220px) auto;align-items:end;gap:10px;border:1px solid var(--line);border-radius:8px;background:#121615;padding:10px}.pp-notification-rule .pp-input{width:min(100%,180px)}.pp-notification-rule .pp-row-actions{flex-wrap:nowrap}.pp-notification-rule .pp-row-actions .pp-input{width:7ch;max-width:7ch}.pp-notification-switch{display:grid;gap:5px;align-self:end;color:var(--muted);font-size:12px}.pp-ledger-scroll{max-height:430px;overflow:auto}.pp-ledger-scroll .pp-table thead th{position:sticky;top:0;z-index:2}
@@ -362,7 +362,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     .pp-table.is-compact{min-width:0}.pp-people-table th,.pp-people-table td,.pp-effectiveness-table th,.pp-effectiveness-table td{text-align:center}.pp-people-table .pp-pill{justify-content:center}.pp-report-actions{margin-top:10px}
 .pp-inline{width:auto;max-width:calc(100% - 8px);min-height:30px;border:1px solid var(--line);border-radius:6px;background:#0f1111;color:var(--text);padding:5px 7px;margin-left:4px;margin-right:4px}.pp-fit{width:auto;max-width:180px}.pp-tiny{width:5ch;max-width:5ch;text-align:right}.pp-capacity{width:9ch;max-width:9ch;text-align:right}.pp-stock-qty{width:8ch;max-width:8ch;text-align:right}.pp-name{width:150px}.pp-row-actions{display:flex;gap:6px;flex-wrap:wrap;min-width:0}.pp-row-actions>*{min-width:0}.pp-row-actions .pp-btn{margin-left:0;margin-right:0}.pp-btn{margin-left:4px;margin-right:4px}
     .pp-ledger-add-form{grid-template-columns:repeat(auto-fit,minmax(84px,max-content));justify-content:start;align-items:end}.pp-ledger-add-form .pp-field{overflow:visible}.pp-ledger-add-form .pp-input,.pp-ledger-add-form .pp-select{width:var(--ledger-field-width,auto);min-width:var(--ledger-field-min,8ch);max-width:min(var(--ledger-field-max,24ch),calc(100vw - 48px))}.pp-ledger-staff-field{--ledger-field-width:26ch;--ledger-field-max:30ch}.pp-ledger-date-field{--ledger-field-width:13ch;--ledger-field-max:14ch}.pp-ledger-money-field{--ledger-field-width:15ch;--ledger-field-max:16ch}.pp-ledger-price-field{--ledger-field-width:12ch;--ledger-field-max:13ch}.pp-ledger-small-field{--ledger-field-width:7ch;--ledger-field-max:8ch}.pp-ledger-contract-field{--ledger-field-width:20ch;--ledger-field-max:22ch}.pp-ledger-check-field{min-width:15ch}.pp-checkline{display:flex;gap:10px;align-items:center;min-height:34px;white-space:nowrap}.pp-ledger-preview-field{grid-column:span 2;min-width:min(40ch,100%)}.pp-ledger-preview-field .pp-btn{width:min(32ch,100%)}.pp-ledger-row.is-done td{opacity:.58}.pp-ledger-id{font-weight:700;color:var(--accent)}.pp-order-trains{display:grid;grid-template-columns:repeat(2,max-content);gap:6px 8px;align-items:end}.pp-order-trains label,.pp-order-discounts label{display:grid;gap:3px;color:var(--muted);font-size:12px}.pp-order-discounts{display:grid;gap:4px}.pp-readonly-value{color:var(--text);white-space:nowrap}.pp-readonly-sub{display:block;color:var(--muted);font-size:12px;margin-top:3px}
-    .pp-settings-nav,.pp-action-grid,.pp-report-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.pp-settings-nav{grid-column:span 12}.pp-member-card{grid-column:span 12}.pp-hidden{display:none!important}.pp-range-row{display:grid;grid-template-columns:auto minmax(140px,1fr) auto;gap:8px;align-items:center}.pp-analytics-scroll{max-height:min(64vh,620px);overflow:auto}.pp-analytics-scroll .pp-table th,.pp-analytics-scroll .pp-table td{text-align:center;padding-left:14px;padding-right:14px}.pp-past-scroll{max-height:430px;overflow:auto}.pp-stars{letter-spacing:1px;color:#5f6662}.pp-stars span{color:#FFDD00}.pp-table-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0 6px;color:#fff;font-weight:700}.pp-sort{border:0;background:transparent;color:var(--muted);font:inherit;font-weight:700;padding:0;cursor:pointer}.pp-sort.is-active{color:var(--accent)}.pp-card-count{align-self:center;color:var(--muted);font-size:12px}.pp-report-options label{display:flex;align-items:center;gap:6px;color:var(--muted)}.pp-training-pills{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}.pp-training-day{display:grid;gap:7px;align-items:start;border:1px solid var(--line);border-radius:8px;background:#121615;padding:8px}.pp-training-day strong{color:#fff}.pp-pill-list{display:flex;flex-wrap:wrap;gap:6px}.pp-percent-bar{position:relative;min-height:24px;border:1px solid var(--line);border-radius:7px;background-image:linear-gradient(90deg,rgba(255,255,255,.14) 1px,transparent 1px);background-size:10% 100%;background-color:#101312;overflow:hidden}.pp-percent-bar span{position:absolute;inset:0 auto 0 0;width:var(--percent);background:linear-gradient(90deg,var(--bad),var(--accent))}.pp-percent-bar b{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:12px;text-shadow:0 1px 2px #000}.pp-stock-summary{margin-bottom:12px}.pp-stock-summary .pp-stat strong{font-size:16px}.pp-stock-na{color:var(--muted);opacity:.6}.pp-stock-restock{display:grid;gap:2px}.pp-stock-restock b{color:#fff;font-size:12px;font-weight:700}.pp-stock-restock small{color:var(--muted);font-size:11px}.pp-modal-backdrop{position:absolute;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.58)}.pp-modal-card{width:min(720px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;box-shadow:0 18px 54px rgba(0,0,0,.5)}.pp-card-form{display:grid;gap:12px}.pp-card-section{border:1px solid var(--line);border-radius:8px;background:#121615;overflow:hidden}.pp-card-section summary{list-style:none}.pp-card-section summary::-webkit-details-marker{display:none}.pp-card-section-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;cursor:pointer}.pp-card-section[open] .pp-card-section-head{border-bottom:1px solid rgba(255,255,255,.08)}.pp-card-section-head h4{margin:0;color:#fff;font-size:13px;line-height:1.2}.pp-card-section-body{padding:12px}.pp-card-section-body .pp-form{gap:10px}.pp-history-stack{display:grid;gap:8px}.pp-history-item{border:1px solid var(--line);border-radius:8px;background:#101312}.pp-history-item summary{list-style:none;cursor:pointer;padding:10px 12px;color:#fff;font-weight:700}.pp-history-item summary::-webkit-details-marker{display:none}.pp-history-item[open] summary{border-bottom:1px solid rgba(255,255,255,.08)}.pp-history-body{padding:10px 12px}.pp-card-header-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .pp-settings-nav,.pp-action-grid,.pp-report-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.pp-settings-nav{grid-column:span 12}.pp-member-card{grid-column:span 12}.pp-hidden{display:none!important}.pp-range-row{display:grid;grid-template-columns:auto minmax(140px,1fr) auto;gap:8px;align-items:center}.pp-analytics-scroll{max-height:min(64vh,620px);overflow:auto}.pp-analytics-scroll .pp-table th,.pp-analytics-scroll .pp-table td{text-align:center;padding-left:14px;padding-right:14px}.pp-past-scroll{max-height:430px;overflow:auto}.pp-stars{letter-spacing:1px;color:#5f6662}.pp-stars span{color:#FFDD00}.pp-table-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0 6px;color:#fff;font-weight:700}.pp-sort{border:0;background:transparent;color:var(--muted);font:inherit;font-weight:700;padding:0;cursor:pointer}.pp-sort.is-active{color:var(--accent)}.pp-card-count{align-self:center;color:var(--muted);font-size:12px}.pp-report-options label{display:flex;align-items:center;gap:6px;color:var(--muted)}.pp-training-pills{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}.pp-training-day{display:grid;gap:7px;align-items:start;border:1px solid var(--line);border-radius:8px;background:#121615;padding:8px}.pp-training-day strong{color:#fff}.pp-pill-list{display:flex;flex-wrap:wrap;gap:6px}.pp-percent-bar{position:relative;min-height:24px;border:1px solid var(--line);border-radius:7px;background-image:linear-gradient(90deg,rgba(255,255,255,.14) 1px,transparent 1px);background-size:10% 100%;background-color:#101312;overflow:hidden}.pp-percent-bar span{position:absolute;inset:0 auto 0 0;width:var(--percent);background:linear-gradient(90deg,var(--bad),var(--accent))}.pp-percent-bar b{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:12px;text-shadow:-1px -1px 0 #000,0 -1px 0 #000,1px -1px 0 #000,-1px 0 0 #000,1px 0 0 #000,-1px 1px 0 #000,0 1px 0 #000,1px 1px 0 #000}.pp-stock-summary{margin-bottom:12px}.pp-stock-summary .pp-stat strong{font-size:16px}.pp-stock-na{color:var(--muted);opacity:.6}.pp-stock-restock{display:grid;gap:2px}.pp-stock-restock b{color:#fff;font-size:12px;font-weight:700}.pp-stock-restock small{color:var(--muted);font-size:11px}.pp-modal-backdrop{position:absolute;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.58)}.pp-modal-card{width:min(720px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;box-shadow:0 18px 54px rgba(0,0,0,.5)}.pp-card-form{display:grid;gap:12px}.pp-card-section{border:1px solid var(--line);border-radius:8px;background:#121615;overflow:hidden}.pp-card-section summary{list-style:none}.pp-card-section summary::-webkit-details-marker{display:none}.pp-card-section-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;cursor:pointer}.pp-card-section[open] .pp-card-section-head{border-bottom:1px solid rgba(255,255,255,.08)}.pp-card-section-head h4{margin:0;color:#fff;font-size:13px;line-height:1.2}.pp-card-section-body{padding:12px}.pp-card-section-body .pp-form{gap:10px}.pp-history-stack{display:grid;gap:8px}.pp-history-item{border:1px solid var(--line);border-radius:8px;background:#101312}.pp-history-item summary{list-style:none;cursor:pointer;padding:10px 12px;color:#fff;font-weight:700}.pp-history-item summary::-webkit-details-marker{display:none}.pp-history-item[open] summary{border-bottom:1px solid rgba(255,255,255,.08)}.pp-history-body{padding:10px 12px}.pp-card-header-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
     .pp-pill{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:3px 8px;border-radius:999px;border:1px solid var(--line);background:#111313;color:var(--muted);white-space:nowrap}.pp-pill:before{content:'';width:7px;height:7px;border-radius:50%;background:var(--pill-color,var(--muted))}.pp-date-pill:before{display:none}
     .pp-changelog{display:grid;gap:8px}.pp-changelog details{border:1px solid var(--line);border-radius:8px;background:#121615;padding:8px}.pp-changelog summary{cursor:pointer;color:#fff;font-weight:700}.pp-changelog ul{margin:8px 0 0 18px;padding:0;color:var(--muted)}.pp-changelog li{margin:4px 0}.pp-role-history{display:grid;gap:8px;border:1px solid var(--line);border-radius:8px;background:#121615;padding:10px}.pp-role-history>div+div{border-top:1px solid rgba(255,255,255,.08);padding-top:8px}.pp-card-userid{font:inherit;color:var(--accent);text-decoration:none}.pp-card-userid:hover{text-decoration:underline}
     .pp-alerts{position:relative;z-index:6;display:grid;gap:6px;padding:8px 12px;border-bottom:1px solid var(--line);background:rgba(217,93,93,.08);box-shadow:0 8px 18px rgba(0,0,0,.18)}.pp-alerts.is-empty{padding:0;border:0;box-shadow:none;background:transparent;min-height:0}.pp-alert{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px;color:var(--text);font-size:12px;text-align:left}.pp-alert strong{color:#fff}.pp-alert-main{display:block;width:100%;border:0;background:transparent;color:inherit;text-align:left;padding:0;cursor:default}.pp-alert-main[data-action]{cursor:pointer}.pp-alert-main[data-action]:hover strong{text-decoration:underline}.pp-alert-dismiss{display:grid;place-items:center;width:24px;min-width:24px;height:24px;min-height:24px;border:1px solid var(--line);border-radius:6px;background:rgba(0,0,0,.16);color:var(--muted);padding:0;margin:0;cursor:pointer;line-height:1}.pp-alert-dismiss:hover{border-color:var(--accent);color:var(--accent);background:rgba(255,255,255,.04)}.pp-alert-icon,.pp-stock-mini-alert:before{display:inline-grid;place-items:center;width:18px;height:18px;clip-path:polygon(50% 0,100% 92%,0 92%);background:#d95d5d;color:#fff;font-weight:800;font-size:12px;line-height:1}.pp-alert.is-warn .pp-alert-icon{background:var(--warn);color:#111}.pp-alert.is-info .pp-alert-icon{background:var(--accent);color:#07100d}.pp-stock-mini-alert{display:none;align-items:center;gap:5px;color:#fff;font-size:12px;line-height:1.2}.pp-stock-mini-alert:before{content:'!';flex:0 0 18px}.pp-cis-minimized .pp-brand,.pp-popup-badge .pp-brand{flex-wrap:wrap}.pp-cis-minimized .pp-brand .pp-stock-mini-alert,.pp-popup-badge .pp-brand .pp-stock-mini-alert{display:flex;flex-basis:100%;margin-top:2px;padding-top:6px;border-top:1px solid var(--line)}
@@ -370,7 +370,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     .pp-training-day{align-content:start}.pp-pill-list{align-content:flex-start;align-items:flex-start;align-self:start;justify-content:flex-start}.pp-operational{display:grid;grid-template-columns:repeat(6,minmax(105px,1fr));gap:8px;margin:0 0 12px}.pp-operation-note{border:1px solid var(--line);border-radius:8px;background:#121615;padding:9px;color:var(--muted)}.pp-operation-note strong{display:block;color:#fff;font-size:16px}.pp-training-queue{display:grid;gap:7px;margin-bottom:12px;border:1px solid var(--line);border-radius:8px;background:#121615;padding:10px;color:var(--muted)}.pp-training-queue strong{color:#fff}.pp-training-queue-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.pp-training-queue-body{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}.pp-training-queue-list{overflow-wrap:anywhere}.pp-queue-toggle{display:grid;place-items:center;width:28px;min-width:28px;height:26px;min-height:26px;padding:0;margin:0}.pp-eye-icon{display:block;width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
     .pp-disabled-overlay{position:absolute;inset:0;z-index:30;display:grid;place-items:center;padding:18px;background:rgba(0,0,0,.42);backdrop-filter:blur(5px)}.pp-disabled-overlay .pp-empty{max-width:520px;border-color:rgba(217,93,93,.75);background:#1b1111;color:#fff}.pp-disabled-context .pp-body,.pp-disabled-context .pp-tabs,.pp-disabled-context .pp-alerts{filter:blur(2px);pointer-events:none;user-select:none}
     .pp-theme-section{grid-column:1/-1;display:grid;gap:10px;min-width:0;border:1px solid var(--line);border-radius:8px;background:#121615;padding:10px}.pp-theme-section-head{display:grid;gap:3px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.07)}.pp-theme-section h4{margin:0;color:#fff;font-size:13px;line-height:1.25}.pp-theme-section p{margin:0;color:var(--muted);font-size:12px}.pp-theme-section-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;align-items:end}.pp-theme-section-grid .pp-field,.pp-theme-section-grid .pp-field.span-2{grid-column:auto}.pp-theme-editor{display:grid;grid-template-columns:repeat(3,minmax(150px,1fr));gap:10px}.pp-theme-swatch{display:grid;gap:5px}.pp-theme-dirty{border-color:var(--warn)!important}.pp-role-table .pp-inline{max-width:220px}.pp-compact-field .pp-input,.pp-compact-field .pp-select{width:auto;min-width:12ch;max-width:min(260px,calc(100% - 8px))}.pp-api-key{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.pp-api-key .pp-input{flex:0 1 260px;max-width:min(260px,calc(100% - 84px))}.pp-align-top{align-self:start}.pp-identity-settings{align-items:start}.pp-identity-settings>.pp-field{align-self:start}.pp-identity-settings>.pp-field:not(.span-6){border-right:1px solid var(--line);padding-right:10px}.pp-date-format-control{display:grid;gap:6px;align-items:start}.pp-date-format-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.pp-date-format-row .pp-note{margin:0}
-    .pp-graph-panel{display:grid;gap:10px}.pp-graph-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap}.pp-graph-stage{display:grid;grid-template-columns:repeat(var(--graph-cols,12),minmax(28px,1fr));gap:8px;align-items:end;min-height:190px;padding:12px;border:1px solid var(--line);border-radius:8px;background:#121615}.pp-bar{display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:6px;align-items:end;min-width:0}.pp-bar b{display:block;color:var(--text);font-size:11px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pp-bar span{display:block;height:max(4px,var(--bar));border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,var(--bar-color,var(--accent)),rgba(255,255,255,.12));box-shadow:0 0 0 1px rgba(255,255,255,.08) inset}.pp-bar small{display:block;color:var(--muted);font-size:10px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pp-series-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.pp-series-toggle{display:inline-flex;align-items:center;gap:5px;min-height:28px;padding:3px 7px;border:1px solid var(--line);border-radius:6px;background:#111313;color:var(--muted);white-space:nowrap}.pp-series-toggle i{width:10px;height:10px;border-radius:50%;background:var(--series-color)}.pp-line-chart{border:1px solid var(--line);border-radius:8px;background:#121615;padding:10px;overflow-x:auto}.pp-line-svg{display:block;width:100%;min-width:760px;height:auto}.pp-line-grid{stroke:rgba(255,255,255,.08);stroke-width:1}.pp-line-axis{stroke:rgba(255,255,255,.24);stroke-width:1.2}.pp-line-axis-label{fill:var(--muted);font-size:15px;font-weight:700}.pp-line-y{fill:var(--muted);font-size:15px}.pp-line-y.left{text-anchor:end}.pp-line-y.right{text-anchor:start}.pp-line-zero{stroke:rgba(255,221,0,.32);stroke-width:1;stroke-dasharray:5 5}.pp-line-path{fill:none;stroke:var(--series-color);stroke-width:3;stroke-linejoin:round;stroke-linecap:round}.pp-line-path.is-count{stroke-dasharray:8 7;opacity:.72}.pp-line-point{fill:#121615;stroke:var(--series-color);stroke-width:3}.pp-line-point.is-count{stroke-width:2.4;opacity:.86}.pp-line-label{fill:var(--text);font-size:16px;text-anchor:middle;paint-order:stroke;stroke:#121615;stroke-width:4;stroke-linejoin:round}.pp-line-label.is-count{font-size:14px;opacity:.82}.pp-line-x{fill:var(--muted);font-size:15px;text-anchor:middle}.pp-balance-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.pp-balance-table th,.pp-balance-table td{text-align:center;white-space:nowrap}.pp-balance-table td:nth-child(2){text-align:left}
+    .pp-graph-panel{display:grid;gap:10px}.pp-graph-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap}.pp-graph-stage{display:grid;grid-template-columns:repeat(var(--graph-cols,12),minmax(28px,1fr));gap:8px;align-items:end;min-height:190px;padding:12px;border:1px solid var(--line);border-radius:8px;background:#121615}.pp-bar{display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:6px;align-items:end;min-width:0}.pp-bar b{display:block;color:var(--text);font-size:11px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:-1px -1px 0 var(--pp-text-outline),0 -1px 0 var(--pp-text-outline),1px -1px 0 var(--pp-text-outline),-1px 0 0 var(--pp-text-outline),1px 0 0 var(--pp-text-outline),-1px 1px 0 var(--pp-text-outline),0 1px 0 var(--pp-text-outline),1px 1px 0 var(--pp-text-outline)}.pp-bar span{display:block;height:max(4px,var(--bar));border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,var(--bar-color,var(--accent)),rgba(255,255,255,.12));box-shadow:0 0 0 1px rgba(255,255,255,.08) inset}.pp-bar small{display:block;color:var(--muted);font-size:10px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:-1px -1px 0 var(--pp-muted-outline),0 -1px 0 var(--pp-muted-outline),1px -1px 0 var(--pp-muted-outline),-1px 0 0 var(--pp-muted-outline),1px 0 0 var(--pp-muted-outline),-1px 1px 0 var(--pp-muted-outline),0 1px 0 var(--pp-muted-outline),1px 1px 0 var(--pp-muted-outline)}.pp-series-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.pp-series-toggle{display:inline-flex;align-items:center;gap:5px;min-height:28px;padding:3px 7px;border:1px solid var(--line);border-radius:6px;background:#111313;color:var(--muted);white-space:nowrap}.pp-series-toggle i{width:10px;height:10px;border-radius:50%;background:var(--series-color)}.pp-line-chart{border:1px solid var(--line);border-radius:8px;background:#121615;padding:10px;overflow-x:auto}.pp-line-svg{display:block;width:100%;min-width:760px;height:auto}.pp-line-grid{stroke:rgba(255,255,255,.08);stroke-width:1}.pp-line-axis{stroke:rgba(255,255,255,.24);stroke-width:1.2}.pp-line-axis-label{fill:var(--muted);font-size:15px;font-weight:700}.pp-line-y{fill:var(--muted);font-size:15px}.pp-line-axis-label,.pp-line-y,.pp-line-x{paint-order:stroke fill;stroke:var(--pp-muted-outline);stroke-width:2px;stroke-linejoin:round}.pp-line-y.left{text-anchor:end}.pp-line-y.right{text-anchor:start}.pp-line-zero{stroke:rgba(255,221,0,.32);stroke-width:1;stroke-dasharray:5 5}.pp-line-path{fill:none;stroke:var(--series-color);stroke-width:3;stroke-linejoin:round;stroke-linecap:round}.pp-line-path.is-count{stroke-dasharray:8 7;opacity:.72}.pp-line-point{fill:#121615;stroke:var(--series-color);stroke-width:3}.pp-line-point.is-count{stroke-width:2.4;opacity:.86}.pp-line-label{fill:var(--text);font-size:16px;text-anchor:middle;paint-order:stroke fill;stroke:var(--label-outline,var(--pp-text-outline));stroke-width:4px;stroke-linejoin:round}.pp-line-label.is-count{font-size:14px;opacity:.82}.pp-line-x{fill:var(--muted);font-size:15px;text-anchor:middle}.pp-balance-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.pp-balance-table th,.pp-balance-table td{text-align:center;white-space:nowrap}.pp-balance-table td:nth-child(2){text-align:left}
     .pp-ee-history{display:grid;gap:10px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--line)}.pp-ee-controls{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.pp-ee-wrap{overflow:auto;max-width:100%;border:1px solid var(--line);border-radius:8px;background:#121615}.pp-ee-grid{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0}.pp-ee-grid th,.pp-ee-grid td{min-width:72px;height:48px;padding:5px 7px;border-right:1px solid rgba(255,255,255,.07);border-bottom:1px solid rgba(255,255,255,.07);text-align:center;white-space:nowrap}.pp-ee-grid thead th{position:sticky;top:0;z-index:2;height:34px;background:var(--panel2);color:var(--muted);font-size:10px}.pp-ee-grid .pp-ee-name{position:sticky;left:0;z-index:1;min-width:140px;max-width:180px;background:var(--panel);color:var(--text);text-align:left;overflow:hidden;text-overflow:ellipsis}.pp-ee-grid thead .pp-ee-name{z-index:3;background:var(--panel2)}.pp-ee-cell{background:rgba(255,255,255,.025);color:var(--text)}.pp-ee-cell.is-up{background:rgba(70,197,143,.18)}.pp-ee-cell.is-down{background:rgba(217,93,93,.2)}.pp-ee-cell.is-flat{background:rgba(255,255,255,.045)}.pp-ee-cell b{display:block;font-size:12px}.pp-ee-cell small{display:block;color:var(--muted);font-size:9px}.pp-ee-cell.is-up small{color:var(--accent)}.pp-ee-cell.is-down small{color:var(--bad)}.pp-ee-legend,.pp-ee-series-legend{display:flex;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:10px}.pp-ee-legend span:before,.pp-ee-series-legend span:before{content:'';display:inline-block;width:9px;height:9px;margin-right:4px;border-radius:2px;vertical-align:-1px;background:var(--series-color,rgba(255,255,255,.06))}.pp-ee-legend .is-up:before{background:rgba(70,197,143,.5)}.pp-ee-legend .is-down:before{background:rgba(217,93,93,.55)}.pp-ee-line-chart{overflow:auto}.pp-ee-line-chart .pp-line-svg{width:auto;max-width:none}.pp-ee-series-legend{padding:1px 2px}.pp-ee-series-legend span{white-space:nowrap}
     .pp-statline{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.pp-stat{min-height:58px;border:1px solid var(--line);border-radius:8px;background:#121615;padding:10px}.pp-stat small{display:block;color:var(--muted);margin-bottom:3px}.pp-stat strong{display:block;font-size:18px;color:#fff;overflow-wrap:anywhere}
 .pp-calendar{display:grid;grid-template-columns:repeat(7,minmax(140px,1fr));gap:8px;overflow-x:auto}.pp-day{display:grid;align-content:start;gap:8px;min-width:0;min-height:132px;border:1px solid var(--line);border-radius:8px;background:#121615;padding:9px}.pp-day-head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px}.pp-day-head h4{margin:0;font:700 12px/1.25 Arial,Helvetica,sans-serif;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pp-day-reset{display:grid;place-items:center;width:26px;min-width:26px;height:24px;min-height:24px;padding:0;margin:0;color:var(--accent);border-color:var(--accent)}.pp-day-table{width:100%;border-collapse:collapse;table-layout:fixed}.pp-day-table td{padding:4px 3px;border-top:1px solid rgba(255,255,255,.06);vertical-align:middle;color:var(--muted)}.pp-day-table td:first-child{width:36px;text-align:right;padding-right:6px}.pp-day-table td:last-child{width:34px;text-align:right}.pp-day-row.is-active td{color:#fff;background:rgba(70,197,143,.13);box-shadow:0 1px 0 rgba(70,197,143,.42) inset,0 -1px 0 rgba(70,197,143,.42) inset}.pp-day-row.is-active td:first-child{border-radius:6px 0 0 6px}.pp-day-row.is-active td:last-child{border-radius:0 6px 6px 0}.pp-day-name{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pp-day-table .pp-name{width:100%;max-width:100%;margin:0}.pp-contract-badge{display:inline-grid;place-items:center;width:24px;height:22px;border:1px solid var(--badge-color,var(--line));border-radius:6px;background:rgba(255,255,255,.04);color:var(--badge-color,var(--text));font-weight:800;font-size:11px;line-height:1}.pp-train-controls{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;align-items:center;margin-top:2px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08)}.pp-train-controls .pp-btn{min-width:34px;padding-left:9px;padding-right:9px}.pp-torn-train-glow{box-shadow:0 0 0 2px #FFDD00,0 0 20px rgba(255,221,0,.72)!important;border-radius:7px!important;position:relative!important;z-index:5!important;outline:1px solid rgba(255,221,0,.8)!important}
@@ -1101,15 +1101,24 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const known = budget > 0 || knownFlag === true;
         if (budget === 0 && !known) return;
         const observedAt = String(raw.observedAt || raw.observed_at || raw.syncedAt || raw.synced_at || raw.at || raw.created_at || rawMeta.observedAt || rawMeta.observed_at || '').trim() || Utils.nowIso();
-        const date = Utils.dateInput(raw.date || raw.observedDate || raw.observed_date || rawMeta.date || observedAt);
+        const source = String(raw.source || rawMeta.source || 'business-sync').trim() || 'business-sync';
+        const exact = raw.exact === true || rawMeta.exact === true || source.includes('torn-user-log-6283');
+        const storedDate = Utils.dateInput(raw.date || raw.observedDate || raw.observed_date || rawMeta.date || observedAt);
+        // Live profile observations made after the 18:10 TCT close belong to
+        // the following closing date. Recompute old snapshot rows as well so
+        // an already-saved post-close detection does not remain on yesterday.
+        const observedTimestamp = Utils.dateTimestamp(observedAt);
+        const date = !exact && ['business-sync', 'company-detail-sync'].includes(source) && observedTimestamp
+          ? Utils.tctCompanyDayKey(observedTimestamp * 1000)
+          : storedDate;
         if (!date) return;
         const row = {
           date,
           observedAt,
           advertisingBudget: Math.round(budget),
           advertisingBudgetKnown: known,
-          source: String(raw.source || rawMeta.source || 'business-sync').trim() || 'business-sync',
-          exact: raw.exact === true || rawMeta.exact === true || String(raw.source || rawMeta.source || '').includes('torn-user-log-6283'),
+          source,
+          exact,
           sourceLogId: String(raw.sourceLogId || raw.source_log_id || rawMeta.sourceLogId || rawMeta.source_log_id || '').trim(),
           oldBudget: Utils.num(raw.oldBudget ?? raw.old_budget ?? rawMeta.oldBudget ?? rawMeta.old_budget, null),
           logTimestamp: Utils.int(raw.logTimestamp || raw.log_timestamp || rawMeta.logTimestamp || rawMeta.log_timestamp, 0)
@@ -4439,7 +4448,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         .map((person) => {
           const identity = Company.resolveIdentity(person, state, identityMaps);
           const str = Math.max(Utils.int(loggedByIdentity.get(identity), 0), Utils.int(ledgerUsedByIdentity.get(identity), 0));
-          const risk = riskAware ? Planner.trainingRisk(person, state, opts.referenceDate) : { penalty: 0, level: 0, summary: '' };
+          const risk = riskAware ? Planner.trainingRisk(person, state, opts.referenceDate) : { penalty: 0, level: 0, blocked: false, summary: '' };
           const need = Planner.trainingNeed(person, state);
           const assignedNeed = Planner.assignedRoleNeed(person, state);
           return {
@@ -4458,8 +4467,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             assignedRequiredTotal: assignedNeed.requiredTotal,
             assignedUnder: assignedNeed.under,
             priorityMode,
+            riskAware,
             riskPenalty: risk.penalty,
             riskLevel: risk.level,
+            riskBlocked: risk.blocked,
             riskSummary: risk.summary
           };
         })
@@ -4535,21 +4546,26 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const recentInactiveDays = Math.min(inactivityDays, reviewDays);
       let penalty = 0;
       let level = 0;
+      let blocked = false;
       const reasons = [];
       if (addictionEnabled && addiction > addictionThreshold) {
+        blocked = true;
         penalty += addictionWeight;
         level = Math.max(level, 2);
         reasons.push(`addiction ${addiction}`);
       } else if (addictionEnabled && addiction >= addictionThreshold) {
+        blocked = true;
         penalty += 0.5 * addictionWeight;
         level = Math.max(level, 1);
         reasons.push(`addiction ${addiction}`);
       }
       if (inactivityEnabled && recentInactiveDays > inactivityThreshold) {
+        blocked = true;
         penalty += inactivityWeight;
         level = Math.max(level, 2);
         reasons.push(`inactive ${recentInactiveDays}d`);
       } else if (inactivityEnabled && recentInactiveDays >= inactivityThreshold) {
+        blocked = true;
         penalty += 0.5 * inactivityWeight;
         level = Math.max(level, 1);
         reasons.push(`inactive ${recentInactiveDays}d`);
@@ -4557,6 +4573,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       return {
         penalty,
         level,
+        blocked,
         recentInactiveDays,
         reviewDays,
         summary: reasons.join(', ')
@@ -4564,7 +4581,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     },
     sponsoredRiskSummary(state, referenceValue) {
       return Planner.sponsoredRoster(state, { riskAware: true, referenceDate: referenceValue }).reduce((sum, row) => {
-        if (Utils.num(row.riskPenalty, 0) <= 0) return sum;
+        if (!row.riskBlocked) return sum;
         sum.total += 1;
         if (Utils.int(row.riskLevel, 0) >= 2) sum.danger += 1;
         else sum.warn += 1;
@@ -4574,21 +4591,37 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     nextSponsored(roster, state, referenceDate) {
       const total = Array.isArray(roster) ? roster.length : 0;
       if (!total) return null;
-      roster.sort(Planner.compareSponsored);
-      const start = 0;
-      let row = null;
-      let rowIndex = -1;
-      for (let offset = 0; offset < total; offset += 1) {
-        const index = (start + offset) % total;
-        const candidate = roster[index];
-        if (!candidate) continue;
-        if (!Planner.trainingEligibility(candidate.personRef || candidate, state, referenceDate).eligible) continue;
-        row = candidate;
-        rowIndex = index;
-        break;
+      const dayKey = Utils.dateInput(referenceDate) || Utils.todayInput();
+      const eligible = roster.filter((candidate) => {
+        if (!candidate || !Planner.trainingEligibility(candidate.personRef || candidate, state, referenceDate).eligible) return false;
+        const risk = candidate.riskAware
+          ? Planner.trainingRisk(candidate.personRef || candidate, state, referenceDate)
+          : { penalty: 0, level: 0, blocked: false, summary: '' };
+        candidate.riskPenalty = risk.penalty;
+        candidate.riskLevel = risk.level;
+        candidate.riskBlocked = risk.blocked;
+        candidate.riskSummary = risk.summary;
+        return !risk.blocked;
+      });
+      if (!eligible.length) return null;
+      const dailyCount = (candidate) => Utils.int(candidate && candidate.dailySponsoredCounts && candidate.dailySponsoredCounts[dayKey], 0);
+      const leastToday = Math.min.apply(null, eligible.map(dailyCount));
+      const pool = eligible.filter((candidate) => dailyCount(candidate) === leastToday);
+      if (leastToday > 0) {
+        pool.sort((a, b) => {
+          const totalA = Utils.num(a && a.statTotal, 0);
+          const totalB = Utils.num(b && b.statTotal, 0);
+          const knownA = totalA > 0 ? totalA : Number.MAX_SAFE_INTEGER;
+          const knownB = totalB > 0 ? totalB : Number.MAX_SAFE_INTEGER;
+          return knownA - knownB || Planner.compareSponsored(a, b);
+        });
+      } else {
+        pool.sort(Planner.compareSponsored);
       }
+      const row = pool[0] || null;
       if (!row) return null;
-      roster.cursor = (rowIndex + 1) % total;
+      row.dailySponsoredCounts = row.dailySponsoredCounts || {};
+      row.dailySponsoredCounts[dayKey] = dailyCount(row) + 1;
       row.virtualStr += 1;
       return {
         identity: row.identity,
@@ -4603,6 +4636,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         assignedGap: row.assignedGap,
         assignedUnder: row.assignedUnder,
         statNeedSummary: row.statNeedSummary,
+        dailySponsoredCount: row.dailySponsoredCounts[dayKey],
         riskPenalty: row.riskPenalty,
         riskLevel: row.riskLevel,
         riskSummary: row.riskSummary
@@ -6971,6 +7005,36 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       else delete btn.dataset.ppcisAlerts;
     },
 
+    footerButtonNeedsIcon(btn, iconMarkup) {
+      return !btn
+        || btn.__ppcisIconMarkup !== iconMarkup
+        || typeof btn.querySelector !== 'function'
+        || !btn.querySelector('.pp-footer-button-icon');
+    },
+
+    footerButtonReusableWrap(btn, wrappers) {
+      return (btn && btn.closest ? btn.closest('#ppcis-footer-wrap') : null)
+        || (Array.isArray(wrappers) ? wrappers[0] : null)
+        || null;
+    },
+
+    footerMutationNeedsRepair(record) {
+      return Array.from(record && record.removedNodes || []).some((node) => {
+        if (!node || node.nodeType !== 1) return false;
+        if (node.id === 'ppcis-footer-wrap' || node.id === 'ppcis-footer-btn') return true;
+        if (node.matches && node.matches('.pp-footer-button-icon')) return true;
+        return !!(node.querySelector && node.querySelector('#ppcis-footer-wrap, #ppcis-footer-btn, .pp-footer-button-icon'));
+      });
+    },
+
+    footerButtonIsHealthy(root) {
+      const btn = document.getElementById('ppcis-footer-btn');
+      const wrap = btn && btn.closest ? btn.closest('#ppcis-footer-wrap') : document.getElementById('ppcis-footer-wrap');
+      const healthy = !!(wrap && btn && wrap.contains(btn) && document.body && document.body.contains(wrap) && btn.querySelector('.pp-footer-button-icon'));
+      if (root) root.classList.toggle('pp-footer-button-mounted', healthy);
+      return healthy;
+    },
+
     footerButtonClick(event) {
       if (event) {
         event.preventDefault();
@@ -6996,11 +7060,14 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       }
       const ref = UI.footerButtonRef();
       const existing = document.getElementById('ppcis-footer-btn');
+      const wrappers = Array.from(document.querySelectorAll('#ppcis-footer-wrap'));
+      const reusableWrap = UI.footerButtonReusableWrap(existing, wrappers);
+      wrappers.filter((node) => node !== reusableWrap).forEach((node) => node.remove());
       const anchor = UI.footerButtonAnchor(ref);
       const sourceWrap = UI.footerButtonWrapperSource(ref, anchor);
       const fallbackParent = !anchor ? UI.footerButtonContainer() : null;
       if (existing) {
-        const wrap = document.getElementById('ppcis-footer-wrap');
+        const wrap = reusableWrap;
         if (!wrap) {
           existing.remove();
         } else {
@@ -7021,7 +7088,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           const svgClassName = ref?.querySelector('svg')?.className;
           const iconClasses = typeof svgClassName === 'string' ? svgClassName : svgClassName?.baseVal || '';
           const iconMarkup = UI.footerButtonIconSvg(iconClasses);
-          if (existing.__ppcisIconMarkup !== iconMarkup) {
+          if (UI.footerButtonNeedsIcon(existing, iconMarkup)) {
             existing.innerHTML = iconMarkup;
             existing.__ppcisIconMarkup = iconMarkup;
           }
@@ -7039,7 +7106,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         root.classList.remove('pp-footer-button-mounted');
         return false;
       }
-      const wrap = document.createElement('div');
+      const wrap = reusableWrap || document.createElement('div');
       wrap.id = 'ppcis-footer-wrap';
       wrap.className = sourceWrap?.className || 'root___tV4zg';
       const styleText = sourceWrap?.getAttribute && sourceWrap.getAttribute('style');
@@ -7068,11 +7135,13 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       UI.footerButtonObserver = new MutationObserver((records) => {
         // Ignore our own renders and icon changes. Otherwise mounting the icon schedules
         // another mount forever, once per animation frame, even while Torn is idle.
-        const externalChange = records.some((record) => {
+        const footerDamage = records.some(UI.footerMutationNeedsRepair);
+        const externalChange = footerDamage || records.some((record) => {
           const target = record.target && (record.target.nodeType === 1 ? record.target : record.target.parentElement);
           return !target || !target.closest || !target.closest(`#${APP.id}, #ppcis-footer-wrap`);
         });
         if (!externalChange) return;
+        if (footerDamage) (root || UI.root)?.classList.remove('pp-footer-button-mounted');
         if (UI.footerButtonPending) return;
         UI.footerButtonPending = true;
         requestAnimationFrame(() => {
@@ -7125,20 +7194,19 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           UI.removeFooterButton();
           return;
         }
-        const wrap = document.getElementById('ppcis-footer-wrap');
-        const btn = document.getElementById('ppcis-footer-btn');
-        if (!wrap || !btn || !document.body.contains(wrap)) {
+        if (!UI.footerButtonIsHealthy(root || UI.root)) {
           if (!UI.mountFooterButton(root || UI.root, force)) UI.scheduleFooterButtonRetry(root || UI.root, force);
           return;
         }
+        const btn = document.getElementById('ppcis-footer-btn');
         UI.footerButtonStyle(btn, root || UI.root);
       }, 2000);
     },
 
     removeFooterButton() {
-      const wrap = document.getElementById('ppcis-footer-wrap');
       const node = document.getElementById('ppcis-footer-btn');
-      if (wrap) wrap.remove();
+      const wraps = Array.from(document.querySelectorAll('#ppcis-footer-wrap'));
+      if (wraps.length) wraps.forEach((wrap) => wrap.remove());
       else if (node) node.remove();
       if (UI.footerButtonObserver) {
         UI.footerButtonObserver.disconnect();
@@ -7266,6 +7334,22 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       }, {});
     },
 
+    textOutlineColor(color) {
+      const match = String(color || '').trim().match(/^#([0-9a-f]{6})$/i);
+      if (!match) return '#000000';
+      const channels = [0, 2, 4].map((offset) => parseInt(match[1].slice(offset, offset + 2), 16) / 255)
+        .map((value) => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
+      const luminance = channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+      return luminance > 0.179 ? '#000000' : '#ffffff';
+    },
+
+    applyTextOutlineVars(root, vars) {
+      if (!root) return;
+      const colors = UI.themeVars(vars);
+      root.style.setProperty('--pp-text-outline', UI.textOutlineColor(colors.text));
+      root.style.setProperty('--pp-muted-outline', UI.textOutlineColor(colors.muted));
+    },
+
     currentThemeVars(theme) {
       const key = String(theme || UI.state.settings.theme || 'modul').toLowerCase().replace(/[^a-z0-9-]/g, '') || 'modul';
       const saved = UI.savedThemeById(key);
@@ -7278,9 +7362,12 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (!root) return;
       Object.keys(DEFAULTS.settings.customTheme.vars).forEach((key) => root.style.removeProperty(`--${key}`));
       const selected = UI.savedThemeById(UI.state.settings.theme);
-      if (String(UI.state.settings.theme || '') !== 'custom' && !selected && !varsOverride) return;
-      const vars = UI.themeVars(varsOverride || (selected && selected.vars));
-      Object.entries(vars).forEach(([key, value]) => root.style.setProperty(`--${key}`, value));
+      const usesInlineTheme = String(UI.state.settings.theme || '') === 'custom' || selected || varsOverride;
+      const vars = usesInlineTheme
+        ? UI.themeVars(varsOverride || (selected && selected.vars))
+        : UI.currentThemeVars(UI.state.settings.theme);
+      if (usesInlineTheme) Object.entries(vars).forEach(([key, value]) => root.style.setProperty(`--${key}`, value));
+      UI.applyTextOutlineVars(root, vars);
     },
 
     previewTheme(theme) {
@@ -7293,7 +7380,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       root.classList.add(`pp-theme-${safeTheme === 'custom' || saved ? 'custom' : safeTheme}`);
       Object.keys(DEFAULTS.settings.customTheme.vars).forEach((key) => root.style.removeProperty(`--${key}`));
       if (saved) UI.applyThemeVars(root, saved.vars);
-      else if (safeTheme === 'custom') UI.applyThemeVars(root);
+      else if (safeTheme === 'custom') UI.applyThemeVars(root, UI.currentThemeVars('custom'));
+      else UI.applyTextOutlineVars(root, UI.currentThemeVars(safeTheme));
     },
 
     companyContextOk() {
@@ -8655,9 +8743,14 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             : [];
           const wage = Utils.num(person && person.wage, 0);
           const wageKnown = !!(person && person.wageFromApi);
+          const startTs = Utils.dateTimestamp(UI.personHireValue(person) || Company.employmentStart(person));
+          const storedLeftTs = Utils.dateTimestamp(UI.personLeftValue(person) || person && (person.leftDate || person.leftTimestamp));
+          const exactLeftTs = Timeline.personEventTimestamp(UI.state, person, ['left', 'fired'], 'last');
+          const usableExactLeftTs = exactLeftTs && (!startTs || exactLeftTs >= startTs) ? exactLeftTs : 0;
           return Object.assign({}, person, {
-            _balanceStartTs: Utils.dateTimestamp(UI.personHireValue(person) || Company.employmentStart(person)),
-            _balanceLeftTs: Utils.dateTimestamp(UI.personLeftValue(person) || person && (person.leftDate || person.leftTimestamp)),
+            _balanceStartTs: startTs,
+            _balanceLeftTs: usableExactLeftTs || storedLeftTs,
+            _balanceExactLeftTs: usableExactLeftTs,
             _balanceWage: wageKnown ? wage : 0,
             _balanceWageKnown: wageKnown,
             _balanceWageObservedAt: person.currentRosterObservedAt || '',
@@ -8693,13 +8786,26 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         if (observed < at && companyDay === previousDay && (!previous || observed > previous.observed)) previous = { observed, wage };
         if (observed >= at && companyDay === nextDay && (!next || observed < next.observed)) next = { observed, wage };
       });
-      if (!previous || !next || previous.wage !== next.wage || through < next.observed) return null;
+      if (!previous) return null;
       const started = Utils.num(person && person._balanceStartTs, 0);
       const left = Utils.num(person && person._balanceLeftTs, 0);
-      if ((started && started > previous.observed) || (left && left <= next.observed)) return null;
+      const exactLeft = Utils.num(person && person._balanceExactLeftTs, 0);
+      let evidenceEnd = 0;
+      if (next) {
+        if (previous.wage !== next.wage || (left && left <= next.observed)) return null;
+        evidenceEnd = next.observed;
+      } else if (exactLeft > at && Utils.tctCompanyDayKey(exactLeft * 1000) === nextDay) {
+        // A precise departure after this close replaces the otherwise
+        // impossible following snapshot. Complete wage logs must cover the
+        // departure and show no intervening change.
+        evidenceEnd = exactLeft;
+      } else {
+        return null;
+      }
+      if (through < evidenceEnd || (started && started > previous.observed)) return null;
       const changedBetween = (history || []).some((row) => {
         const changed = Utils.dateTimestamp(row && row.at);
-        return changed > previous.observed && changed <= next.observed;
+        return changed > previous.observed && changed <= evidenceEnd;
       });
       return changedBetween ? null : previous.wage;
     },
@@ -8841,7 +8947,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const known = detailed.advertisingBudgetKnown === true || budget > 0;
       if (budget === 0 && !known) return 0;
       const at = String(observedAt || detailed.lastSynced || Utils.nowIso()).trim() || Utils.nowIso();
-      const date = Utils.dateInput(at) || Utils.todayInput();
+      const observedTimestamp = Utils.dateTimestamp(at);
+      const date = observedTimestamp ? Utils.tctCompanyDayKey(observedTimestamp * 1000) : Utils.todayInput();
       UI.state.company.adBudgetHistory = Store.mergeAdBudgetHistory(UI.state.company.adBudgetHistory || [], [{
         date,
         observedAt: at,
@@ -8914,7 +9021,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           ? 0
           : (calculatedWages !== null ? calculatedWages : (saved && saved.wagesKnown && !UI.wageHistoryGapOn(row.date, context) ? Utils.num(saved.wages, 0) : null));
         const observedAdBudget = UI.balanceAdBudgetOn(row.date);
-        const adBudget = saved && saved.adBudgetKnown ? Utils.num(saved.adBudget, 0) : observedAdBudget;
+        // Ad-budget history is the canonical timeline. Saved operating rows
+        // are derived snapshots and may contain the old calendar-day bug.
+        const adBudget = observedAdBudget !== null
+          ? observedAdBudget
+          : (saved && saved.adBudgetKnown ? Utils.num(saved.adBudget, 0) : null);
         const rating = UI.balanceRatingOn(row.date, context);
         const restock = Company.restockCostOn(row.date, restockCosts);
         return Object.assign({}, row, {
@@ -9222,7 +9333,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
               : Math.max(15, point.y - 9 - (seriesIndex % 2) * 10);
             const title = `${series.label} ${slide.label(rows[index])}: ${series.format(value)}`;
             return `<circle class="pp-line-point${seriesClass}" cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="${isCount ? 3 : 4}"><title>${Utils.esc(title)}</title></circle>
-              ${skipCountLabel ? '' : `<text class="pp-line-label${seriesClass}" style="--series-color:${color};fill:var(--series-color)" x="${point.x.toFixed(1)}" y="${labelY.toFixed(1)}">${Utils.esc(series.compact(value))}</text>`}`;
+              ${skipCountLabel ? '' : `<text class="pp-line-label${seriesClass}" style="--series-color:${color};--label-outline:${UI.textOutlineColor(series.color)};fill:var(--series-color)" x="${point.x.toFixed(1)}" y="${labelY.toFixed(1)}">${Utils.esc(series.compact(value))}</text>`}`;
           }).join('')}
         </g>`;
       }).join('');
@@ -9354,7 +9465,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             <div class="pp-head">
               <div>
                 <h3>Train Schedule</h3>
-                <p title="FIFO, First In First Out">FIFO paid trains first. Remaining daily capacity fills sponsored rotation users.</p>
+                <p title="FIFO, First In First Out">FIFO paid trains first. Auto mode skips sponsored staff at the addiction or inactivity threshold and reassigns those trains to eligible staff.</p>
               </div>
                 <button class="pp-btn is-primary" type="button" data-action="build-planner">Build calendar</button>
             </div>
@@ -9605,15 +9716,15 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       });
       const coverage = Array.from(counts.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([role, count]) => `${role}: ${count}`).join('\n') || 'No staff synced yet.';
       const riskTitle = risk.total
-        ? `Auto mode lowers sponsored priority for ${risk.total} staff this review window (${risk.reviewDays} day${risk.reviewDays === 1 ? '' : 's'}). ${risk.danger} danger, ${risk.warn} warning.`
-        : `Auto mode is not currently lowering sponsored priority for addiction or inactivity in the ${risk.reviewDays}-day review window.`;
+        ? `Auto mode excludes ${risk.total} staff from sponsored/free trains at the current addiction or inactivity threshold. Their slots are reassigned; paid trains remain eligible. ${risk.danger} above threshold, ${risk.warn} at threshold.`
+        : `No staff are currently excluded from Auto sponsored/free trains by addiction or inactivity. Paid trains are always immune.`;
       return `<div class="pp-operational">
         <div class="pp-operation-note"><strong>${paidQueue.toLocaleString()}</strong>Paid trains waiting</div>
         <div class="pp-operation-note"><strong>${sponsored.length.toLocaleString()}</strong>Free/sponsored candidates</div>
         <div class="pp-operation-note"><strong>${supply.toLocaleString()} / 20</strong>Available slots / ${paidDaily.toLocaleString()} paid</div>
         <div class="pp-operation-note" title="${Utils.esc(coverage)}"><strong>${paidDays.toLocaleString()}</strong>Paid queue day${paidDays === 1 ? '' : 's'}</div>
         <div class="pp-operation-note" title="Staff in their first ${Planner.trainingHoldDays()} days are held off the schedule, even when they already have paid orders."><strong>${holdCount.toLocaleString()}</strong>New-hire hold</div>
-        <div class="pp-operation-note" title="${Utils.esc(riskTitle)}"><strong>${risk.total.toLocaleString()}</strong>Risk-adjusted sponsored</div>
+        <div class="pp-operation-note" title="${Utils.esc(riskTitle)}"><strong>${risk.total.toLocaleString()}</strong>Auto-excluded sponsored</div>
       </div>`;
     },
 
@@ -10820,16 +10931,14 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             ${UI.field('Paid cap / day', UI.paidCapSelect(state.settings), 'pp-compact-field')}
             <label class="pp-field"><span class="pp-note">Trainer role</span><span><input type="checkbox" name="trainerAutoDetect" ${state.settings.trainerAutoDetect !== false ? 'checked' : ''}> Auto-Detect</span></label>
             <div class="pp-field span-6"><span class="pp-note">Detected setup: company rating comes from profile sync and Trainer comes from staff sync when Auto-Detect is enabled. Current trainer bonus: ${state.settings.trainerAssigned ? 'yes' : 'no'}.</span></div>
-            <div class="pp-form-title">Auto mode priority</div>
+            <div class="pp-form-title">Auto sponsored/free rules</div>
             <div class="pp-priority-grid">
               ${UI.field('Queue standard', UI.plannerQueuePolicySelect(), 'pp-compact-field')}
               <label class="pp-field"><span class="pp-note">Paid orders first</span><span><input type="checkbox" name="plannerPaidFirst" ${state.settings.plannerPriority && state.settings.plannerPriority.paidFirst !== false ? 'checked' : ''}> Enabled</span></label>
-              ${UI.field('Addiction weight', `<input class="pp-input" name="plannerAddictionWeight" inputmode="decimal" value="${Utils.esc(state.settings.plannerPriority && state.settings.plannerPriority.addictionWeight || 1)}">`, 'pp-compact-field')}
-              <label class="pp-field"><span class="pp-note">Addiction penalty</span><span><input type="checkbox" name="plannerAddictionEnabled" ${state.settings.plannerPriority && state.settings.plannerPriority.addictionEnabled !== false ? 'checked' : ''}> Enabled</span></label>
-              ${UI.field('Inactivity weight', `<input class="pp-input" name="plannerInactivityWeight" inputmode="decimal" value="${Utils.esc(state.settings.plannerPriority && state.settings.plannerPriority.inactivityWeight || 1)}">`, 'pp-compact-field')}
-              <label class="pp-field"><span class="pp-note">Inactivity penalty</span><span><input type="checkbox" name="plannerInactivityEnabled" ${state.settings.plannerPriority && state.settings.plannerPriority.inactivityEnabled !== false ? 'checked' : ''}> Enabled</span></label>
+              <label class="pp-field"><span class="pp-note">Addiction threshold</span><span><input type="checkbox" name="plannerAddictionEnabled" ${state.settings.plannerPriority && state.settings.plannerPriority.addictionEnabled !== false ? 'checked' : ''}> Skip sponsored/free</span></label>
+              <label class="pp-field"><span class="pp-note">Inactivity threshold</span><span><input type="checkbox" name="plannerInactivityEnabled" ${state.settings.plannerPriority && state.settings.plannerPriority.inactivityEnabled !== false ? 'checked' : ''}> Skip sponsored/free</span></label>
             </div>
-            <div class="pp-field span-6"><span class="pp-note">Paid orders first prioritizes paid staff with remaining trains. Queue standard controls sponsored/free capacity: director-selected slots, full rotation, lower stats, assigned-role catch-up, or role need. Addiction and inactivity can still lower priority.</span></div>
+            <div class="pp-field span-6"><span class="pp-note">In Auto mode, staff at or above the notification thresholds receive no sponsored/free train that day. All eligible staff receive one before repeats; extra trains prefer the eligible member with the lowest total stats. Paid trains ignore both rules. Hybrid and Manual remain editable director choices.</span></div>
           </form>
         </div>
       </section>`;
@@ -12653,6 +12762,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.1.9 - Reliable launcher, training, and daily records</summary>
+              <ul><li>The minimized footer launcher now repairs itself after Torn redraws the footer; an empty or removed icon can no longer leave an inaccessible blank gap.</li><li>Auto mode excludes staff who meet enabled addiction or inactivity thresholds from sponsored/free trains, while paid FIFO orders remain unaffected. Eligible staff rotate once before the lowest-stat member receives an extra train.</li><li>Advertising-budget observations use the 18:10 TCT company-day boundary, and exact budget changes take priority over stale saved daily snapshots.</li><li>Balance can recover an isolated closing wage when complete logs contain an exact post-closing departure, without widening historical inference.</li><li>Progress bars and graph labels use adaptive contrasting outlines for readability across light and dark themes.</li></ul>
+            </details>
+            <details>
               <summary>v3.1.8 - Automatic company workspace handover</summary>
               <ul><li>Startup and company sync actions verify the current Torn account and company before loading or changing workspace data.</li><li>Changing company opens a pristine workspace and preserves the historical cloud workspace without carrying staff, news, stock, wage, ledger, planner, or company settings across.</li><li>Historical workspaces reopen only when the account is currently attached to that company, and ordinary staff are denied company-workspace access instead of being treated as directors.</li></ul>
             </details>
