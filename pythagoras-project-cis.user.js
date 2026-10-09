@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.2.0
+// @version      3.2.1
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
 // @author       MoDuL [4022159]
 // @match        https://www.torn.com/companies.php*
@@ -50,7 +50,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.2.0',
+    version: '3.2.1',
     popupName: 'pythagoras-cis-popup'
   };
 
@@ -1035,6 +1035,84 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ledgerOrderKey(entry) {
       return String(entry && (entry.orderId || entry.id) || '').trim();
     },
+    ledgerSourceEventId(entry) {
+      if (!entry || typeof entry !== 'object') return '';
+      const direct = String(entry.sourceEventId || entry.source_event_id || '').trim().replace(/^log4810:/i, '');
+      if (direct && !direct.includes(':')) return direct;
+      const sourceKey = String(entry.sourceLogKey || entry.source_log_key || entry.sourceLogId || entry.source_log_id || '').trim();
+      const match = sourceKey.match(/^log4810:([^:]+)$/i);
+      return match ? match[1] : '';
+    },
+    ledgerSourceKey(entry) {
+      const eventId = Store.ledgerSourceEventId(entry);
+      if (eventId) return `log4810:${eventId}`;
+      const sourceKey = String(entry && (entry.sourceLogKey || entry.source_log_key || entry.sourceLogId || entry.source_log_id) || '').trim();
+      return /^log4810:/i.test(sourceKey) ? sourceKey : '';
+    },
+    ledgerSourceKind(entry) {
+      return String(entry && (entry.sourceKind || entry.source_kind || entry.source) || '').trim().toLowerCase();
+    },
+    ledgerIsManual(entry) {
+      return ['manual', 'manual_add', 'manual-entry'].includes(Store.ledgerSourceKind(entry));
+    },
+    ledgerOrderSequence(entry) {
+      const match = String(entry && entry.orderId || '').match(/-TR-(\d+)$/i);
+      return match ? Utils.int(match[1], Number.MAX_SAFE_INTEGER) : Number.MAX_SAFE_INTEGER;
+    },
+    compareLedgerCanonical(first, second) {
+      const orderDelta = Store.ledgerOrderSequence(first) - Store.ledgerOrderSequence(second);
+      if (orderDelta) return orderDelta;
+      const dateDelta = Utils.dateTimestamp(first && (first.createdAt || first.entryDate)) - Utils.dateTimestamp(second && (second.createdAt || second.entryDate));
+      if (dateDelta) return dateDelta;
+      return String(first && (first.orderId || first.id) || '').localeCompare(String(second && (second.orderId || second.id) || ''));
+    },
+    mergeLedgerEventPair(first, second, eventId) {
+      const primary = Store.compareLedgerCanonical(first, second) <= 0 ? first : second;
+      const duplicate = primary === first ? second : first;
+      const merged = Object.assign({}, duplicate || {}, primary || {});
+      const stableEventId = String(eventId || Store.ledgerSourceEventId(primary) || Store.ledgerSourceEventId(duplicate) || '').trim();
+      if (stableEventId) {
+        merged.sourceEventId = stableEventId;
+        merged.sourceLogKey = `log4810:${stableEventId}`;
+        merged.sourceLogId = merged.sourceLogKey;
+      }
+      merged.usedTrains = Math.max(Utils.int(first && first.usedTrains, 0), Utils.int(second && second.usedTrains, 0));
+      merged.paid = !!(first && first.paid) || !!(second && second.paid);
+      merged.done = !!(first && first.done) || !!(second && second.done);
+      const newestUpdate = [first && first.updatedAt, second && second.updatedAt]
+        .filter(Boolean)
+        .sort((a, b) => Utils.dateTimestamp(b) - Utils.dateTimestamp(a))[0];
+      if (newestUpdate) merged.updatedAt = newestUpdate;
+      return merged;
+    },
+    dedupeLedgerEventRows(rows) {
+      const output = [];
+      const eventIndexes = new Map();
+      let removed = 0;
+      (Array.isArray(rows) ? rows : []).forEach((entry) => {
+        if (!entry || typeof entry !== 'object') return;
+        const row = Object.assign({}, entry);
+        const eventId = Store.ledgerSourceEventId(row);
+        if (!eventId) {
+          output.push(row);
+          return;
+        }
+        row.sourceEventId = eventId;
+        row.sourceLogKey = `log4810:${eventId}`;
+        row.sourceLogId = row.sourceLogKey;
+        row.sourceKind = 'log_import';
+        row.source = 'log_import';
+        if (!eventIndexes.has(eventId)) {
+          eventIndexes.set(eventId, output.length);
+          output.push(row);
+          return;
+        }
+        const index = eventIndexes.get(eventId);
+        output[index] = Store.mergeLedgerEventPair(output[index], row, eventId);
+        removed += 1;
+      });
+      return { rows: output, removed };
+    },
     mergeLedgerRows(base, extra) {
       const byKey = new Map();
       const noKey = [];
@@ -1050,7 +1128,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       };
       (base || []).forEach(add);
       (extra || []).forEach(add);
-      return Array.from(byKey.values()).concat(noKey).sort((a, b) => {
+      return Store.dedupeLedgerEventRows(Array.from(byKey.values()).concat(noKey)).rows.sort((a, b) => {
         const first = Utils.dateTimestamp(a.entryDate || a.createdAt || a.updatedAt);
         const second = Utils.dateTimestamp(b.entryDate || b.createdAt || b.updatedAt);
         return first - second || String(a.orderId || a.id || '').localeCompare(String(b.orderId || b.id || ''));
@@ -2201,6 +2279,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       };
     },
     dbOrderToLedger(row) {
+      const sourceEventId = String(row.source_event_id || row.sourceEventId || '').trim().replace(/^log4810:/i, '');
+      const sourceKind = String(row.source_kind || row.sourceKind || '').trim().toLowerCase();
       return {
         id: row.order_id || '',
         orderId: row.order_id || '',
@@ -2218,6 +2298,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         paid: !!row.paid,
         done: !!row.done,
         entryDate: row.entry_date || '',
+        sourceEventId,
+        sourceLogId: sourceEventId ? `log4810:${sourceEventId}` : '',
+        sourceLogKey: sourceEventId ? `log4810:${sourceEventId}` : '',
+        sourceKind,
+        source: sourceKind,
         createdAt: row.created_at || '',
         updatedAt: row.updated_at || ''
       };
@@ -3943,7 +4028,96 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         if (match.name) entry.playerName = match.name;
       });
     },
+    importFingerprint(entry) {
+      if (!entry || typeof entry !== 'object') return '';
+      const date = Utils.dateInput(entry.entryDate || entry.createdAt || entry.sourceLogTimestamp);
+      const playerId = String(entry.playerId || entry.userId || '').trim();
+      const player = playerId ? `id:${playerId}` : `name:${Company.nameKey(entry.playerName || entry.name)}`;
+      const payment = Math.max(0, Math.round(Utils.num(entry.payment, 0)));
+      if (!date || !player.replace(/^(?:id|name):/, '') || !payment) return '';
+      return `${date}|${player}|${payment}`;
+    },
+    reconcileImportedEvents(state, candidates) {
+      if (!state || !Array.isArray(state.ledger)) return { added: 0, removed: 0, tagged: 0 };
+      const initial = Store.dedupeLedgerEventRows(state.ledger);
+      state.ledger = initial.rows;
+      let removed = initial.removed;
+      let tagged = 0;
+      const uniqueCandidates = new Map();
+      (Array.isArray(candidates) ? candidates : []).forEach((candidate) => {
+        const eventId = Store.ledgerSourceEventId(candidate);
+        const fingerprint = Ledger.importFingerprint(candidate);
+        if (eventId && fingerprint && !uniqueCandidates.has(eventId)) uniqueCandidates.set(eventId, Object.assign({}, candidate, { sourceEventId: eventId }));
+      });
+      const existingByEvent = new Map();
+      state.ledger.forEach((entry) => {
+        const eventId = Store.ledgerSourceEventId(entry);
+        if (eventId && !existingByEvent.has(eventId)) existingByEvent.set(eventId, entry);
+      });
+      const groups = new Map();
+      uniqueCandidates.forEach((candidate, eventId) => {
+        const fingerprint = Ledger.importFingerprint(candidate);
+        const existing = existingByEvent.get(eventId);
+        if (existing && Ledger.importFingerprint(existing) !== fingerprint) return;
+        if (!groups.has(fingerprint)) groups.set(fingerprint, []);
+        groups.get(fingerprint).push(candidate);
+      });
+      const removedRows = new Set();
+      const additions = [];
+      groups.forEach((eventRows, fingerprint) => {
+        const events = eventRows.slice().sort((a, b) => Utils.int(a.sourceLogTimestamp, 0) - Utils.int(b.sourceLogTimestamp, 0)
+          || Store.ledgerSourceEventId(a).localeCompare(Store.ledgerSourceEventId(b)));
+        const ledgerRows = state.ledger
+          .filter((entry) => !removedRows.has(entry) && !Store.ledgerIsManual(entry) && Ledger.importFingerprint(entry) === fingerprint)
+          .sort(Store.compareLedgerCanonical);
+        const targets = ledgerRows.slice(0, events.length);
+        events.forEach((candidate, index) => {
+          const eventId = Store.ledgerSourceEventId(candidate);
+          const target = targets[index];
+          if (!target) {
+            additions.push(Object.assign({}, candidate, {
+              sourceEventId: eventId,
+              sourceLogId: `log4810:${eventId}`,
+              sourceLogKey: `log4810:${eventId}`
+            }));
+            return;
+          }
+          let merged = target;
+          ledgerRows.forEach((row) => {
+            if (row === target || targets.includes(row) || Store.ledgerSourceEventId(row) !== eventId || removedRows.has(row)) return;
+            merged = Store.mergeLedgerEventPair(merged, row, eventId);
+            removedRows.add(row);
+            removed += 1;
+          });
+          const oldEventId = Store.ledgerSourceEventId(target);
+          const oldKey = Store.ledgerSourceKey(target);
+          Object.assign(target, merged, {
+            source: 'log_import',
+            sourceKind: 'log_import',
+            sourceEventId: eventId,
+            sourceLogId: `log4810:${eventId}`,
+            sourceLogKey: `log4810:${eventId}`,
+            sourceLogTimestamp: Utils.int(candidate.sourceLogTimestamp, Utils.int(target.sourceLogTimestamp, 0)),
+            sourceLogText: candidate.sourceLogText || target.sourceLogText || ''
+          });
+          if (oldEventId !== eventId || oldKey !== `log4810:${eventId}`) tagged += 1;
+          existingByEvent.set(eventId, target);
+        });
+        ledgerRows.slice(events.length).forEach((row) => {
+          if (removedRows.has(row)) return;
+          if (!Store.ledgerSourceEventId(row) && Store.ledgerSourceKind(row) !== 'log_import') return;
+          removedRows.add(row);
+          removed += 1;
+        });
+      });
+      state.ledger = state.ledger.filter((entry) => !removedRows.has(entry)).concat(additions);
+      const finalRows = Store.dedupeLedgerEventRows(state.ledger);
+      state.ledger = finalRows.rows;
+      removed += finalRows.removed;
+      return { added: additions.length, removed, tagged };
+    },
     prepare(state) {
+      if (state && Array.isArray(state.ledger)) state.ledger = Store.dedupeLedgerEventRows(state.ledger).rows;
       Ledger.ensureOrderIds(state);
       Ledger.bindPlayerIds(state);
       (state && state.ledger || []).forEach((entry) => {
@@ -3976,6 +4150,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         applyDiscount: !form.applyDiscount || form.applyDiscount.checked,
         paid: form.paid && form.paid.checked,
         done: form.done && form.done.checked,
+        source: 'manual',
+        sourceKind: 'manual',
         createdAt,
         updatedAt: Utils.nowIso()
       };
@@ -12775,6 +12951,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.2.1 - Event-backed training orders</summary>
+              <ul><li>Imported payments now use Torn&apos;s real event ID as their hidden identity, including after cloud save and reload.</li><li>History sync keeps the original order row, removes surplus copies, and preserves separate same-day payments when Torn provides different event IDs.</li><li>Manual additions remain separate and are never removed for lacking a Torn event ID.</li><li>Event IDs and order origins remain internal and are never displayed in Training Orders or completed-history rows.</li></ul>
+            </details>
+            <details>
               <summary>v3.2.0 - Organized training-order history</summary>
               <ul><li>Training Orders is split into <strong>Orders</strong>, <strong>Add order</strong>, and <strong>Done orders</strong> so running work stays separate from manual entry and completed history.</li><li>Order history follows every validated Torn pagination cursor for payment log 4810 and exact training-action log 6263.</li><li>Historical <strong>Traine</strong> and <strong>Tains</strong> references are recognized as bounded message-only variants; blank-message transfers remain manual.</li><li>Editing, completing, or deleting an order updates only affected rows instead of redrawing the entire page.</li></ul>
             </details>
@@ -15220,8 +15400,12 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       return Timeline.plainText(strings.join(' '));
     },
 
+    logImportEventId(item, fallbackId) {
+      return String(item && (item.id || item.log_id) || fallbackId || '').trim();
+    },
+
     logImportKey(item, fallbackId) {
-      const id = String(item && (item.id || item.log_id) || fallbackId || '').trim();
+      const id = UI.logImportEventId(item, fallbackId);
       if (id) return `log4810:${id}`;
       const data = item && item.data || {};
       const timestamp = Utils.int(item && (item.timestamp || item.time || item.date), 0);
@@ -15298,9 +15482,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const trigger = UI.logImportTrigger();
       const text = UI.logImportText(item);
       if (!UI.logImportMatchesTrigger(item, text, trigger)) return { skipped: 'trigger' };
+      const sourceEventId = UI.logImportEventId(item, rowId);
       const sourceLogKey = UI.logImportKey(item, rowId);
-      const exists = UI.state.ledger.some((entry) => entry.sourceLogKey === sourceLogKey || entry.sourceLogId === sourceLogKey);
-      if (exists) return { skipped: 'duplicate' };
+      const exists = UI.state.ledger.some((entry) => (sourceEventId && Store.ledgerSourceEventId(entry) === sourceEventId) || Store.ledgerSourceKey(entry) === sourceLogKey);
       const timestamp = Utils.int(item && (item.timestamp || item.time || item.date), 0);
       const who = UI.logImportPerson(item, text);
       const payment = UI.logImportAmount(item, text);
@@ -15322,6 +15506,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         paid: true,
         done: false,
         source: 'log_import',
+        sourceKind: 'log_import',
+        sourceEventId,
         sourceLogId: sourceLogKey,
         sourceLogKey,
         sourceLogTimestamp: timestamp,
@@ -15333,6 +15519,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (entry.totalTrains && !entry.payment) entry.payment = Ledger.totals(entry, UI.state.settings).finalCost;
       if (!entry.totalTrains && !entry.payment) return { skipped: 'empty' };
       UI.linkLedgerEntryToStaff(entry);
+      if (exists) return { skipped: 'duplicate', candidate: entry, sourceEventId, sourceLogKey };
       return { entry };
     },
 
@@ -15392,23 +15579,23 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const history = await UI.fetchTrainingOrderHistory(syncId);
         UI.syncStep(syncId, 'Parsing payment log rows.', 82);
         const stats = { trigger: 0, duplicate: 0, empty: 0 };
-        const imported = [];
+        const candidates = [];
         history.rows.forEach(([rowId, item]) => {
           const kind = Utils.int(item && item.details && item.details.id || item && item.log || 0, 0);
           if (kind !== 4810) return;
           const result = UI.buildTrainingOrderFromLog(item, rowId, options);
-          if (result.entry) imported.push(result.entry);
-          else if (result.skipped) stats[result.skipped] = (stats[result.skipped] || 0) + 1;
+          if (result.entry || result.candidate) candidates.push(result.entry || result.candidate);
+          if (result.skipped) stats[result.skipped] = (stats[result.skipped] || 0) + 1;
         });
+        const orderRepair = Ledger.reconcileImportedEvents(UI.state, candidates);
         const exactRows = Timeline.companyTrainingRowsFromUserLog({ log: Object.fromEntries(history.rows) }, UI.state);
         if (exactRows.length) UI.state.trainingLog = Timeline.mergeTrainingRows((UI.state.trainingLog || []).concat(exactRows), UI.state);
         const usedBefore = UI.state.ledger.reduce((sum, entry) => sum + Math.max(0, Utils.int(entry.usedTrains, 0)), 0);
         UI.state.staff.timeline = Timeline.reclassify(UI.state.staff.timeline || []);
-        if (imported.length) UI.state.ledger.push(...imported);
         Ledger.syncTrainingLog(UI.state);
         const usedAfter = UI.state.ledger.reduce((sum, entry) => sum + Math.max(0, Utils.int(entry.usedTrains, 0)), 0);
         const reconciledTrains = Math.max(0, usedAfter - usedBefore);
-        if (!imported.length && !reconciledTrains && !exactRows.length) {
+        if (!orderRepair.added && !orderRepair.removed && !orderRepair.tagged && !reconciledTrains && !exactRows.length) {
           const duplicateText = stats.duplicate ? ` ${stats.duplicate} matching row${stats.duplicate === 1 ? ' was' : 's were'} already imported.` : '';
           const message = `No new "${trigger}" training orders found across ${history.pages} history page${history.pages === 1 ? '' : 's'}.${duplicateText}`;
           Store.save(UI.state);
@@ -15420,16 +15607,19 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         UI.recordLedgerPending();
         Store.save(UI.state);
         await UI.uploadLedgerCloudSave();
-        const importText = imported.length
-          ? `Imported ${imported.length} training order${imported.length === 1 ? '' : 's'} from log.`
+        const importText = orderRepair.added
+          ? `Imported ${orderRepair.added} training order${orderRepair.added === 1 ? '' : 's'} from log.`
           : `No new "${trigger}" training orders found.`;
+        const repairText = orderRepair.removed
+          ? ` Removed ${orderRepair.removed} duplicate order row${orderRepair.removed === 1 ? '' : 's'} using Torn event history.`
+          : (orderRepair.tagged ? ` Linked ${orderRepair.tagged} existing order${orderRepair.tagged === 1 ? '' : 's'} to Torn history.` : '');
         const reconcileText = reconciledTrains
           ? ` Reconciled ${reconciledTrains} given train${reconciledTrains === 1 ? '' : 's'} from stored training history.`
           : '';
         const duplicateText = stats.duplicate ? ` ${stats.duplicate} duplicate${stats.duplicate === 1 ? '' : 's'} skipped.` : '';
         const exactCount = exactRows.reduce((sum, row) => sum + Math.max(0, Utils.int(row.count, 0)), 0);
         const exactText = exactRows.length ? ` Stored ${exactCount} exact train action${exactCount === 1 ? '' : 's'} for reconciliation.` : '';
-        const message = `${importText}${reconcileText}${exactText}${duplicateText} Read ${history.pages} history page${history.pages === 1 ? '' : 's'}.`;
+        const message = `${importText}${repairText}${reconcileText}${exactText}${duplicateText} Read ${history.pages} history page${history.pages === 1 ? '' : 's'}.`;
         UI.saveRender(message);
         UI.finishSync(syncId, message);
       } catch (error) {
