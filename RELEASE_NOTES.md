@@ -1,6 +1,6 @@
-## v3.2.2 - Live CIS activity
+## v3.2.3 - Independent training batches
 
-- Replaces the full-width blank startup rectangle with a compact bottom-right activity card above Torn's icon bar.
-- Shows real startup milestones with checked, running, skipped, and failed states plus an honest overall progress bar.
-- Mirrors Sync all progress and its scrolling Sync console in the activity card while work is running.
-- Preserves the freshly checked key-access result and timestamp when the company cloud workspace loads.
+- Allocates exact training actions chronologically and only to orders that already existed when each action occurred.
+- Rebuilds synchronized usage for event-backed orders, clearing stale trains that had carried into a later purchase.
+- Keeps Racehorce's 10-train and 21-train purchases independent: the first 10 fill only the first batch, while later actions can fill the second batch to a total of 31.
+- Preserves manually entered usage on manual orders that have no Torn payment event ID.

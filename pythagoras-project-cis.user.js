@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.2.2
+// @version      3.2.3
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
 // @author       MoDuL [4022159]
 // @match        https://www.torn.com/companies.php*
@@ -50,7 +50,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.2.2',
+    version: '3.2.3',
     popupName: 'pythagoras-cis-popup'
   };
 
@@ -4165,6 +4165,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const entryDate = Utils.dateInput(form.entryDate ? form.entryDate.value : '') || Utils.todayInput();
       const createdAt = new Date(`${entryDate}T12:00:00`).toISOString();
       const payment = Utils.num(form.payment ? form.payment.value : 0, 0);
+      const usedTrains = Math.max(0, Utils.int(form.usedTrains ? form.usedTrains.value : 0, 0));
       const entry = {
         id: Utils.id('train'),
         orderId: state ? Ledger.nextOrderId(state) : '',
@@ -4175,7 +4176,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         payment,
         pricePerTrain: Utils.num(form.pricePerTrain.value, settings.trainingPrice),
         totalTrains: Math.max(0, Utils.int(form.totalTrains.value, 0)),
-        usedTrains: Math.max(0, Utils.int(form.usedTrains ? form.usedTrains.value : 0, 0)),
+        usedTrains,
+        manualUsedTrains: usedTrains,
         merits: Utils.clamp(Utils.int(form.merits.value, 0), 0, 10),
         manualDiscount: Utils.percent(form.manualDiscount.value, 0),
         applyDiscount: !form.applyDiscount || form.applyDiscount.checked,
@@ -4286,26 +4288,79 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       Company.dedupeStaff(state);
       Company.removeDirectorsFromStaff(state);
       const identityMaps = Company.identityMaps(state);
-      const countByIdentity = logs.reduce((map, row) => {
-        const identity = Company.resolveIdentity(row, state, identityMaps);
-        map.set(identity, (map.get(identity) || 0) + Utils.int(row.count, 0));
-        return map;
-      }, new Map());
-      state.ledger.slice().sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || ''))).forEach((entry) => {
+      const allocations = [];
+      const ordersByIdentity = new Map();
+      state.ledger.slice().sort((a, b) => {
+        const first = Utils.int(a.sourceLogTimestamp, 0) || Utils.dateTimestamp(a.createdAt || a.entryDate);
+        const second = Utils.int(b.sourceLogTimestamp, 0) || Utils.dateTimestamp(b.createdAt || b.entryDate);
+        return first - second || Store.compareLedgerCanonical(a, b);
+      }).forEach((entry) => {
         const identity = Company.resolveIdentity({ id: entry.playerId, name: entry.playerName }, state, identityMaps);
-        const logged = countByIdentity.get(identity) || 0;
-        if (!logged) return;
         const totalTrains = Math.max(0, Utils.int(entry.totalTrains, 0));
         const existingUsed = Utils.clamp(Utils.int(entry.usedTrains, 0), 0, totalTrains);
-        let remaining = logged;
-        const covered = Math.min(existingUsed, remaining);
-        remaining -= covered;
-        const allocated = Math.min(totalTrains - existingUsed, remaining);
-        entry.usedTrains = existingUsed + allocated;
+        const imported = Boolean(Store.ledgerSourceEventId(entry)) || Store.ledgerSourceKind(entry) === 'log_import';
+        const hasManualFloor = entry.manualUsedTrains !== undefined && entry.manualUsedTrains !== null && entry.manualUsedTrains !== '';
+        const manualUsed = Utils.clamp(hasManualFloor ? Utils.int(entry.manualUsedTrains, 0) : (imported ? 0 : existingUsed), 0, totalTrains);
+        const orderTimestamp = Utils.int(entry.sourceLogTimestamp, 0)
+          || Utils.dateTimestamp(entry.createdAt || (entry.entryDate ? `${entry.entryDate}T00:00:00` : ''));
+        const allocation = { entry, identity, totalTrains, existingUsed, manualUsed, orderTimestamp, logAllocated: 0, imported };
+        allocations.push(allocation);
+        if (!ordersByIdentity.has(identity)) ordersByIdentity.set(identity, []);
+        ordersByIdentity.get(identity).push(allocation);
+      });
+
+      const logUnits = [];
+      logs.forEach((row) => {
+        const exactEvents = Array.isArray(row.exactEvents) ? row.exactEvents.filter(Boolean) : [];
+        if (!exactEvents.length) {
+          logUnits.push(row);
+          return;
+        }
+        exactEvents.forEach((event) => logUnits.push(Object.assign({}, row, {
+          timestamp: Utils.int(event.timestamp, 0) || Utils.int(row.timestamp, 0),
+          userId: String(event.userId || row.userId || ''),
+          playerName: event.playerName || row.playerName || '',
+          count: Math.max(1, Utils.int(event.count, 1))
+        })));
+      });
+      const identitiesWithLogs = new Set();
+      logUnits.sort((a, b) => {
+        const first = Utils.int(a.timestamp, 0) || Utils.dateTimestamp(a.date ? `${a.date}T23:59:59` : '');
+        const second = Utils.int(b.timestamp, 0) || Utils.dateTimestamp(b.date ? `${b.date}T23:59:59` : '');
+        return first - second || String(a.date || '').localeCompare(String(b.date || ''));
+      }).forEach((row) => {
+        const identity = Company.resolveIdentity(row, state, identityMaps);
+        let remaining = Math.max(0, Utils.int(row.count, 0));
+        if (!identity || !remaining) return;
+        identitiesWithLogs.add(identity);
+        const eventTimestamp = Utils.int(row.timestamp, 0)
+          || Utils.dateTimestamp(row.date ? `${row.date}T23:59:59` : '');
+        const orders = ordersByIdentity.get(identity) || [];
+        for (const allocation of orders) {
+          if (!remaining) break;
+          if (eventTimestamp && allocation.orderTimestamp && allocation.orderTimestamp > eventTimestamp) continue;
+          const capacity = Math.max(0, allocation.totalTrains - allocation.logAllocated);
+          if (!capacity) continue;
+          const used = Math.min(capacity, remaining);
+          allocation.logAllocated += used;
+          remaining -= used;
+        }
+      });
+
+      allocations.forEach((allocation) => {
+        if (!identitiesWithLogs.has(allocation.identity)) return;
+        const { entry, identity, totalTrains, existingUsed, manualUsed, logAllocated, imported } = allocation;
+        const nextUsed = Math.max(manualUsed, logAllocated);
+        const previousAllocated = Utils.int(entry.trainingLogAllocated, -1);
+        const previousManual = Utils.int(entry.manualUsedTrains, -1);
+        entry.usedTrains = nextUsed;
+        entry.manualUsedTrains = manualUsed;
+        entry.trainingLogAllocated = logAllocated;
+        entry.newsSyncedTrainCount = logAllocated;
         if (!entry.playerId && identity.startsWith('id:')) entry.playerId = identity.slice(3);
-        countByIdentity.set(identity, Math.max(0, remaining - allocated));
-        entry.newsSyncedTrainCount = logged;
-        entry.updatedAt = Utils.nowIso();
+        if (imported && !manualUsed && existingUsed >= totalTrains && nextUsed < totalTrains) entry.done = false;
+        if (totalTrains > 0 && nextUsed >= totalTrains) entry.done = true;
+        if (existingUsed !== nextUsed || previousAllocated !== logAllocated || previousManual !== manualUsed) entry.updatedAt = Utils.nowIso();
       });
       return logs;
     }
@@ -13140,6 +13195,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.2.3 - Independent training batches</summary>
+              <ul><li>Exact training actions are consumed chronologically and only by orders that existed when those actions occurred.</li><li>Stale synchronized usage is rebuilt for event-backed orders, so Racehorce&apos;s first 10 trains no longer appear in the later 21-train batch.</li><li>Later actions still fill the second batch normally, producing independent 10 and 21 totals.</li><li>Manual orders without Torn payment event IDs keep their manually entered usage.</li></ul>
+            </details>
+            <details>
               <summary>v3.2.2 - Live CIS activity</summary>
               <ul><li>The blank startup rectangle is replaced by a compact bottom-right activity card above Torn&apos;s icon bar.</li><li>Startup shows real checked milestones for saved identity, Torn contact, authentication, company workspace, saved history, and dashboard rendering.</li><li><strong>Sync all</strong> now mirrors its real progress and scrolling Sync console in the activity card.</li><li>A freshly checked key-access result and timestamp now survive the company cloud-workspace load.</li></ul>
             </details>
@@ -14432,6 +14491,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         .sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')) || String(a.orderId || '').localeCompare(String(b.orderId || '')))[0] || clicked;
       const totals = Ledger.totals(entry, UI.state.settings);
       entry.usedTrains = Math.min(totals.totalTrains, totals.usedTrains + 1);
+      entry.manualUsedTrains = entry.usedTrains;
       entry.done = entry.usedTrains >= totals.totalTrains;
       entry.updatedAt = Utils.nowIso();
       Planner.build(UI.state);
@@ -15693,6 +15753,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         pricePerTrain: Math.max(0, Utils.num(options.pricePerTrain, UI.state.settings.trainingPrice)),
         totalTrains: explicitTrains,
         usedTrains: 0,
+        manualUsedTrains: 0,
         merits: Utils.clamp(Utils.int(who.person ? UI.personMerits(who.person) : 0, 0), 0, 10),
         manualDiscount: Utils.percent(options.manualDiscount, 0),
         applyDiscount: options.applyDiscount !== false,
