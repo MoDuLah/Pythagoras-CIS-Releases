@@ -1,6 +1,7 @@
-## v3.1.10 - Training ledger reconciliation
+## v3.2.0 - Organized training-order history
 
-- Recognizes Torn company-news wording such as `Apprentice Technician Racehorce received 10 trains by the director` and records the recipient, position, and exact train count.
-- Import from log now reclassifies stored training history and immediately reconciles given trains into matching ledger orders.
-- Existing payment rows can be safely imported again: the duplicate payment remains skipped while previously missed training history repairs the order.
-- Adds focused regression coverage for both newly imported and already-existing orders.
+- Splits Training Orders into `Orders`, `Add order`, and `Done orders`, keeping running work separate from manual entry and completed history.
+- Fetches every available payment-log `4810` and exact training-action `6263` page by following Torn's validated pagination cursor.
+- Recognizes the bounded historical `Traine` and `Tains` message variants while leaving no-message transfers for safe manual attribution.
+- Editing, completing, or deleting an order updates only the affected table rows instead of redrawing the whole page.
+- Adds regression coverage for tab separation, full-history pagination, historical trigger variants, and row-only deletion.

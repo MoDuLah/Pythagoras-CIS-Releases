@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.1.10
+// @version      3.2.0
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
 // @author       MoDuL [4022159]
 // @match        https://www.torn.com/companies.php*
@@ -50,7 +50,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.1.10',
+    version: '3.2.0',
     popupName: 'pythagoras-cis-popup'
   };
 
@@ -305,7 +305,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       },
       wageRoleRequirements: {}
     },
-    ui: { tab: 'timeline', staffTab: 'current', directorTab: 'current', settingsSection: 'core', timelineFilter: 'all', timelineGrouped: true, timelineEnabled: true, analyticsYear: 'all', analyticsExpanded: {}, dailyBalanceMode: 'week', dailyBalanceStart: '', dailyBalanceIncludeWages: true, graphIndex: 0, graphScale: 'daily', graphSeries: { income: true, customers: true, wages: true, adBudget: true, profit: true }, staffEeMode: 'total', staffEeMetric: 'workingStats', staffEeRange: '30', staffEeEmployee: 'all', trainingLogStart: '', trainingLogYear: 'all', profileSort: 'name', profileSortDir: 'asc', tableSorts: {}, showApiKey: false, privacyMode: false, tourActive: false, tourStep: 0, startMinimized: false, minimized: false, mode: 'embedded', editMode: false, editPersonKey: '', editDirectorKey: '', personSaveExit: false, plannerQueueHidden: false, collapsedPanels: {}, detailOpenState: {}, panelSizes: {}, reportSections: { summary: true, ledger: true, trainingLog: true, planner: true, analytics: true, balance: true, stock: true, staff: true, pastStaff: false, directors: false, timeline: true, profile: true, details: true, settings: true }, left: '', top: '', restoreWidth: '', restoreHeight: '' }
+    ui: { tab: 'timeline', staffTab: 'current', directorTab: 'current', ledgerTab: 'orders', settingsSection: 'core', timelineFilter: 'all', timelineGrouped: true, timelineEnabled: true, analyticsYear: 'all', analyticsExpanded: {}, dailyBalanceMode: 'week', dailyBalanceStart: '', dailyBalanceIncludeWages: true, graphIndex: 0, graphScale: 'daily', graphSeries: { income: true, customers: true, wages: true, adBudget: true, profit: true }, staffEeMode: 'total', staffEeMetric: 'workingStats', staffEeRange: '30', staffEeEmployee: 'all', trainingLogStart: '', trainingLogYear: 'all', profileSort: 'name', profileSortDir: 'asc', tableSorts: {}, showApiKey: false, privacyMode: false, tourActive: false, tourStep: 0, startMinimized: false, minimized: false, mode: 'embedded', editMode: false, editPersonKey: '', editDirectorKey: '', personSaveExit: false, plannerQueueHidden: false, collapsedPanels: {}, detailOpenState: {}, panelSizes: {}, reportSections: { summary: true, ledger: true, trainingLog: true, planner: true, analytics: true, balance: true, stock: true, staff: true, pastStaff: false, directors: false, timeline: true, profile: true, details: true, settings: true }, left: '', top: '', restoreWidth: '', restoreHeight: '' }
   };
 
   const CSS = `
@@ -9404,6 +9404,28 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const visibleLedger = UI.visibleLedgerRows();
       const summary = Ledger.summary(visibleLedger, state.settings);
       const today = Utils.todayInput();
+      const ledgerTab = ['orders', 'add', 'done'].includes(state.ui.ledgerTab) ? state.ui.ledgerTab : 'orders';
+      state.ui.ledgerTab = ledgerTab;
+      const openCount = visibleLedger.filter((entry) => !Ledger.totals(entry, state.settings).done).length;
+      const doneCount = visibleLedger.length - openCount;
+      const addOrderForm = `
+        <div class="pp-table-title"><span>Add training order</span><span class="pp-note">Use this for no-message transfers, corrections, or an order bought for somebody other than the sender.</span></div>
+        <form data-ledger-form class="pp-form pp-ledger-add-form">
+          ${UI.field('Staff Name', UI.staffSelect('playerName'), 'pp-ledger-staff-field')}
+          <input type="hidden" name="playerId" value="">
+          <input type="hidden" name="contractType" value="paid">
+          ${UI.field('Entry date', `<input class="pp-input" type="date" name="entryDate" value="${Utils.esc(today)}">`, 'pp-ledger-date-field')}
+          ${UI.field('Payment received', '<input class="pp-input" name="payment" inputmode="numeric" data-money-input placeholder="$10,000,000" value="">', 'pp-ledger-money-field')}
+          ${UI.field('Price / train', `<input class="pp-input" name="pricePerTrain" inputmode="numeric" data-money-input placeholder="$600,000" value="${state.settings.trainingPrice.toLocaleString('en-US')}">`, 'pp-ledger-price-field')}
+          ${UI.field('Total trains', '<input class="pp-input" name="totalTrains" inputmode="numeric" placeholder="Auto" value="0">', 'pp-ledger-small-field')}
+          <input class="pp-input" name="usedTrains" inputmode="numeric" value="0" type="hidden">
+          ${UI.field('Merits', '<input class="pp-input" name="merits" inputmode="numeric" min="0" max="10" value="0" enabled="false">', 'pp-ledger-small-field')}
+          ${UI.field('Manual discount %', '<input class="pp-input" name="manualDiscount" inputmode="decimal" value="0">', 'pp-ledger-small-field')}
+          ${UI.field('Apply discounts', '<span class="pp-checkline"><input type="checkbox" name="applyDiscount" checked></span>', 'pp-ledger-check-field')}
+          ${UI.field('Paid', '<span class="pp-checkline"><input type="checkbox" name="paid"></span>', 'pp-ledger-check-field')}
+          ${UI.field('Done', '<span class="pp-checkline"><input type="checkbox" name="done"></span>', 'pp-ledger-check-field')}
+          <div class="pp-field pp-ledger-preview-field"><span class="pp-note" data-cost-preview>Final cost: $0</span><button class="pp-btn is-primary" type="submit">Add order</button></div>
+        </form>`;
       return `
         <div class="pp-grid">
           <section class="pp-panel" data-tour="ledger-summary">
@@ -9423,34 +9445,23 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             <div class="pp-head">
               <div>
                 <h3>Training Orders</h3>
-                <p>Add manual orders or import payment-log orders from one explicit Torn API request.</p>
+                <p>Keep running orders, manual entry, and completed history separate.</p>
               </div>
               <div class="pp-row-actions">
                 <span class="pp-pill" style="--pill-color:${state.settings.colors.paid}">Default ${Utils.money(state.settings.trainingPrice)} / train</span>
-                <button class="pp-btn" type="button" data-action="import-training-orders-log" data-sync-action="training-log" title="Import from log">[+]</button>
+                <button class="pp-btn" type="button" data-action="import-training-orders-log" data-sync-action="training-log" title="Fetch every available payment and exact training-action page">Sync order history</button>
               </div>
             </div>
             <div class="pp-content">
-              <div class="pp-table-title"><span>Add training order</span><span class="pp-note">${state.settings.discountsEnabled !== false ? 'Discounts combine manual, merit, loyalty, and global promo values.' : 'Discount rules are currently off in Settings.'}</span></div>
-              <form data-ledger-form class="pp-form pp-ledger-add-form">
-                ${UI.field('Staff Name', UI.staffSelect('playerName'), 'pp-ledger-staff-field')}
-                <input type="hidden" name="playerId" value="">
-                <input type="hidden" name="contractType" value="paid">
-                ${UI.field('Entry date', `<input class="pp-input" type="date" name="entryDate" value="${Utils.esc(today)}">`, 'pp-ledger-date-field')}
-                ${UI.field('Payment received', '<input class="pp-input" name="payment" inputmode="numeric" data-money-input placeholder="$10,000,000" value="">', 'pp-ledger-money-field')}
-                ${UI.field('Price / train', `<input class="pp-input" name="pricePerTrain" inputmode="numeric" data-money-input placeholder="$600,000" value="${state.settings.trainingPrice.toLocaleString('en-US')}">`, 'pp-ledger-price-field')}
-                ${UI.field('Total trains', '<input class="pp-input" name="totalTrains" inputmode="numeric" placeholder="Auto" value="0">', 'pp-ledger-small-field')}
-                <input class="pp-input" name="usedTrains" inputmode="numeric" value="0" type="hidden">
-                ${UI.field('Merits', '<input class="pp-input" name="merits" inputmode="numeric" min="0" max="10" value="0" enabled="false">', 'pp-ledger-small-field')}
-                ${UI.field('Manual discount %', '<input class="pp-input" name="manualDiscount" inputmode="decimal" value="0">', 'pp-ledger-small-field')}
-                ${UI.field('Apply discounts', '<span class="pp-checkline"><input type="checkbox" name="applyDiscount" checked></span>', 'pp-ledger-check-field')}
-                ${UI.field('Paid', '<span class="pp-checkline"><input type="checkbox" name="paid"></span>', 'pp-ledger-check-field')}
-                ${UI.field('Done', '<span class="pp-checkline"><input type="checkbox" name="done"></span>', 'pp-ledger-check-field')}
-                <div class="pp-field pp-ledger-preview-field"><span class="pp-note" data-cost-preview>Final cost: $0</span><button class="pp-btn is-primary" type="submit">Add entry</button></div>
-              </form>
-              <div class="pp-table-title"><span>Orders</span><span class="pp-note">Inline status edits update totals immediately.</span></div>
-              ${UI.weeklyLimitNotice(state.ledger.length, visibleLedger.length, 'Training orders')}
-              ${UI.ledgerTable()}
+              <div class="pp-subtabs" aria-label="Training order views">
+                <button type="button" class="pp-subtab ${ledgerTab === 'orders' ? 'is-active' : ''}" data-subtab="ledger:orders">Orders <span data-ledger-tab-count="orders">(${openCount})</span></button>
+                <button type="button" class="pp-subtab ${ledgerTab === 'add' ? 'is-active' : ''}" data-subtab="ledger:add">Add order</button>
+                <button type="button" class="pp-subtab ${ledgerTab === 'done' ? 'is-active' : ''}" data-subtab="ledger:done">Done orders <span data-ledger-tab-count="done">(${doneCount})</span></button>
+              </div>
+              ${ledgerTab === 'add' ? addOrderForm : `
+                <div class="pp-table-title"><span>${ledgerTab === 'done' ? 'Done orders' : 'Running orders'}</span><span class="pp-note">${ledgerTab === 'done' ? 'Completed orders stay available as a paged history.' : 'Paid and unpaid orders remain here until completed.'}</span></div>
+                ${UI.weeklyLimitNotice(state.ledger.length, visibleLedger.length, 'Training orders')}
+                <div data-ledger-table-container="${ledgerTab}">${UI.ledgerTable(ledgerTab)}</div>`}
             </div>
           </section>
           <section class="pp-panel" data-tour="training-log">
@@ -9485,13 +9496,14 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         </div>`;
     },
 
-    ledgerTable() {
+    ledgerTable(view) {
       const state = UI.state;
-      const ledgerRows = UI.visibleLedgerRows();
-      if (!state.ledger.length) return '<div class="pp-empty">No ledger entries yet.</div>';
-      if (!ledgerRows.length) return '<div class="pp-empty">No training orders yet.</div>';
+      const requestedView = view === 'done' ? 'done' : 'orders';
+      const ledgerRows = UI.visibleLedgerRows().filter((entry) => Ledger.totals(entry, state.settings).done === (requestedView === 'done'));
+      if (!ledgerRows.length) return `<div class="pp-empty">${requestedView === 'done' ? 'No completed training orders yet.' : 'No running training orders. Use Add order or sync the Torn history.'}</div>`;
       Ledger.prepare(state);
-      const rows = UI.sortedRows('ledger', ledgerRows, {
+      const tableId = requestedView === 'done' ? 'ledgerDone' : 'ledgerOrders';
+      const rows = UI.sortedRows(tableId, ledgerRows, {
         orderId: (entry) => Utils.int(String(entry.orderId || '').replace(/^.*-TR-/i, ''), 0),
         date: (entry) => Utils.dateTimestamp(entry.entryDate || entry.createdAt),
         playerName: (entry) => String(entry.playerName || '').toLowerCase(),
@@ -9506,18 +9518,18 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       return `<div class="pp-wrap pp-ledger-scroll"><table class="pp-table">
         <thead>
           <tr>
-            <th>#</th><th>${UI.tableSortHeader('ledger', 'orderId', 'Order')}</th><th>${UI.tableSortHeader('ledger', 'date', 'Date')}</th>
-            <th>${UI.tableSortHeader('ledger', 'playerName', 'Player')}</th>
-            <th>${UI.tableSortHeader('ledger', 'payment', 'Payment')}</th>
-            <th>${UI.tableSortHeader('ledger', 'price', 'Price')}</th>
-            <th>${UI.tableSortHeader('ledger', 'totalTrains', 'Trains')}</th>
-            <th>${UI.tableSortHeader('ledger', 'manualDiscount', 'Manual %')}</th>
-            <th>${UI.tableSortHeader('ledger', 'merits', 'Merits')}</th>
-            <th>${UI.tableSortHeader('ledger', 'applyDiscount', 'Apply discount')}</th>
-            <th>${UI.tableSortHeader('ledger', 'status', 'Status')}</th><th>Actions</th>
+            <th>#</th><th>${UI.tableSortHeader(tableId, 'orderId', 'Order')}</th><th>${UI.tableSortHeader(tableId, 'date', 'Date')}</th>
+            <th>${UI.tableSortHeader(tableId, 'playerName', 'Player')}</th>
+            <th>${UI.tableSortHeader(tableId, 'payment', 'Payment')}</th>
+            <th>${UI.tableSortHeader(tableId, 'price', 'Price')}</th>
+            <th>${UI.tableSortHeader(tableId, 'totalTrains', 'Trains')}</th>
+            <th>${UI.tableSortHeader(tableId, 'manualDiscount', 'Manual %')}</th>
+            <th>${UI.tableSortHeader(tableId, 'merits', 'Merits')}</th>
+            <th>${UI.tableSortHeader(tableId, 'applyDiscount', 'Apply discount')}</th>
+            <th>${UI.tableSortHeader(tableId, 'status', 'Status')}</th><th>Actions</th>
           </tr>
         </thead>
-        ${UI.pagedTableBody('ledger', rows, (entry, index) => UI.ledgerRow(entry, index), 12)}
+        ${UI.pagedTableBody(tableId, rows, (entry, index) => UI.ledgerRow(entry, index), 12, requestedView)}
       </table></div>`;
     },
 
@@ -12763,6 +12775,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.2.0 - Organized training-order history</summary>
+              <ul><li>Training Orders is split into <strong>Orders</strong>, <strong>Add order</strong>, and <strong>Done orders</strong> so running work stays separate from manual entry and completed history.</li><li>Order history follows every validated Torn pagination cursor for payment log 4810 and exact training-action log 6263.</li><li>Historical <strong>Traine</strong> and <strong>Tains</strong> references are recognized as bounded message-only variants; blank-message transfers remain manual.</li><li>Editing, completing, or deleting an order updates only affected rows instead of redrawing the entire page.</li></ul>
+            </details>
+            <details>
               <summary>v3.1.10 - Training ledger reconciliation</summary>
               <ul><li>Company news such as <strong>Racehorce received 10 trains by the director</strong> is now classified as training with the correct employee, position, and exact count.</li><li>Import from log reclassifies stored training history and reconciles given trains immediately, including when the matching payment was already imported and is skipped as a duplicate.</li><li>Added regression coverage for new orders and repair of existing ledger orders.</li></ul>
             </details>
@@ -13280,6 +13296,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const parts = subtab.dataset.subtab.split(':');
         if (parts[0] === 'staff') UI.state.ui.staffTab = parts[1];
         if (parts[0] === 'director') UI.state.ui.directorTab = parts[1];
+        if (parts[0] === 'ledger' && ['orders', 'add', 'done'].includes(parts[1])) UI.state.ui.ledgerTab = parts[1];
         UI.saveRender();
         return;
       }
@@ -13402,6 +13419,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       UI.state.ledger.push(entry);
       Ledger.prepare(UI.state);
       Planner.build(UI.state);
+      UI.state.ui.ledgerTab = Ledger.totals(entry, UI.state.settings).done ? 'done' : 'orders';
       UI.recordLedgerPending();
       UI.scheduleLedgerCloudSave(100);
       UI.saveRender(`Ledger entry ${entry.orderId || ''} added.`);
@@ -13653,6 +13671,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (!row) return;
       const entry = UI.state.ledger.find((item) => item.id === row.dataset.ledgerRow);
       if (!entry) return;
+      const wasDone = Ledger.totals(entry, UI.state.settings).done;
       const name = field.dataset.ledgerField;
       if (field.type === 'checkbox') entry[name] = field.checked;
       else if (name === 'entryDate') {
@@ -13701,21 +13720,71 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (remaining) remaining.textContent = String(totals.remaining);
       if (discount) discount.textContent = String(totals.totalDiscount);
       if (balance) balance.textContent = Utils.money(totals.balance);
+      row.classList.toggle('is-done', totals.done);
+      if (name === 'done') field.checked = totals.done;
       Planner.build(UI.state);
       UI.updateLedgerSummary();
       UI.recordLedgerPending();
       UI.scheduleLedgerCloudSave(300);
       if (name === 'done' || name === 'paid') {
-        UI.saveRender('Order status updated.');
+        if (name === 'done' && wasDone !== totals.done) UI.removeLedgerRow(entry.id);
+        Store.save(UI.state);
+        UI.scheduleWorkspaceMirrorSave('ledger-status', 1800);
+        UI.toast('Order status updated.');
         return;
       }
       Store.save(UI.state);
+    },
+
+    removeLedgerRow(id) {
+      const root = UI.currentRoot();
+      if (!root || !root.querySelector) return;
+      const row = Array.from(root.querySelectorAll('[data-ledger-row]')).find((candidate) => candidate.dataset.ledgerRow === String(id || ''));
+      if (!row) {
+        UI.updateLedgerTabCounts(root);
+        return;
+      }
+      const body = row.closest('[data-row-batch]');
+      const batch = body && body.__ppcisRowBatch;
+      row.remove();
+      if (batch) {
+        batch.rows = (batch.rows || []).filter((entry) => entry.id !== id);
+        batch.count = Math.max(0, batch.count - 1);
+        UI.rowBatchViews.set(batch.id, { key: batch.key, count: batch.count });
+      }
+      if (body) {
+        Array.from(body.querySelectorAll('[data-ledger-row]')).forEach((visibleRow, index) => {
+          if (visibleRow.cells && visibleRow.cells[0]) visibleRow.cells[0].textContent = String(index + 1);
+        });
+        const total = batch ? batch.rows.length : body.querySelectorAll('[data-ledger-row]').length;
+        const count = body.querySelectorAll('[data-ledger-row]').length;
+        const countNode = body.querySelector('[data-row-batch-count]');
+        if (countNode) countNode.textContent = `Showing ${Utils.formatNumber(count)} of ${Utils.formatNumber(total)} rows.`;
+        if (!total) {
+          if (batch && batch.observer) batch.observer.disconnect();
+          body.innerHTML = `<tr><td colspan="12"><div class="pp-empty">${UI.state.ui.ledgerTab === 'done' ? 'No completed training orders yet.' : 'No running training orders.'}</div></td></tr>`;
+        }
+      }
+      UI.updateLedgerTabCounts(root);
+    },
+
+    updateLedgerTabCounts(root) {
+      const host = root || UI.currentRoot();
+      if (!host || !host.querySelector) return;
+      const rows = UI.visibleLedgerRows();
+      const done = rows.filter((entry) => Ledger.totals(entry, UI.state.settings).done).length;
+      const values = { orders: rows.length - done, done };
+      Object.entries(values).forEach(([tab, count]) => {
+        const node = host.querySelector(`[data-ledger-tab-count="${tab}"]`);
+        if (node) node.textContent = `(${count})`;
+      });
     },
 
     updateLedgerSummary() {
       const summaryNode = UI.currentRoot().querySelector('[data-ledger-summary]');
       if (!summaryNode) return;
       summaryNode.innerHTML = UI.summaryStats(Ledger.summary(UI.state.ledger, UI.state.settings));
+      UI.updateLedgerTabCounts(UI.currentRoot());
     },
 
     markPersonCardDirty(form, isDirty) {
@@ -13967,11 +14036,17 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     },
 
     deleteLedger(id) {
+      const removed = UI.state.ledger.find((entry) => entry.id === id);
+      if (!removed) return;
       UI.state.ledger = UI.state.ledger.filter((entry) => entry.id !== id);
       Planner.build(UI.state);
       UI.recordLedgerPending();
       UI.scheduleLedgerCloudSave(100);
-      UI.saveRender('Ledger entry deleted.');
+      UI.removeLedgerRow(id);
+      UI.updateLedgerSummary();
+      Store.save(UI.state);
+      UI.scheduleWorkspaceMirrorSave('ledger-delete', 1800);
+      UI.toast(`Training order ${removed.orderId || ''} deleted.`.trim());
     },
 
     useTrain(id) {
@@ -15116,8 +15191,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const configuredVariants = variants(configured);
       if (messageTexts.some((message) => configuredVariants.some((candidate) => UI.logImportTextContainsTrigger(message, candidate)))) return true;
       const withoutLeadingSymbol = configured.replace(/^[^a-z0-9_]+/i, '');
-      if (withoutLeadingSymbol && withoutLeadingSymbol !== configured
-        && messageTexts.some((message) => variants(withoutLeadingSymbol).some((candidate) => UI.logImportTextContainsTrigger(message, candidate)))) return true;
+      if (withoutLeadingSymbol && withoutLeadingSymbol !== configured) {
+        const fallbackVariants = variants(withoutLeadingSymbol);
+        if (withoutLeadingSymbol === 'train') fallbackVariants.push('traine', 'tains');
+        if (messageTexts.some((message) => fallbackVariants.some((candidate) => UI.logImportTextContainsTrigger(message, candidate)))) return true;
+      }
       return configuredVariants.some((candidate) => UI.logImportTextContainsTrigger(text, candidate));
     },
 
@@ -15258,6 +15336,45 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       return { entry };
     },
 
+    async fetchTrainingOrderHistory(syncId) {
+      const rows = [];
+      const rowKeys = new Set();
+      const seenCursors = new Set();
+      let nextUrl = '';
+      let cursorTo = Number.MAX_SAFE_INTEGER;
+      let pages = 0;
+      do {
+        UI.syncStep(syncId, `Reading training-order history page ${pages + 1}.`, Math.min(80, 15 + pages * 3));
+        const data = nextUrl
+          ? await ApiClient.requestV2Url(nextUrl, UI.state.settings.apiKey)
+          : await ApiClient.requestV2('user/log', UI.state.settings.apiKey, { log: '4810,6263', limit: 100, sort: 'DESC' });
+        Timeline.userLogRows(data).forEach(([rowId, item], index) => {
+          const key = String(item && (item.id || item.log_id) || `${pages}:${rowId || index}`);
+          if (rowKeys.has(key)) return;
+          rowKeys.add(key);
+          rows.push([key, item]);
+        });
+        pages += 1;
+        const rawNext = ApiClient.nextLink(data);
+        nextUrl = ApiClient.safeNextLink(data);
+        if (rawNext && !nextUrl) throw new Error('Torn returned an unsupported training-history pagination link. Existing history was kept.');
+        if (nextUrl) {
+          const url = new URL(nextUrl);
+          const logs = String(url.searchParams.get('log') || '').split(',').filter(Boolean).sort().join(',');
+          if (url.protocol !== 'https:' || url.pathname.replace(/\/$/, '') !== '/v2/user/log' || url.searchParams.has('target') || logs !== '4810,6263') {
+            throw new Error('Unexpected training-history pagination endpoint. Existing history was kept.');
+          }
+          const olderTo = Utils.num(url.searchParams.get('to'), null);
+          if (olderTo === null || olderTo < 0 || olderTo >= cursorTo) throw new Error('Training-history pagination did not advance to older records. Existing history was kept.');
+          cursorTo = olderTo;
+          nextUrl = url.toString();
+          if (seenCursors.has(nextUrl)) throw new Error('Torn repeated a training-history cursor. Existing history was kept.');
+          seenCursors.add(nextUrl);
+        }
+      } while (nextUrl);
+      return { rows, pages };
+    },
+
     async importTrainingOrdersFromLog() {
       const syncId = 'training-log';
       const root = UI.currentRoot();
@@ -15271,25 +15388,29 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (!trigger) { UI.toast('Set a log trigger in Settings first.'); return; }
       UI.beginSync(syncId, 'Import training orders from Torn log');
       try {
-        UI.syncStep(syncId, 'Requesting Torn payment log.', 15);
-        const data = await ApiClient.requestV2('user/log', UI.state.settings.apiKey, { log: 4810, limit: 100 });
-        UI.syncStep(syncId, 'Parsing payment log rows.', 45);
+        UI.syncStep(syncId, 'Requesting paginated Torn payment and training-action history.', 10);
+        const history = await UI.fetchTrainingOrderHistory(syncId);
+        UI.syncStep(syncId, 'Parsing payment log rows.', 82);
         const stats = { trigger: 0, duplicate: 0, empty: 0 };
         const imported = [];
-        Timeline.userLogRows(data).forEach(([rowId, item]) => {
+        history.rows.forEach(([rowId, item]) => {
+          const kind = Utils.int(item && item.details && item.details.id || item && item.log || 0, 0);
+          if (kind !== 4810) return;
           const result = UI.buildTrainingOrderFromLog(item, rowId, options);
           if (result.entry) imported.push(result.entry);
           else if (result.skipped) stats[result.skipped] = (stats[result.skipped] || 0) + 1;
         });
+        const exactRows = Timeline.companyTrainingRowsFromUserLog({ log: Object.fromEntries(history.rows) }, UI.state);
+        if (exactRows.length) UI.state.trainingLog = Timeline.mergeTrainingRows((UI.state.trainingLog || []).concat(exactRows), UI.state);
         const usedBefore = UI.state.ledger.reduce((sum, entry) => sum + Math.max(0, Utils.int(entry.usedTrains, 0)), 0);
         UI.state.staff.timeline = Timeline.reclassify(UI.state.staff.timeline || []);
         if (imported.length) UI.state.ledger.push(...imported);
         Ledger.syncTrainingLog(UI.state);
         const usedAfter = UI.state.ledger.reduce((sum, entry) => sum + Math.max(0, Utils.int(entry.usedTrains, 0)), 0);
         const reconciledTrains = Math.max(0, usedAfter - usedBefore);
-        if (!imported.length && !reconciledTrains) {
+        if (!imported.length && !reconciledTrains && !exactRows.length) {
           const duplicateText = stats.duplicate ? ` ${stats.duplicate} matching row${stats.duplicate === 1 ? ' was' : 's were'} already imported.` : '';
-          const message = `No new "${trigger}" training orders found.${duplicateText}`;
+          const message = `No new "${trigger}" training orders found across ${history.pages} history page${history.pages === 1 ? '' : 's'}.${duplicateText}`;
           Store.save(UI.state);
           UI.finishSync(syncId, message);
           UI.toast(message);
@@ -15306,7 +15427,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           ? ` Reconciled ${reconciledTrains} given train${reconciledTrains === 1 ? '' : 's'} from stored training history.`
           : '';
         const duplicateText = stats.duplicate ? ` ${stats.duplicate} duplicate${stats.duplicate === 1 ? '' : 's'} skipped.` : '';
-        const message = `${importText}${reconcileText}${duplicateText}`;
+        const exactCount = exactRows.reduce((sum, row) => sum + Math.max(0, Utils.int(row.count, 0)), 0);
+        const exactText = exactRows.length ? ` Stored ${exactCount} exact train action${exactCount === 1 ? '' : 's'} for reconciliation.` : '';
+        const message = `${importText}${reconcileText}${exactText}${duplicateText} Read ${history.pages} history page${history.pages === 1 ? '' : 's'}.`;
         UI.saveRender(message);
         UI.finishSync(syncId, message);
       } catch (error) {
