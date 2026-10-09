@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.1.9
+// @version      3.1.10
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
 // @author       MoDuL [4022159]
 // @match        https://www.torn.com/companies.php*
@@ -50,7 +50,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.1.9',
+    version: '3.1.10',
     popupName: 'pythagoras-cis-popup'
   };
 
@@ -4749,6 +4749,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         { type: 'director', regex: /([^.,]+?) (?:is now|became|has become|was made|has been made) (?:the )?(?:new )?director/i },
         { type: 'director', regex: /director (?:changed|transferred).*?to ([^.,]+)/i },
         { type: 'director', regex: /([^.,]+?) started (?:the )?.+? company/i, preferMatch: true },
+        { type: 'training', regex: /(.+?)\s+(?:received|was given)\s+\d+\s+trains?\s+by\s+(?:the\s+)?director/i, roleSubject: true, preferMatch: true },
         { type: 'training', regex: /([^.,]+?) has been trained/i },
         { type: 'withdraw', regex: /([^.,]+) has withdrawn/i },
         { type: 'deposit', regex: /([^.,]+) has deposited/i },
@@ -12762,6 +12763,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.1.10 - Training ledger reconciliation</summary>
+              <ul><li>Company news such as <strong>Racehorce received 10 trains by the director</strong> is now classified as training with the correct employee, position, and exact count.</li><li>Import from log reclassifies stored training history and reconciles given trains immediately, including when the matching payment was already imported and is skipped as a duplicate.</li><li>Added regression coverage for new orders and repair of existing ledger orders.</li></ul>
+            </details>
+            <details>
               <summary>v3.1.9 - Reliable launcher, training, and daily records</summary>
               <ul><li>The minimized footer launcher now repairs itself after Torn redraws the footer; an empty or removed icon can no longer leave an inaccessible blank gap.</li><li>Auto mode excludes staff who meet enabled addiction or inactivity thresholds from sponsored/free trains, while paid FIFO orders remain unaffected. Eligible staff rotate once before the lowest-stat member receives an extra train.</li><li>Advertising-budget observations use the 18:10 TCT company-day boundary, and exact budget changes take priority over stale saved daily snapshots.</li><li>Balance can recover an isolated closing wage when complete logs contain an exact post-closing departure, without widening historical inference.</li><li>Progress bars and graph labels use adaptive contrasting outlines for readability across light and dark themes.</li></ul>
             </details>
@@ -15276,20 +15281,32 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           if (result.entry) imported.push(result.entry);
           else if (result.skipped) stats[result.skipped] = (stats[result.skipped] || 0) + 1;
         });
-        if (!imported.length) {
+        const usedBefore = UI.state.ledger.reduce((sum, entry) => sum + Math.max(0, Utils.int(entry.usedTrains, 0)), 0);
+        UI.state.staff.timeline = Timeline.reclassify(UI.state.staff.timeline || []);
+        if (imported.length) UI.state.ledger.push(...imported);
+        Ledger.syncTrainingLog(UI.state);
+        const usedAfter = UI.state.ledger.reduce((sum, entry) => sum + Math.max(0, Utils.int(entry.usedTrains, 0)), 0);
+        const reconciledTrains = Math.max(0, usedAfter - usedBefore);
+        if (!imported.length && !reconciledTrains) {
           const duplicateText = stats.duplicate ? ` ${stats.duplicate} matching row${stats.duplicate === 1 ? ' was' : 's were'} already imported.` : '';
           const message = `No new "${trigger}" training orders found.${duplicateText}`;
+          Store.save(UI.state);
           UI.finishSync(syncId, message);
           UI.toast(message);
           return;
         }
-        UI.state.ledger.push(...imported);
-        Ledger.prepare(UI.state);
         Planner.build(UI.state);
         UI.recordLedgerPending();
         Store.save(UI.state);
         await UI.uploadLedgerCloudSave();
-        const message = `Imported ${imported.length} training order${imported.length === 1 ? '' : 's'} from log.${stats.duplicate ? ` ${stats.duplicate} duplicate${stats.duplicate === 1 ? '' : 's'} skipped.` : ''}`;
+        const importText = imported.length
+          ? `Imported ${imported.length} training order${imported.length === 1 ? '' : 's'} from log.`
+          : `No new "${trigger}" training orders found.`;
+        const reconcileText = reconciledTrains
+          ? ` Reconciled ${reconciledTrains} given train${reconciledTrains === 1 ? '' : 's'} from stored training history.`
+          : '';
+        const duplicateText = stats.duplicate ? ` ${stats.duplicate} duplicate${stats.duplicate === 1 ? '' : 's'} skipped.` : '';
+        const message = `${importText}${reconcileText}${duplicateText}`;
         UI.saveRender(message);
         UI.finishSync(syncId, message);
       } catch (error) {
