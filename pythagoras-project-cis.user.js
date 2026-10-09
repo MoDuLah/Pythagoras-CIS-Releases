@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.2.1
+// @version      3.2.2
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
 // @author       MoDuL [4022159]
 // @match        https://www.torn.com/companies.php*
@@ -50,7 +50,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.2.1',
+    version: '3.2.2',
     popupName: 'pythagoras-cis-popup'
   };
 
@@ -325,6 +325,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     #pythagoras-cis::-webkit-scrollbar,#pythagoras-cis *::-webkit-scrollbar{width:10px;height:10px}#pythagoras-cis::-webkit-scrollbar-track,#pythagoras-cis *::-webkit-scrollbar-track{background:var(--panel)}#pythagoras-cis::-webkit-scrollbar-thumb,#pythagoras-cis *::-webkit-scrollbar-thumb{background:var(--accent);border:2px solid var(--panel);border-radius:8px}
     #pythagoras-cis.pp-theme-blue-gold .pp-input,#pythagoras-cis.pp-theme-blue-gold .pp-select,#pythagoras-cis.pp-theme-blue-gold .pp-textarea,#pythagoras-cis.pp-theme-blue-gold .pp-inline,#pythagoras-cis.pp-theme-blue-gold .pp-btn{border-color:var(--accent);color:var(--accent)}
     #pythagoras-cis.pp-cis-popup-root{position:static;width:100%;max-height:none;min-height:100vh;border:0;border-radius:0;box-shadow:none;resize:none}
+    #pythagoras-cis.pp-startup-pending{display:none}
     #pythagoras-cis *{box-sizing:border-box;letter-spacing:0}
     #pythagoras-cis,#pythagoras-cis *{font-family:Arial,Helvetica,sans-serif}
     #pythagoras-cis h1,#pythagoras-cis h2,#pythagoras-cis h3,#pythagoras-cis h4,#pythagoras-cis h5,#pythagoras-cis h6,#pythagoras-cis p,#pythagoras-cis ul,#pythagoras-cis ol{margin:0;padding:0}
@@ -378,6 +379,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     .pp-timeline-grid{align-items:stretch}.pp-timeline-panel,.pp-analytics-panel{display:flex;flex-direction:column;height:min(74vh,760px);align-self:stretch}.pp-timeline-panel.is-collapsed,.pp-analytics-panel.is-collapsed{height:auto}.pp-timeline-panel .pp-content,.pp-analytics-panel .pp-content{display:flex;flex:1 1 auto;flex-direction:column;min-height:0;overflow:hidden}.pp-timeline{display:grid;flex:1 1 auto;gap:8px;min-height:0;overflow:auto;padding-right:4px}.pp-analytics-panel .pp-analytics-scroll{flex:1 1 auto;max-height:none;min-height:0}.pp-event{display:grid;gap:4px;padding:9px 10px;border-left:3px solid var(--event-color,var(--muted));background:#121615;border-radius:0 6px 6px 0}.pp-event time{color:var(--muted);font-size:12px}.pp-event strong{color:#fff}
     .pp-kv{display:grid;grid-template-columns:minmax(110px,.8fr) minmax(0,1.2fr);gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)}.pp-kv>span:first-child{color:var(--muted)}
     .pp-toast{position:fixed;right:20px;bottom:20px;max-width:min(420px,calc(100vw - 36px));border:1px solid rgba(70,197,143,.55);border-radius:8px;background:#102019;color:#effff8;padding:10px 12px;box-shadow:0 12px 28px rgba(0,0,0,.35);z-index:1000001}.pp-toast-confirm{display:grid;gap:8px;border-color:rgba(216,165,69,.75);background:#20180d}.pp-toast-confirm strong{color:#fff}.pp-toast-actions{display:flex;gap:6px;flex-wrap:wrap}.pp-empty{color:var(--muted);padding:12px;border:1px dashed var(--line);border-radius:8px;background:#111313}
+    .pp-activity-toast{position:fixed;right:20px;bottom:72px;z-index:1000002;width:min(410px,calc(100vw - 28px));box-sizing:border-box;overflow:hidden;border:1px solid rgba(70,197,143,.62);border-radius:12px;background:linear-gradient(145deg,rgba(24,31,28,.98),rgba(10,14,12,.98));color:#eff2ef;box-shadow:0 18px 48px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.035) inset;font:12px/1.4 Arial,Helvetica,sans-serif;animation:pp-activity-in .18s ease-out}.pp-activity-toast.is-error{border-color:rgba(217,93,93,.78)}.pp-activity-head{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:9px;align-items:center;padding:11px 12px 9px;border-bottom:1px solid rgba(255,255,255,.08)}.pp-activity-badge{display:grid;place-items:center;width:34px;height:34px;border:1px solid rgba(70,197,143,.55);border-radius:10px;background:rgba(70,197,143,.11);color:#46c58f;font-size:17px;font-weight:800}.pp-activity-toast.is-error .pp-activity-badge{border-color:rgba(217,93,93,.6);background:rgba(217,93,93,.12);color:#f17c7c}.pp-activity-title{min-width:0}.pp-activity-title strong,.pp-activity-title span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pp-activity-title strong{color:#fff;font-size:13px}.pp-activity-title span{color:#a8b0aa;font-size:10px}.pp-activity-percent{color:#46c58f;font-weight:800;font-variant-numeric:tabular-nums}.pp-activity-track{height:4px;background:rgba(255,255,255,.07)}.pp-activity-track span{display:block;width:var(--activity-progress,0%);height:100%;background:linear-gradient(90deg,#2e9f73,#55e69f);box-shadow:0 0 12px rgba(70,197,143,.5);transition:width .2s ease}.pp-activity-toast.is-error .pp-activity-track span{background:linear-gradient(90deg,#a93e46,#ef6d70)}.pp-activity-body{display:grid;gap:8px;max-height:min(260px,38vh);overflow:auto;padding:9px 12px 11px;scrollbar-color:#46c58f #111513;scrollbar-width:thin}.pp-activity-steps{display:grid;gap:5px}.pp-activity-step{display:grid;grid-template-columns:18px minmax(0,1fr);gap:7px;align-items:start;color:#a8b0aa}.pp-activity-step.is-done{color:#dff9ec}.pp-activity-step.is-running{color:#fff}.pp-activity-step.is-error{color:#ff9a9f}.pp-activity-step.is-skipped{opacity:.7}.pp-activity-mark{display:grid;place-items:center;width:16px;height:16px;margin-top:1px;border:1px solid rgba(168,176,170,.45);border-radius:50%;font-size:10px;font-weight:800;line-height:1}.pp-activity-step.is-done .pp-activity-mark{border-color:#46c58f;background:#46c58f;color:#07100d}.pp-activity-step.is-error .pp-activity-mark{border-color:#d95d5d;background:#d95d5d;color:#fff}.pp-activity-step.is-running .pp-activity-mark{border-color:#d8a545;border-top-color:transparent;animation:pp-activity-spin .75s linear infinite}.pp-activity-console{display:grid;gap:3px;padding-top:7px;border-top:1px solid rgba(255,255,255,.07)}.pp-activity-console strong{color:#fff;font-size:10px;text-transform:uppercase;letter-spacing:.07em}.pp-activity-console p{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px;margin:0;color:#a8b0aa;overflow-wrap:anywhere}.pp-activity-console time{color:#46c58f;font-size:10px;font-variant-numeric:tabular-nums}@keyframes pp-activity-spin{to{transform:rotate(360deg)}}@keyframes pp-activity-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
     .good{color:var(--accent)}.bad{color:var(--bad)}.warn{color:var(--warn)}
     .pp-effectiveness-tip{display:inline-flex;align-items:center;justify-content:center;min-width:2ch;color:inherit;cursor:help;text-decoration:underline dotted transparent;text-underline-offset:2px}.pp-effectiveness-tip.is-left{justify-content:flex-start;text-align:left;min-width:0}.pp-effectiveness-tip:hover,.pp-effectiveness-tip:focus-visible{text-decoration-color:var(--accent);outline:none}
     .pp-hover-tooltip{position:fixed;left:0;top:0;z-index:1000001;min-width:220px;max-width:min(320px,calc(100vw - 16px));padding:10px 11px;border:1px solid var(--tip-accent,#46c58f);border-radius:8px;background:var(--tip-panel,#171a1a);color:var(--tip-text,#eff2ef);box-shadow:0 14px 30px rgba(0,0,0,.38),0 0 0 1px rgba(255,255,255,.04) inset;pointer-events:none}
@@ -394,7 +396,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     .pp-hover-tooltip-empty{color:var(--tip-muted,#a8b0aa)}
     @media (max-width:860px){#pythagoras-cis{top:8px;right:8px;left:8px!important;width:auto;max-height:calc(100vh - 16px);resize:none}.pp-titlebar{grid-template-columns:1fr;cursor:default}.pp-actions{justify-content:flex-start}.pp-panel.is-half,.pp-panel.is-third{grid-column:span 12}.pp-form{grid-template-columns:repeat(2,minmax(0,1fr))}.pp-field.span-2,.pp-field.span-3,.pp-field.span-4,.pp-field.span-6,.pp-settings-nav,.pp-action-grid,.pp-report-options{grid-column:span 2}.pp-statline,.pp-settings-nav,.pp-action-grid,.pp-report-options,.pp-operational,.pp-theme-editor{grid-template-columns:repeat(2,minmax(0,1fr))}.pp-priority-grid,.pp-notification-grid{grid-template-columns:1fr}.pp-discount-row{grid-template-columns:repeat(2,minmax(0,1fr))}.pp-timeline-panel,.pp-analytics-panel{height:min(72vh,680px)}}
     @media (max-width:860px){.pp-sync-center{grid-template-columns:1fr}.pp-sync-console{max-height:150px}}
-    @media (max-width:560px){#pythagoras-cis{top:0;right:0;left:0!important;width:100vw;max-height:100vh;border-radius:0}.pp-body{padding:8px}.pp-head{padding:14px 76px 12px 10px}.pp-grid,.pp-form,.pp-ledger-add-form,.pp-statline,.pp-operational,.pp-settings-nav,.pp-action-grid,.pp-report-options,.pp-theme-editor,.pp-discount-row{grid-template-columns:1fr}.pp-field,.pp-field.span-2,.pp-field.span-3,.pp-field.span-4,.pp-field.span-6,.pp-ledger-preview-field{grid-column:span 1}.pp-ledger-add-form .pp-input,.pp-ledger-add-form .pp-select{width:calc(100vw - 44px);max-width:calc(100vw - 44px)}.pp-calendar{grid-template-columns:1fr;overflow-x:visible}.pp-table{min-width:680px}.pp-modal-card{width:calc(100vw - 16px);max-height:calc(100vh - 16px)}.pp-notification-rule{grid-template-columns:1fr}.pp-toast{right:10px;bottom:10px}}
+    @media (max-width:560px){#pythagoras-cis{top:0;right:0;left:0!important;width:100vw;max-height:100vh;border-radius:0}.pp-body{padding:8px}.pp-head{padding:14px 76px 12px 10px}.pp-grid,.pp-form,.pp-ledger-add-form,.pp-statline,.pp-operational,.pp-settings-nav,.pp-action-grid,.pp-report-options,.pp-theme-editor,.pp-discount-row{grid-template-columns:1fr}.pp-field,.pp-field.span-2,.pp-field.span-3,.pp-field.span-4,.pp-field.span-6,.pp-ledger-preview-field{grid-column:span 1}.pp-ledger-add-form .pp-input,.pp-ledger-add-form .pp-select{width:calc(100vw - 44px);max-width:calc(100vw - 44px)}.pp-calendar{grid-template-columns:1fr;overflow-x:visible}.pp-table{min-width:680px}.pp-modal-card{width:calc(100vw - 16px);max-height:calc(100vh - 16px)}.pp-notification-rule{grid-template-columns:1fr}.pp-toast{right:10px;bottom:10px}.pp-activity-toast{right:8px;bottom:62px;width:calc(100vw - 16px)}}
+    @media (prefers-reduced-motion:reduce){.pp-activity-toast,.pp-activity-step.is-running .pp-activity-mark{animation:none}.pp-activity-track span{transition:none}}
   `;
 
   const Utils = {
@@ -782,7 +785,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       state.testimonials = Store.mergeTestimonials(state.testimonials, Store.loadTestimonialsLocal());
       return Store.applyNotificationDismissals(Store.applyLedgerPending(Store.applyStaffEditCache(state, Store.loadStaffLocalEdits()), Store.loadLedgerPending()), Store.loadNotificationDismissals());
     },
-    async loadAsync() {
+    async loadAsync(onProgress) {
+      const report = typeof onProgress === 'function' ? onProgress : () => {};
+      report('saved', 'Reading saved identity and preferences', 'running', 5);
       const profile = await Store.loadProfileAsync();
       let state = Store.applyProfile(Store.applyAdminConfig(Store.migrate(Utils.clone(DEFAULTS))), profile);
       let [staffEditCache, ledgerPending, uiPreferences, stockLocalEdits, legacyRaw, dismissals, localTestimonials] = await Promise.all([
@@ -801,13 +806,19 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           Store.rawDelete(APP.companiesKey);
         }
       }
+      report('saved', 'Saved identity and preferences loaded', 'done', 14);
       state.settings.userId = state.settings.userId || PageData.userId();
       state.settings.userName = state.settings.userName || PageData.userName();
       state.settings.companyId = state.settings.companyId || state.company.profile.id || PageData.companyId();
       const apiKey = String(state.settings.apiKey || '').trim();
       if (apiKey) {
+        let contacted = false;
+        report('contact', 'Contacting Torn identity service', 'running', 22);
         try {
           const keyData = await ApiClient.keyInfo(apiKey);
+          contacted = true;
+          report('contact', 'Torn identity service reached', 'done', 32);
+          report('identity', 'Authenticating the current Torn account', 'running', 38);
           const reconciled = Store.reconcileVerifiedIdentity(state, keyData);
           if (reconciled.changed) {
             if (reconciled.oldCompanyId) Store.saveCompanySnapshot(state);
@@ -818,15 +829,24 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             dismissals = {};
           }
           state = reconciled.state;
+          report('identity', 'Current Torn account authenticated', 'done', 48);
           if (state.settings.companyId) {
+            report('workspace', "Entering the company's saved workspace", 'running', 56);
             try {
               state = await Store.loadCloudWorkspace(state, { strict: true });
+              report('workspace', "Company's saved workspace loaded", 'done', 72);
             } catch (error) {
               state.sync = state.sync || {};
               state.sync.workspaceLoadError = error && error.message ? error.message : String(error);
+              report('workspace', 'Company workspace could not be loaded', 'error', 72);
             }
+          } else {
+            report('workspace', 'No current company workspace was returned', 'skipped', 72);
           }
         } catch (error) {
+          if (!contacted) report('contact', 'Torn identity service could not be reached', 'error', 32);
+          report('identity', 'Current Torn account could not be authenticated', 'error', 48);
+          report('workspace', 'Company workspace was not opened', 'skipped', 72);
           state.sync = state.sync || {};
           state.sync.workspaceLoadError = `Current Torn identity could not be verified: ${error && error.message ? error.message : error}`;
           state.settings.keyInfo = Object.assign({}, state.settings.keyInfo || {}, {
@@ -835,6 +855,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             accessType: 'Check failed'
           });
         }
+      } else {
+        report('contact', 'No saved API key; server contact skipped', 'skipped', 32);
+        report('identity', 'Identity check waits for an API key', 'skipped', 48);
+        report('workspace', 'Company workspace waits for identity', 'skipped', 72);
       }
       state = Store.applyLedgerPending(Store.applyStaffEditCache(state, staffEditCache), ledgerPending);
       Store.applyUiPreferences(state, uiPreferences);
@@ -1892,6 +1916,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     cloudState(state) {
       const copy = Store.sanitizedState(state);
       copy.settings.apiKey = '';
+      // Key verification belongs to this browser session. Never let an older
+      // cloud snapshot replace a fresh identity check on another device.
+      delete copy.settings.keyInfo;
       return copy;
     },
     syncCacheTtlMs() {
@@ -2367,6 +2394,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     },
     applyCloudBootstrap(state, response) {
       const localProfile = Store.profileFromState(state || {});
+      const verifiedKeyInfo = Utils.clone(state && state.settings && state.settings.keyInfo || DEFAULTS.settings.keyInfo);
       let next = Store.applyProfile(Store.applyAdminConfig(Store.migrate(Store.merge(Utils.clone(DEFAULTS), state || {}))), localProfile);
       const localStaffEdits = next.staff && next.staff.localEdits && typeof next.staff.localEdits === 'object' && !Array.isArray(next.staff.localEdits) ? Utils.clone(next.staff.localEdits) : {};
       const localStaffEditVersion = Utils.int(next.staff && next.staff.localEditVersion, 0);
@@ -2385,6 +2413,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       next.entitlement = Store.merge(next.entitlement || {}, response.entitlement || response.license || {});
       next.settings = Store.merge(next.settings || {}, settings);
       next = Store.applyProfile(next, localProfile);
+      if (verifiedKeyInfo.lastChecked) {
+        next.settings.keyInfo = Store.merge(Utils.clone(DEFAULTS.settings.keyInfo), verifiedKeyInfo);
+      }
       next.company.syncWatermarks = watermarks;
       const foundedAt = company.founded_at || company.foundedAt || '';
       const foundedTimestamp = Utils.dateTimestamp(foundedAt);
@@ -6598,6 +6629,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     suppressClickUntil: 0,
     syncJobs: {},
     syncLog: [],
+    syncLogSeq: 0,
     staffCardCloudTimer: null,
     settingsCloudTimer: null,
     ledgerCloudTimer: null,
@@ -6605,19 +6637,137 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     workspaceMirrorInFlight: false,
     workspaceMirrorReason: 'autosave',
     identityCheckTask: null,
+    activityState: null,
+    activitySyncId: '',
+    activityTimer: null,
+
+    activityDocument() {
+      return UI.root && UI.root.ownerDocument || (typeof document !== 'undefined' ? document : null);
+    },
+
+    currentActivity() {
+      if (UI.activityState) return UI.activityState;
+      const id = String(UI.activitySyncId || '');
+      const job = id && UI.syncJobs[id];
+      if (!job) return null;
+      return {
+        id,
+        kind: 'sync',
+        title: job.label || 'CIS sync',
+        subtitle: 'Live sync activity',
+        progress: Utils.clamp(Utils.int(job.progress, 0), 0, 100),
+        status: job.status || 'running',
+        steps: Array.isArray(job.steps) ? job.steps : [],
+        consoleRows: UI.syncLog.filter((row) => Utils.int(row.seq, 0) >= Utils.int(job.logStartSeq, 0)).slice(-8)
+      };
+    },
+
+    activityHtml(activity) {
+      const item = activity || UI.currentActivity();
+      if (!item) return '';
+      const steps = (Array.isArray(item.steps) ? item.steps : []).slice(-7);
+      const consoleRows = (Array.isArray(item.consoleRows) ? item.consoleRows : []).slice(-8);
+      const hasError = item.status === 'error' || steps.some((step) => step && step.status === 'error');
+      const progress = Utils.clamp(Utils.int(item.progress, 0), 0, 100);
+      const badge = hasError ? '!' : item.status === 'done' ? '&#10003;' : 'C';
+      const marks = { done: '&#10003;', error: '!', skipped: '&ndash;', pending: '&middot;', running: '' };
+      const stepRows = steps.map((step) => {
+        const status = ['done', 'error', 'skipped', 'pending', 'running'].includes(step && step.status) ? step.status : 'pending';
+        return `<div class="pp-activity-step is-${status}"><span class="pp-activity-mark" aria-hidden="true">${marks[status]}</span><span>${Utils.esc(step && (step.label || step.message) || '')}</span></div>`;
+      }).join('');
+      const consoleHtml = consoleRows.length
+        ? `<div class="pp-activity-console"><strong>Sync console</strong>${consoleRows.map((row) => `<p><time>${Utils.esc(row.time || '')}</time><span>${Utils.esc(row.message || '')}</span></p>`).join('')}</div>`
+        : '';
+      return `<div class="pp-activity-head"><span class="pp-activity-badge" aria-hidden="true">${badge}</span><span class="pp-activity-title"><strong>${Utils.esc(item.title || 'Pythagoras CIS')}</strong><span>${Utils.esc(item.subtitle || '')}</span></span><span class="pp-activity-percent">${progress}%</span></div><div class="pp-activity-track" aria-hidden="true"><span></span></div><div class="pp-activity-body" data-activity-scroll>${stepRows ? `<div class="pp-activity-steps">${stepRows}</div>` : ''}${consoleHtml}</div>`;
+    },
+
+    renderActivityToast() {
+      const doc = UI.activityDocument();
+      if (!doc || !doc.body || typeof doc.createElement !== 'function') return;
+      const activity = UI.currentActivity();
+      let node = doc.getElementById && doc.getElementById(`${APP.id}-activity`);
+      if (!activity) {
+        if (node) node.remove();
+        return;
+      }
+      if (!node) {
+        node = doc.createElement('section');
+        node.id = `${APP.id}-activity`;
+        node.setAttribute('role', 'status');
+        node.setAttribute('aria-live', 'polite');
+        node.setAttribute('aria-atomic', 'false');
+        doc.body.appendChild(node);
+      }
+      const hasError = activity.status === 'error' || (activity.steps || []).some((step) => step && step.status === 'error');
+      node.className = `pp-activity-toast${hasError ? ' is-error' : ''}`;
+      node.style.setProperty('--activity-progress', `${Utils.clamp(Utils.int(activity.progress, 0), 0, 100)}%`);
+      node.innerHTML = UI.activityHtml(activity);
+      const scroller = node.querySelector('[data-activity-scroll]');
+      if (scroller) scroller.scrollTop = scroller.scrollHeight;
+    },
+
+    clearActivityTimer() {
+      clearTimeout(UI.activityTimer);
+      UI.activityTimer = null;
+    },
+
+    startStartupActivity() {
+      UI.clearActivityTimer();
+      UI.activitySyncId = '';
+      UI.activityState = {
+        id: 'startup',
+        kind: 'startup',
+        title: 'Starting Pythagoras CIS',
+        subtitle: 'Preparing your company workspace',
+        progress: 1,
+        status: 'running',
+        steps: []
+      };
+      UI.renderActivityToast();
+    },
+
+    startupStep(id, label, status, progress) {
+      if (!UI.activityState || UI.activityState.kind !== 'startup') UI.startStartupActivity();
+      const activity = UI.activityState;
+      let step = activity.steps.find((row) => row.id === id);
+      if (!step) {
+        step = { id, label: String(label || ''), status: status || 'running' };
+        activity.steps.push(step);
+      } else {
+        step.label = String(label || step.label || '');
+        step.status = status || step.status || 'running';
+      }
+      activity.progress = Math.max(activity.progress || 0, Utils.clamp(Utils.int(progress, activity.progress || 0), 0, 100));
+      UI.renderActivityToast();
+    },
+
+    finishStartupActivity(message) {
+      if (!UI.activityState || UI.activityState.kind !== 'startup') return;
+      UI.startupStep('ready', message || 'CIS is ready', 'done', 100);
+      const hasError = UI.activityState.steps.some((step) => step && step.status === 'error');
+      UI.activityState.status = hasError ? 'error' : 'done';
+      UI.activityState.subtitle = hasError ? 'Opened with a warning' : 'Workspace ready';
+      UI.renderActivityToast();
+      UI.clearActivityTimer();
+      UI.activityTimer = setTimeout(() => {
+        if (UI.activityState && UI.activityState.kind === 'startup') UI.activityState = null;
+        UI.renderActivityToast();
+      }, 4200);
+    },
 
     async init() {
       const startedAt = Date.now();
       UI.installCss(document);
       UI.root = document.createElement('div');
       UI.root.id = APP.id;
-      UI.root.className = 'mh-root';
-      UI.root.innerHTML = '<div class="pp-shell mh-panel"><div class="pp-titlebar" role="status">CIS: loading saved workspace...</div></div>';
+      UI.root.className = 'mh-root pp-startup-pending';
+      UI.root.innerHTML = '';
       document.body.appendChild(UI.root);
+      UI.startStartupActivity();
       await new Promise((resolve) => setTimeout(resolve, 0));
-      UI.state = await Store.loadAsync();
+      UI.state = await Store.loadAsync((id, label, status, progress) => UI.startupStep(id, label, status, progress));
       const loadedAt = Date.now();
-      UI.root.querySelector('[role="status"]').textContent = 'CIS: preparing saved history...';
+      UI.startupStep('history', 'Preparing saved company history', 'running', 78);
       if (UI.state.ui.timelineEnabled !== false && UI.state.staff.timeline.length) {
         UI.state.staff.timeline = await Timeline.reclassifyAsync(UI.state.staff.timeline);
         Timeline.rebuildPeople(UI.state);
@@ -6626,6 +6776,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         Ledger.syncTrainingLog(UI.state);
         await new Promise((resolve) => setTimeout(resolve, 0));
       }
+      UI.startupStep('history', 'Saved company history prepared', 'done', 92);
       const standalonePopup = UI.isStandalonePopup();
       UI.state.ui.minimized = !standalonePopup && UI.state.ui.startMinimized === true;
       if (standalonePopup) {
@@ -6644,9 +6795,12 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (Object.keys(UI.state.staff.localEdits || {}).length && Store.canUseCloudWorkspace(UI.state)) UI.scheduleStaffCardCloudSave(1500);
       if ((Store.loadLedgerPending().orders || []).length && Store.canUseCloudWorkspace(UI.state)) UI.scheduleLedgerCloudSave(1600);
       const preparedAt = Date.now();
+      UI.startupStep('render', 'Opening the CIS dashboard', 'running', 96);
       UI.render(UI.root, document);
+      UI.startupStep('render', 'CIS dashboard opened', 'done', 100);
       const transitionNotice = UI.state.sync && UI.state.sync.companyTransition && UI.state.sync.companyTransition.message || '';
       const workspaceLoadError = UI.state.sync && UI.state.sync.workspaceLoadError || '';
+      UI.finishStartupActivity(workspaceLoadError ? 'CIS opened with a workspace warning' : 'CIS is ready');
       if (transitionNotice || workspaceLoadError) {
         UI.toast([transitionNotice, workspaceLoadError ? `Workspace access was not loaded: ${workspaceLoadError}` : ''].filter(Boolean).join(' '));
       }
@@ -12035,10 +12189,12 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     syncLogMessage(message) {
       const date = new Date();
       const time = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      UI.syncLog.push({ time, message: String(message || '') });
+      UI.syncLogSeq += 1;
+      UI.syncLog.push({ seq: UI.syncLogSeq, time, message: String(message || '') });
       UI.syncLog = UI.syncLog.slice(-24);
     },
     updateSyncUi() {
+      UI.renderActivityToast();
       const root = UI.currentRoot && UI.currentRoot();
       if (!root) return;
       const consoleNode = root.querySelector('[data-sync-console]');
@@ -12062,14 +12218,30 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       });
     },
     beginSync(id, label) {
-      UI.syncJobs[id] = { label, progress: 2, status: 'running', startedAt: Date.now() };
+      UI.clearActivityTimer();
+      UI.activityState = null;
+      const activeActivity = UI.activitySyncId && UI.syncJobs[UI.activitySyncId];
+      if (!activeActivity || activeActivity.status !== 'running' || id === 'sync-all') UI.activitySyncId = id;
+      UI.syncJobs[id] = {
+        label,
+        progress: 2,
+        status: 'running',
+        startedAt: Date.now(),
+        logStartSeq: UI.syncLogSeq + 1,
+        steps: [{ label: 'Starting', status: 'running' }]
+      };
       UI.syncLogMessage(`${label}: starting.`);
       UI.updateSyncUi();
     },
     syncStep(id, message, progress) {
-      const job = UI.syncJobs[id] || { label: id, progress: 0, status: 'running', startedAt: Date.now() };
+      const job = UI.syncJobs[id] || { label: id, progress: 0, status: 'running', startedAt: Date.now(), steps: [] };
       job.progress = Math.max(job.progress || 0, Utils.clamp(Utils.int(progress, job.progress || 0), 0, 100));
       job.status = 'running';
+      job.steps = Array.isArray(job.steps) ? job.steps : [];
+      const last = job.steps[job.steps.length - 1];
+      if (last && last.status === 'running') last.status = 'done';
+      if (message) job.steps.push({ label: String(message), status: 'running' });
+      job.steps = job.steps.slice(-12);
       UI.syncJobs[id] = job;
       if (message) UI.syncLogMessage(`${job.label}: ${message}`);
       UI.updateSyncUi();
@@ -12452,30 +12624,47 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       return summary;
     },
     finishSync(id, message) {
-      const job = UI.syncJobs[id] || { label: id, progress: 100, status: 'done' };
+      const job = UI.syncJobs[id] || { label: id, progress: 100, status: 'done', steps: [] };
       job.progress = 100;
       job.status = 'done';
       job.finishedAt = Date.now();
+      job.steps = Array.isArray(job.steps) ? job.steps : [];
+      job.steps.forEach((step) => { if (step.status === 'running') step.status = 'done'; });
+      job.steps.push({ label: message || 'Complete', status: 'done' });
+      job.steps = job.steps.slice(-12);
       UI.syncJobs[id] = job;
       const elapsed = job.startedAt ? ` (${((job.finishedAt - job.startedAt) / 1000).toFixed(1)}s)` : '';
       UI.syncLogMessage(`${job.label}: ${message || 'complete.'}${elapsed}`);
       UI.updateSyncUi();
+      const keepVisible = UI.activitySyncId === id ? 4800 : 2500;
       setTimeout(() => {
         if (UI.syncJobs[id] && UI.syncJobs[id].status === 'done') {
           delete UI.syncJobs[id];
+          if (UI.activitySyncId === id) UI.activitySyncId = '';
           UI.updateSyncUi();
         }
-      }, 2500);
+      }, keepVisible);
     },
     failSync(id, error) {
-      const job = UI.syncJobs[id] || { label: id, progress: 100, status: 'error' };
+      const job = UI.syncJobs[id] || { label: id, progress: 100, status: 'error', steps: [] };
       job.progress = 100;
       job.status = 'error';
       job.finishedAt = Date.now();
+      job.steps = Array.isArray(job.steps) ? job.steps : [];
+      job.steps.forEach((step) => { if (step.status === 'running') step.status = 'error'; });
+      job.steps.push({ label: error && error.message ? error.message : String(error || 'Sync failed'), status: 'error' });
+      job.steps = job.steps.slice(-12);
       UI.syncJobs[id] = job;
       const elapsed = job.startedAt ? ` after ${((job.finishedAt - job.startedAt) / 1000).toFixed(1)}s` : '';
       UI.syncLogMessage(`${job.label}: failed${elapsed} - ${error && error.message ? error.message : error}`);
       UI.updateSyncUi();
+      setTimeout(() => {
+        if (UI.syncJobs[id] && UI.syncJobs[id].status === 'error') {
+          delete UI.syncJobs[id];
+          if (UI.activitySyncId === id) UI.activitySyncId = '';
+          UI.updateSyncUi();
+        }
+      }, UI.activitySyncId === id ? 9000 : 3000);
     },
     syncControlPanel() {
       const disabled = UI.apiKeyMissing() || UI.isSyncBusy() ? ' disabled' : '';
@@ -12951,6 +13140,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.2.2 - Live CIS activity</summary>
+              <ul><li>The blank startup rectangle is replaced by a compact bottom-right activity card above Torn&apos;s icon bar.</li><li>Startup shows real checked milestones for saved identity, Torn contact, authentication, company workspace, saved history, and dashboard rendering.</li><li><strong>Sync all</strong> now mirrors its real progress and scrolling Sync console in the activity card.</li><li>A freshly checked key-access result and timestamp now survive the company cloud-workspace load.</li></ul>
+            </details>
+            <details>
               <summary>v3.2.1 - Event-backed training orders</summary>
               <ul><li>Imported payments now use Torn&apos;s real event ID as their hidden identity, including after cloud save and reload.</li><li>History sync keeps the original order row, removes surplus copies, and preserves separate same-day payments when Torn provides different event IDs.</li><li>Manual additions remain separate and are never removed for lacking a Torn event ID.</li><li>Event IDs and order origins remain internal and are never displayed in Training Orders or completed-history rows.</li></ul>
             </details>
