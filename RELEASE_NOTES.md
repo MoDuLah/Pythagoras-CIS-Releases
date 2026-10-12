@@ -1,8 +1,8 @@
-## v3.2.5 - Faster verified startup and timed sync activity
+## v3.2.6 - Explicit training instructions
 
-- Uses Torn's readable numeric `uid` cookie as the early account identity hint, allowing a matching cached workspace to open before Torn's page globals or navigation links render.
-- Keeps the live Torn API response authoritative for authentication, company membership, and workspace access; sensitive authentication-token cookies are never read.
-- Shows individual elapsed times for completed initialization, Daily sync, Sync all, and nested synchronization steps while retaining the overall duration on the final line.
-- Pauses the activity toast's remaining auto-close countdown while the pointer is over it and resumes the same countdown when the pointer leaves.
-- Checks the stock-purchase log from the newest saved purchase timestamp instead of rereading older entries during routine checks.
-- Removes the automatic restock child-sync log and stops repeating the same restock result in the final Daily sync summary.
+- Honors explicit train counts in automatic payment comments across accepted singular and plural trigger variants, so `!train 10` remains 10 even when the discounted payment alone would estimate 9.
+- Repairs an existing event-backed order on the next history sync when its prior payment-only estimate disagrees with the explicit count.
+- Retains and displays sender comments plus sortable Primary and Secondary stat columns.
+- Parses labelled stats and shorthand such as `!train 10 Int & End`; position requests such as `!train 10 Trainer` are stored and derive the role's two working stats when known.
+- Lets manual Add order entries store the same comment, stat, and requested-position details.
+- Persists the new instruction fields through the company cloud workspace and includes them in receipts and exported reports.

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.2.5
+// @version      3.2.6
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
 // @author       MoDuL [4022159]
 // @match        https://www.torn.com/companies.php*
@@ -51,7 +51,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.2.5',
+    version: '3.2.6',
     popupName: 'pythagoras-cis-popup'
   };
 
@@ -364,7 +364,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     .pp-table tr.pp-stock-warning td{background:rgba(216,165,69,.08)}.pp-table tr.pp-detail-row td{background:rgba(255,255,255,.035);white-space:normal}.pp-analytics-detail{display:grid;gap:8px;padding:8px}.pp-analytics-detail .pp-wrap{display:inline-block;max-width:100%}.pp-analytics-detail-table{width:max-content;border-collapse:collapse;min-width:0}.pp-analytics-detail-table th,.pp-analytics-detail-table td{padding:6px 9px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}.pp-analytics-detail-table th{color:var(--muted);font-size:12px}.pp-expand-btn{min-width:30px;padding:4px 8px}
     .pp-table.is-compact{min-width:0}.pp-people-table th,.pp-people-table td,.pp-effectiveness-table th,.pp-effectiveness-table td{text-align:center}.pp-people-table .pp-pill{justify-content:center}.pp-report-actions{margin-top:10px}
 .pp-inline{width:auto;max-width:calc(100% - 8px);min-height:30px;border:1px solid var(--line);border-radius:6px;background:#0f1111;color:var(--text);padding:5px 7px;margin-left:4px;margin-right:4px}.pp-fit{width:auto;max-width:180px}.pp-tiny{width:5ch;max-width:5ch;text-align:right}.pp-capacity{width:9ch;max-width:9ch;text-align:right}.pp-stock-qty{width:8ch;max-width:8ch;text-align:right}.pp-name{width:150px}.pp-row-actions{display:flex;gap:6px;flex-wrap:wrap;min-width:0}.pp-row-actions>*{min-width:0}.pp-row-actions .pp-btn{margin-left:0;margin-right:0}.pp-btn{margin-left:4px;margin-right:4px}
-    .pp-ledger-add-form{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;min-width:0}.pp-ledger-add-form .pp-field{flex:0 0 var(--ledger-field-width,10ch);min-width:0;overflow:visible}.pp-ledger-add-form .pp-input,.pp-ledger-add-form .pp-select{width:100%;min-width:0;max-width:100%}.pp-ledger-staff-field{--ledger-field-width:30ch}.pp-ledger-date-field{--ledger-field-width:13ch}.pp-ledger-money-field{--ledger-field-width:15ch}.pp-ledger-price-field{--ledger-field-width:12ch}.pp-ledger-small-field{--ledger-field-width:7ch}.pp-ledger-contract-field{--ledger-field-width:20ch}.pp-ledger-check-field{--ledger-field-width:9ch}.pp-checkline{display:flex;gap:6px;align-items:center;min-height:34px;white-space:nowrap}.pp-ledger-preview-field{flex:1 0 100%!important;min-width:0}.pp-ledger-preview-field .pp-btn{width:min(32ch,100%)}.pp-ledger-row.is-done td{opacity:.58}.pp-ledger-id{font-weight:700;color:var(--accent)}.pp-order-trains{display:grid;grid-template-columns:repeat(2,max-content);gap:6px 8px;align-items:end}.pp-order-trains label,.pp-order-discounts label{display:grid;gap:3px;color:var(--muted);font-size:12px}.pp-order-discounts{display:grid;gap:4px}.pp-readonly-value{color:var(--text);white-space:nowrap}.pp-readonly-sub{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+    .pp-ledger-add-form{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;min-width:0}.pp-ledger-add-form .pp-field{flex:0 0 var(--ledger-field-width,10ch);min-width:0;overflow:visible}.pp-ledger-add-form .pp-input,.pp-ledger-add-form .pp-select{width:100%;min-width:0;max-width:100%}.pp-ledger-staff-field{--ledger-field-width:30ch}.pp-ledger-date-field{--ledger-field-width:13ch}.pp-ledger-money-field{--ledger-field-width:15ch}.pp-ledger-price-field{--ledger-field-width:12ch}.pp-ledger-small-field{--ledger-field-width:7ch}.pp-ledger-stat-field{--ledger-field-width:10ch}.pp-ledger-position-field{--ledger-field-width:20ch}.pp-ledger-comment-field{--ledger-field-width:34ch}.pp-ledger-contract-field{--ledger-field-width:20ch}.pp-ledger-check-field{--ledger-field-width:9ch}.pp-checkline{display:flex;gap:6px;align-items:center;min-height:34px;white-space:nowrap}.pp-ledger-preview-field{flex:1 0 100%!important;min-width:0}.pp-ledger-preview-field .pp-btn{width:min(32ch,100%)}.pp-ledger-row.is-done td{opacity:.58}.pp-ledger-id{font-weight:700;color:var(--accent)}.pp-order-trains{display:grid;grid-template-columns:repeat(2,max-content);gap:6px 8px;align-items:end}.pp-order-trains label,.pp-order-discounts label{display:grid;gap:3px;color:var(--muted);font-size:12px}.pp-order-discounts{display:grid;gap:4px}.pp-readonly-value{color:var(--text);white-space:nowrap}.pp-readonly-sub{display:block;color:var(--muted);font-size:12px;margin-top:3px}.pp-order-comment{display:block;min-width:16ch;max-width:34ch;white-space:normal;overflow-wrap:anywhere;line-height:1.35}.pp-order-stat{font-weight:700;letter-spacing:.04em;white-space:nowrap}
     .pp-settings-nav,.pp-action-grid,.pp-report-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.pp-settings-nav{grid-column:span 12}.pp-member-card{grid-column:span 12}.pp-hidden{display:none!important}.pp-range-row{display:grid;grid-template-columns:auto minmax(140px,1fr) auto;gap:8px;align-items:center}.pp-analytics-scroll{max-height:min(64vh,620px);overflow:auto}.pp-analytics-scroll .pp-table th,.pp-analytics-scroll .pp-table td{text-align:center;padding-left:14px;padding-right:14px}.pp-past-scroll{max-height:430px;overflow:auto}.pp-stars{letter-spacing:1px;color:#5f6662}.pp-stars span{color:#FFDD00}.pp-table-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0 6px;color:#fff;font-weight:700}.pp-sort{border:0;background:transparent;color:var(--muted);font:inherit;font-weight:700;padding:0;cursor:pointer}.pp-sort.is-active{color:var(--accent)}.pp-card-count{align-self:center;color:var(--muted);font-size:12px}.pp-report-options label{display:flex;align-items:center;gap:6px;color:var(--muted)}.pp-training-pills{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}.pp-training-day{display:grid;gap:7px;align-items:start;border:1px solid var(--line);border-radius:8px;background:#121615;padding:8px}.pp-training-day strong{color:#fff}.pp-pill-list{display:flex;flex-wrap:wrap;gap:6px}.pp-percent-bar{position:relative;min-height:24px;border:1px solid var(--line);border-radius:7px;background-image:linear-gradient(90deg,rgba(255,255,255,.14) 1px,transparent 1px);background-size:10% 100%;background-color:#101312;overflow:hidden}.pp-percent-bar span{position:absolute;inset:0 auto 0 0;width:var(--percent);background:linear-gradient(90deg,var(--bad),var(--accent))}.pp-percent-bar b{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:12px;text-shadow:-1px -1px 0 #000,0 -1px 0 #000,1px -1px 0 #000,-1px 0 0 #000,1px 0 0 #000,-1px 1px 0 #000,0 1px 0 #000,1px 1px 0 #000}.pp-stock-summary{margin-bottom:12px}.pp-stock-summary .pp-stat strong{font-size:16px}.pp-stock-na{color:var(--muted);opacity:.6}.pp-stock-restock{display:grid;gap:2px}.pp-stock-restock b{color:#fff;font-size:12px;font-weight:700}.pp-stock-restock small{color:var(--muted);font-size:11px}.pp-modal-backdrop{position:absolute;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.58)}.pp-modal-card{width:min(720px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;box-shadow:0 18px 54px rgba(0,0,0,.5)}.pp-card-form{display:grid;gap:12px}.pp-card-section{border:1px solid var(--line);border-radius:8px;background:#121615;overflow:hidden}.pp-card-section summary{list-style:none}.pp-card-section summary::-webkit-details-marker{display:none}.pp-card-section-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;cursor:pointer}.pp-card-section[open] .pp-card-section-head{border-bottom:1px solid rgba(255,255,255,.08)}.pp-card-section-head h4{margin:0;color:#fff;font-size:13px;line-height:1.2}.pp-card-section-body{padding:12px}.pp-card-section-body .pp-form{gap:10px}.pp-history-stack{display:grid;gap:8px}.pp-history-item{border:1px solid var(--line);border-radius:8px;background:#101312}.pp-history-item summary{list-style:none;cursor:pointer;padding:10px 12px;color:#fff;font-weight:700}.pp-history-item summary::-webkit-details-marker{display:none}.pp-history-item[open] summary{border-bottom:1px solid rgba(255,255,255,.08)}.pp-history-body{padding:10px 12px}.pp-card-header-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
     .pp-pill{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:3px 8px;border-radius:999px;border:1px solid var(--line);background:#111313;color:var(--muted);white-space:nowrap}.pp-pill:before{content:'';width:7px;height:7px;border-radius:50%;background:var(--pill-color,var(--muted))}.pp-date-pill:before{display:none}
     .pp-changelog{display:grid;gap:8px}.pp-changelog details{border:1px solid var(--line);border-radius:8px;background:#121615;padding:8px}.pp-changelog summary{cursor:pointer;color:#fff;font-weight:700}.pp-changelog ul{margin:8px 0 0 18px;padding:0;color:var(--muted)}.pp-changelog li{margin:4px 0}.pp-role-history{display:grid;gap:8px;border:1px solid var(--line);border-radius:8px;background:#121615;padding:10px}.pp-role-history>div+div{border-top:1px solid rgba(255,255,255,.08);padding-top:8px}.pp-card-userid{font:inherit;color:var(--accent);text-decoration:none}.pp-card-userid:hover{text-decoration:underline}
@@ -2554,6 +2554,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         paid: !!row.paid,
         done: !!row.done,
         entryDate: row.entry_date || '',
+        comment: String(row.comment || row.source_log_text || '').slice(0, 500),
+        primaryStat: String(row.primary_stat || row.primaryStat || '').trim().toLowerCase(),
+        secondaryStat: String(row.secondary_stat || row.secondaryStat || '').trim().toLowerCase(),
+        requestedPosition: String(row.requested_position || row.requestedPosition || '').trim(),
         sourceEventId,
         sourceLogId: sourceEventId ? `log4810:${sourceEventId}` : '',
         sourceLogKey: sourceEventId ? `log4810:${sourceEventId}` : '',
@@ -4393,7 +4397,13 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             sourceLogId: `log4810:${eventId}`,
             sourceLogKey: `log4810:${eventId}`,
             sourceLogTimestamp: Utils.int(candidate.sourceLogTimestamp, Utils.int(target.sourceLogTimestamp, 0)),
-            sourceLogText: candidate.sourceLogText || target.sourceLogText || ''
+            sourceLogText: candidate.sourceLogText || target.sourceLogText || '',
+            totalTrains: candidate.sourceExplicitTrainCount ? candidate.totalTrains : merged.totalTrains,
+            sourceExplicitTrainCount: candidate.sourceExplicitTrainCount || target.sourceExplicitTrainCount || false,
+            comment: candidate.comment || target.comment || '',
+            primaryStat: candidate.primaryStat || target.primaryStat || '',
+            secondaryStat: candidate.secondaryStat || target.secondaryStat || '',
+            requestedPosition: candidate.requestedPosition || target.requestedPosition || ''
           });
           if (oldEventId !== eventId || oldKey !== `log4810:${eventId}`) tagged += 1;
           existingByEvent.set(eventId, target);
@@ -4447,6 +4457,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         applyDiscount: !form.applyDiscount || form.applyDiscount.checked,
         paid: form.paid && form.paid.checked,
         done: form.done && form.done.checked,
+        comment: String(form.comment ? form.comment.value : '').trim().slice(0, 500),
+        primaryStat: String(form.primaryStat ? form.primaryStat.value : '').trim().toLowerCase(),
+        secondaryStat: String(form.secondaryStat ? form.secondaryStat.value : '').trim().toLowerCase(),
+        requestedPosition: String(form.requestedPosition ? form.requestedPosition.value : '').trim().slice(0, 120),
         source: 'manual',
         sourceKind: 'manual',
         createdAt,
@@ -6798,9 +6812,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ledgerTable(state) {
       if (!state.ledger.length) return '<p>No training entries yet.</p>';
       Ledger.prepare(state);
-      return `<table><thead><tr><th>#</th><th>Order</th><th>Date</th><th>Player</th><th>ID</th><th>Type</th><th>Used</th><th>Remaining</th><th>Cost</th><th>Status</th></tr></thead><tbody>${state.ledger.map((entry, index) => {
+      return `<table><thead><tr><th>#</th><th>Order</th><th>Date</th><th>Player</th><th>ID</th><th>Type</th><th>Primary</th><th>Secondary</th><th>Comment</th><th>Used</th><th>Remaining</th><th>Cost</th><th>Status</th></tr></thead><tbody>${state.ledger.map((entry, index) => {
         const totals = Ledger.totals(entry, state.settings);
-        return `<tr><td>${index + 1}</td><td>${Utils.esc(entry.orderId || '')}</td><td>${Utils.esc(Utils.dateShort(entry.entryDate || entry.createdAt))}</td><td>${Utils.esc(entry.playerName)}</td><td>${Utils.esc(entry.playerId || '')}</td><td>${Utils.esc(entry.contractType)}</td><td>${totals.usedTrains}</td><td>${totals.remaining}</td><td>${Utils.money(totals.finalCost)}</td><td>${totals.paid ? 'Paid' : 'Unpaid'} / ${totals.done ? 'Done' : 'Undone'}</td></tr>`;
+        return `<tr><td>${index + 1}</td><td>${Utils.esc(entry.orderId || '')}</td><td>${Utils.esc(Utils.dateShort(entry.entryDate || entry.createdAt))}</td><td>${Utils.esc(entry.playerName)}</td><td>${Utils.esc(entry.playerId || '')}</td><td>${Utils.esc(entry.contractType)}</td><td>${Utils.esc(UI.trainingStatLabel(entry.primaryStat))}</td><td>${Utils.esc(UI.trainingStatLabel(entry.secondaryStat))}</td><td>${Utils.esc(entry.comment || '')}${entry.requestedPosition ? `<br><small>Position: ${Utils.esc(entry.requestedPosition)}</small>` : ''}</td><td>${totals.usedTrains}</td><td>${totals.remaining}</td><td>${Utils.money(totals.finalCost)}</td><td>${totals.paid ? 'Paid' : 'Unpaid'} / ${totals.done ? 'Done' : 'Undone'}</td></tr>`;
       }).join('')}</tbody></table>`;
     },
     trainingReceipt(state, entry) {
@@ -6822,6 +6836,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         ['Payment received', Utils.money(totals.payment)],
         ['Base price / train', Utils.money(totals.price)],
         ['Discount applied', entry.applyDiscount === false ? 'No' : `Yes (${totals.totalDiscount}%)`],
+        ['Primary stat', UI.trainingStatLabel(entry.primaryStat)],
+        ['Secondary stat', UI.trainingStatLabel(entry.secondaryStat)],
+        ['Requested position', entry.requestedPosition || 'Not specified'],
+        ['Comment', entry.comment || 'None'],
         ['Effective price / train', Utils.money(effectivePrice)],
         ['Training credit purchased', `${totals.totalTrains.toLocaleString()} train${totals.totalTrains === 1 ? '' : 's'}`],
         ['Given so far', `${totals.usedTrains.toLocaleString()} train${totals.usedTrains === 1 ? '' : 's'}`],
@@ -10194,6 +10212,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           ${UI.field('Total trains', '<input class="pp-input" name="totalTrains" inputmode="numeric" placeholder="Auto" value="0">', 'pp-ledger-small-field')}
           <input class="pp-input" name="usedTrains" inputmode="numeric" value="0" type="hidden">
           ${UI.field('Merits', '<input class="pp-input" name="merits" inputmode="numeric" min="0" max="10" value="0" enabled="false">', 'pp-ledger-small-field')}
+          ${UI.field('Primary stat', `<select class="pp-select" name="primaryStat">${UI.trainingStatOptions('')}</select>`, 'pp-ledger-stat-field')}
+          ${UI.field('Secondary stat', `<select class="pp-select" name="secondaryStat">${UI.trainingStatOptions('')}</select>`, 'pp-ledger-stat-field')}
+          ${UI.field('Requested position', '<input class="pp-input" name="requestedPosition" maxlength="120" placeholder="Trainer">', 'pp-ledger-position-field')}
+          ${UI.field('Comment', '<input class="pp-input" name="comment" maxlength="500" placeholder="Customer instructions">', 'pp-ledger-comment-field')}
           ${UI.field('Manual discount %', '<input class="pp-input" name="manualDiscount" inputmode="decimal" value="0">', 'pp-ledger-small-field')}
           ${UI.field('Apply discounts', '<span class="pp-checkline"><input type="checkbox" name="applyDiscount" checked></span>', 'pp-ledger-check-field')}
           ${UI.field('Paid', '<span class="pp-checkline"><input type="checkbox" name="paid"></span>', 'pp-ledger-check-field')}
@@ -10284,6 +10306,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         payment: (entry) => Utils.num(entry.payment, 0),
         price: (entry) => Ledger.totals(entry, state.settings).price,
         totalTrains: (entry) => Ledger.totals(entry, state.settings).totalTrains,
+        primaryStat: (entry) => String(entry.primaryStat || ''),
+        secondaryStat: (entry) => String(entry.secondaryStat || ''),
+        comment: (entry) => `${entry.comment || ''} ${entry.requestedPosition || ''}`.trim().toLowerCase(),
         manualDiscount: (entry) => Utils.num(entry.manualDiscount, 0),
         merits: (entry) => Utils.int(entry.merits, 0),
         applyDiscount: (entry) => entry.applyDiscount === false ? 0 : 1,
@@ -10297,6 +10322,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             <th>${UI.tableSortHeader(tableId, 'payment', 'Payment')}</th>
             <th>${UI.tableSortHeader(tableId, 'price', 'Price')}</th>
             <th>${UI.tableSortHeader(tableId, 'totalTrains', 'Trains')}</th>
+            <th>${UI.tableSortHeader(tableId, 'primaryStat', 'Primary')}</th>
+            <th>${UI.tableSortHeader(tableId, 'secondaryStat', 'Secondary')}</th>
+            <th>${UI.tableSortHeader(tableId, 'comment', 'Comment')}</th>
             <th>${UI.tableSortHeader(tableId, 'manualDiscount', 'Manual %')}</th>
             <th>${UI.tableSortHeader(tableId, 'merits', 'Merits')}</th>
             <th>${UI.tableSortHeader(tableId, 'applyDiscount', 'Apply discount')}</th>
@@ -10321,6 +10349,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           <td><span class="pp-readonly-value">${Utils.money(totals.payment)}</span><span class="pp-readonly-sub">Balance: <span data-row-balance>${Utils.money(totals.balance)}</span></span></td>
           <td><span class="pp-readonly-value">${Utils.money(totals.price)}</span><span class="pp-readonly-sub">Per train</span></td>
           <td><span class="pp-order-trains"><label>Total<span>${Utils.esc(totals.totalTrains)}</span></label><label>Given<span>${Utils.esc(totals.usedTrains)}</span></label></span><span class="pp-readonly-sub"><span data-row-remaining>${totals.remaining}</span> remaining</span></td>
+          <td><span class="pp-order-stat">${Utils.esc(UI.trainingStatLabel(entry.primaryStat))}</span></td>
+          <td><span class="pp-order-stat">${Utils.esc(UI.trainingStatLabel(entry.secondaryStat))}</span></td>
+          <td><span class="pp-order-comment" title="${Utils.esc(entry.comment || '')}">${Utils.esc(entry.comment || '—')}</span>${entry.requestedPosition ? `<span class="pp-readonly-sub">Position: ${Utils.esc(entry.requestedPosition)}</span>` : ''}</td>
           <td><span class="pp-readonly-value">${Utils.esc(entry.manualDiscount || 0)}%</span></td>
           <td><span class="pp-readonly-value">${Utils.esc(entry.merits || 0)}</span></td>
           <td><label class="pp-note"><input type="checkbox" disabled ${entry.applyDiscount !== false ? 'checked' : ''}> ${entry.applyDiscount !== false ? 'Enabled' : 'Off'}</label><span class="pp-readonly-sub"><span data-row-discount>${totals.totalDiscount}</span>% total</span></td>
@@ -13637,6 +13668,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.2.6 - Explicit training instructions</summary>
+              <ul><li>Automatic payment imports honor an explicit train count after any accepted singular or plural trigger, so <strong>!train 10</strong> stays 10 even when the discounted payment alone would estimate 9.</li><li>Payment comments are retained and shown with Primary and Secondary stat columns.</li><li>Instructions such as <strong>!train 10 Int &amp; End</strong> set both stats, while <strong>!train 10 Trainer</strong> records the requested position and derives its role stats.</li><li>Manual Add order entries can store the same comment, stat, and position details, and cloud reloads preserve them.</li></ul>
+            </details>
+            <details>
               <summary>v3.2.3 - Independent training batches</summary>
               <ul><li>Exact training actions are consumed chronologically and only by orders that existed when those actions occurred.</li><li>Stale synchronized usage is rebuilt for event-backed orders, so Racehorce&apos;s first 10 trains no longer appear in the later 21-train batch.</li><li>Later actions still fill the second batch normally, producing independent 10 and 21 totals.</li><li>Manual orders without Torn payment event IDs keep their manually entered usage.</li></ul>
             </details>
@@ -14634,7 +14669,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         if (countNode) countNode.textContent = `Showing ${Utils.formatNumber(count)} of ${Utils.formatNumber(total)} rows.`;
         if (!total) {
           if (batch && batch.observer) batch.observer.disconnect();
-          body.innerHTML = `<tr><td colspan="12"><div class="pp-empty">${UI.state.ui.ledgerTab === 'done' ? 'No completed training orders yet.' : 'No running training orders.'}</div></td></tr>`;
+          body.innerHTML = `<tr><td colspan="15"><div class="pp-empty">${UI.state.ui.ledgerTab === 'done' ? 'No completed training orders yet.' : 'No running training orders.'}</div></td></tr>`;
         }
       }
       UI.updateLedgerTabCounts(root);
@@ -16027,6 +16062,42 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         .toLowerCase();
     },
 
+    trainingStatKey(value) {
+      const key = String(value || '').trim().toLowerCase().replace(/[^a-z]/g, '');
+      if (['man', 'manual', 'manuallabor', 'manuallabour'].includes(key)) return 'man';
+      if (['int', 'intelligence'].includes(key)) return 'int';
+      if (['end', 'endurance'].includes(key)) return 'end';
+      return '';
+    },
+
+    trainingStatLabel(value) {
+      return { man: 'MAN', int: 'INT', end: 'END' }[UI.trainingStatKey(value)] || '—';
+    },
+
+    trainingStatOptions(selected) {
+      const current = UI.trainingStatKey(selected);
+      return [['', '—'], ['man', 'MAN'], ['int', 'INT'], ['end', 'END']]
+        .map(([value, label]) => `<option value="${value}" ${current === value ? 'selected' : ''}>${label}</option>`)
+        .join('');
+    },
+
+    logImportTriggerVariants(trigger, includeHistorical) {
+      const configured = UI.logImportNormalisedTriggerText(trigger);
+      if (!configured) return [];
+      const symbol = (configured.match(/^[^a-z0-9_]+/i) || [''])[0];
+      const word = configured.slice(symbol.length);
+      const words = [word];
+      if (/s$/i.test(word) && word.length > 1) words.push(word.slice(0, -1));
+      else if (/[a-z]$/i.test(word)) words.push(`${word}s`);
+      const variants = [];
+      words.filter(Boolean).forEach((candidate) => {
+        if (symbol) variants.push(`${symbol}${candidate}`);
+        variants.push(candidate);
+      });
+      if (includeHistorical !== false && words.some((candidate) => candidate === 'train' || candidate === 'trains')) variants.push('traine', 'tains');
+      return Array.from(new Set(variants)).sort((a, b) => b.length - a.length);
+    },
+
     logImportMessageTexts(item) {
       const messages = [];
       const messageKey = /^(?:message|note|comment|memo|reference)$/i;
@@ -16062,21 +16133,13 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     logImportMatchesTrigger(item, text, trigger) {
       const configured = UI.logImportNormalisedTriggerText(trigger);
       if (!configured) return false;
-      const variants = (value) => {
-        const rows = [value];
-        if (/[a-z]$/i.test(value) && !/s$/i.test(value)) rows.push(`${value}s`);
-        return rows;
-      };
       const messageTexts = UI.logImportMessageTexts(item);
-      const configuredVariants = variants(configured);
-      if (messageTexts.some((message) => configuredVariants.some((candidate) => UI.logImportTextContainsTrigger(message, candidate)))) return true;
-      const withoutLeadingSymbol = configured.replace(/^[^a-z0-9_]+/i, '');
-      if (withoutLeadingSymbol && withoutLeadingSymbol !== configured) {
-        const fallbackVariants = variants(withoutLeadingSymbol);
-        if (withoutLeadingSymbol === 'train') fallbackVariants.push('traine', 'tains');
-        if (messageTexts.some((message) => fallbackVariants.some((candidate) => UI.logImportTextContainsTrigger(message, candidate)))) return true;
-      }
-      return configuredVariants.some((candidate) => UI.logImportTextContainsTrigger(text, candidate));
+      const messageVariants = UI.logImportTriggerVariants(configured, true);
+      if (messageTexts.some((message) => messageVariants.some((candidate) => UI.logImportTextContainsTrigger(message, candidate)))) return true;
+      const leadingSymbol = (configured.match(/^[^a-z0-9_]+/i) || [''])[0];
+      const strictVariants = UI.logImportTriggerVariants(configured, false)
+        .filter((candidate) => !leadingSymbol || candidate.startsWith(leadingSymbol));
+      return strictVariants.some((candidate) => UI.logImportTextContainsTrigger(text, candidate));
     },
 
     logImportText(item) {
@@ -16141,11 +16204,61 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
 
     logImportTrainCount(text, trigger) {
       const clean = String(text || '').replace(/\s+/g, ' ');
-      const escaped = String(trigger || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const after = clean.match(new RegExp(`${escaped}\\s*(?:x\\s*)?(\\d{1,4})\\b`, 'i'));
-      if (after) return Math.max(0, Utils.int(after[1], 0));
+      const variants = UI.logImportTriggerVariants(trigger, true);
+      for (const candidate of variants) {
+        const escaped = candidate.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const after = clean.match(new RegExp(`(?:^|[^a-z0-9_])${escaped}(?:\\s|[:=#-])*(?:x\\s*)?(\\d{1,4})\\b`, 'i'));
+        if (after) return Math.max(0, Utils.int(after[1], 0));
+      }
       const labelled = clean.match(/\b(?:trains?|qty|quantity|count)\s*[:=]?\s*(\d{1,4})\b/i);
       return labelled ? Math.max(0, Utils.int(labelled[1], 0)) : 0;
+    },
+
+    trainingPositionNames() {
+      const names = ['Apprentice Technician', 'Technician', 'Cleaner', 'Manager', 'Receptionist', 'Trainer'];
+      [...(UI.state.staff.current || []), ...(UI.state.staff.past || [])].forEach((person) => {
+        const role = String(person && (person.role || person.currentRole) || '').trim();
+        if (role) names.push(role);
+      });
+      Object.keys(UI.state.settings.wageRoleRequirements || {}).forEach((key) => {
+        const role = String(key || '').replace(/[-_]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()).trim();
+        if (role) names.push(role);
+      });
+      return Array.from(new Set(names)).sort((a, b) => b.length - a.length);
+    },
+
+    logImportInstructions(item, text, trigger) {
+      const comment = String(UI.logImportMessageTexts(item)[0] || text || '').trim().slice(0, 500);
+      const statPattern = '(manual(?:\\s+labou?r)?|man|intelligence|int|endurance|end)';
+      const primaryMatch = comment.match(new RegExp(`\\bprimary(?:\\s+stat)?\\s*[:=\\-]?\\s*${statPattern}\\b`, 'i'));
+      const secondaryMatch = comment.match(new RegExp(`\\bsecondary(?:\\s+stat)?\\s*[:=\\-]?\\s*${statPattern}\\b`, 'i'));
+      let primaryStat = UI.trainingStatKey(primaryMatch && primaryMatch[1]);
+      let secondaryStat = UI.trainingStatKey(secondaryMatch && secondaryMatch[1]);
+      const statTokens = Array.from(comment.matchAll(new RegExp(`\\b${statPattern}\\b`, 'ig')))
+        .map((match) => UI.trainingStatKey(match[1]))
+        .filter(Boolean)
+        .filter((key, index, rows) => rows.indexOf(key) === index);
+      if (!primaryStat) primaryStat = statTokens[0] || '';
+      if (!secondaryStat) secondaryStat = statTokens.find((key) => key !== primaryStat) || '';
+      const requestedPosition = UI.trainingPositionNames().find((position) => {
+        const escaped = position.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return new RegExp(`(?:^|[^a-z0-9_])${escaped}(?:$|[^a-z0-9_])`, 'i').test(comment);
+      }) || '';
+      if (requestedPosition && (!primaryStat || !secondaryStat)) {
+        const roleStats = Wages.effectiveStatKeys({ role: requestedPosition }, UI.state.settings);
+        if (roleStats.length === 2) {
+          if (!primaryStat) primaryStat = roleStats[0];
+          if (!secondaryStat) secondaryStat = roleStats.find((key) => key !== primaryStat) || roleStats[1];
+        }
+      }
+      if (secondaryStat === primaryStat) secondaryStat = '';
+      return {
+        totalTrains: UI.logImportTrainCount(comment || text, trigger),
+        comment,
+        primaryStat,
+        secondaryStat,
+        requestedPosition
+      };
     },
 
     logImportPerson(item, text) {
@@ -16189,7 +16302,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const timestamp = Utils.int(item && (item.timestamp || item.time || item.date), 0);
       const who = UI.logImportPerson(item, text);
       const payment = UI.logImportAmount(item, text);
-      const explicitTrains = UI.logImportTrainCount(text, trigger);
+      const instructions = UI.logImportInstructions(item, text, trigger);
+      const explicitTrains = instructions.totalTrains;
       const entry = {
         id: Utils.id('train'),
         orderId: '',
@@ -16214,6 +16328,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         sourceLogKey,
         sourceLogTimestamp: timestamp,
         sourceLogText: text.slice(0, 500),
+        sourceExplicitTrainCount: explicitTrains > 0,
+        comment: instructions.comment,
+        primaryStat: instructions.primaryStat,
+        secondaryStat: instructions.secondaryStat,
+        requestedPosition: instructions.requestedPosition,
         createdAt: timestamp ? new Date(timestamp * 1000).toISOString() : Utils.nowIso(),
         updatedAt: Utils.nowIso()
       };
