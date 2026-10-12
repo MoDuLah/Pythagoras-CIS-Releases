@@ -1,9 +1,8 @@
-## v3.2.4 - Faster cached startup and reliable training orders
+## v3.2.5 - Faster verified startup and timed sync activity
 
-- Opens the verified saved company workspace immediately from asynchronous userscript storage while the live Torn identity check continues.
-- Keeps a freshly loaded cloud workspace authoritative instead of reapplying an older browser cache that could resurrect deleted orders.
-- Uploads only new or changed daily reports after the server workspace is known, avoiding repeated uploads of unchanged report history.
-- Restores the lightweight Daily sync action for routine company updates while retaining Sync all as the full history rebuild.
-- Remembers deletion of imported refunded orders so the same Torn payment event is not recreated by a later synchronization.
-- Preserves empty pending-order replacements, enriches older completed orders with current staff merits, and explains discount savings, credit, and the shortfall to the next full train.
-- Gives the Add order staff selector more room, tightens the Paid and Done controls, and confines activity scrolling to the console for startup and synchronization.
+- Uses Torn's readable numeric `uid` cookie as the early account identity hint, allowing a matching cached workspace to open before Torn's page globals or navigation links render.
+- Keeps the live Torn API response authoritative for authentication, company membership, and workspace access; sensitive authentication-token cookies are never read.
+- Shows individual elapsed times for completed initialization, Daily sync, Sync all, and nested synchronization steps while retaining the overall duration on the final line.
+- Pauses the activity toast's remaining auto-close countdown while the pointer is over it and resumes the same countdown when the pointer leaves.
+- Checks the stock-purchase log from the newest saved purchase timestamp instead of rereading older entries during routine checks.
+- Removes the automatic restock child-sync log and stops repeating the same restock result in the final Daily sync summary.

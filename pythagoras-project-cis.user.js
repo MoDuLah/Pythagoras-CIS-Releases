@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.2.4
+// @version      3.2.5
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
 // @author       MoDuL [4022159]
 // @match        https://www.torn.com/companies.php*
@@ -51,7 +51,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.2.4',
+    version: '3.2.5',
     popupName: 'pythagoras-cis-popup'
   };
 
@@ -381,7 +381,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     .pp-timeline-grid{align-items:stretch}.pp-timeline-panel,.pp-analytics-panel{display:flex;flex-direction:column;height:min(74vh,760px);align-self:stretch}.pp-timeline-panel.is-collapsed,.pp-analytics-panel.is-collapsed{height:auto}.pp-timeline-panel .pp-content,.pp-analytics-panel .pp-content{display:flex;flex:1 1 auto;flex-direction:column;min-height:0;overflow:hidden}.pp-timeline{display:grid;flex:1 1 auto;gap:8px;min-height:0;overflow:auto;padding-right:4px}.pp-analytics-panel .pp-analytics-scroll{flex:1 1 auto;max-height:none;min-height:0}.pp-event{display:grid;gap:4px;padding:9px 10px;border-left:3px solid var(--event-color,var(--muted));background:#121615;border-radius:0 6px 6px 0}.pp-event time{color:var(--muted);font-size:12px}.pp-event strong{color:#fff}
     .pp-kv{display:grid;grid-template-columns:minmax(110px,.8fr) minmax(0,1.2fr);gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)}.pp-kv>span:first-child{color:var(--muted)}
     .pp-toast{position:fixed;right:20px;bottom:20px;max-width:min(420px,calc(100vw - 36px));border:1px solid rgba(70,197,143,.55);border-radius:8px;background:#102019;color:#effff8;padding:10px 12px;box-shadow:0 12px 28px rgba(0,0,0,.35);z-index:1000001}.pp-toast-confirm{display:grid;gap:8px;border-color:rgba(216,165,69,.75);background:#20180d}.pp-toast-confirm strong{color:#fff}.pp-toast-actions{display:flex;gap:6px;flex-wrap:wrap}.pp-empty{color:var(--muted);padding:12px;border:1px dashed var(--line);border-radius:8px;background:#111313}
-    .pp-activity-toast{position:fixed;right:20px;bottom:72px;z-index:1000002;width:min(410px,calc(100vw - 28px));max-height:calc(100vh - 92px);box-sizing:border-box;overflow:hidden;border:1px solid rgba(70,197,143,.62);border-radius:12px;background:linear-gradient(145deg,rgba(24,31,28,.98),rgba(10,14,12,.98));color:#eff2ef;box-shadow:0 18px 48px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.035) inset;font:12px/1.4 Arial,Helvetica,sans-serif;animation:pp-activity-in .18s ease-out}.pp-activity-toast.is-error{border-color:rgba(217,93,93,.78)}.pp-activity-head{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:9px;align-items:center;padding:11px 12px 9px;border-bottom:1px solid rgba(255,255,255,.08)}.pp-activity-badge{display:grid;place-items:center;width:34px;height:34px;border:1px solid rgba(70,197,143,.55);border-radius:10px;background:rgba(70,197,143,.11);color:#46c58f;font-size:17px;font-weight:800}.pp-activity-toast.is-error .pp-activity-badge{border-color:rgba(217,93,93,.6);background:rgba(217,93,93,.12);color:#f17c7c}.pp-activity-title{min-width:0}.pp-activity-title strong,.pp-activity-title span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pp-activity-title strong{color:#fff;font-size:13px}.pp-activity-title span{color:#a8b0aa;font-size:10px}.pp-activity-percent{color:#46c58f;font-weight:800;font-variant-numeric:tabular-nums}.pp-activity-track{height:4px;background:rgba(255,255,255,.07)}.pp-activity-track span{display:block;width:var(--activity-progress,0%);height:100%;background:linear-gradient(90deg,#2e9f73,#55e69f);box-shadow:0 0 12px rgba(70,197,143,.5);transition:width .2s ease}.pp-activity-toast.is-error .pp-activity-track span{background:linear-gradient(90deg,#a93e46,#ef6d70)}.pp-activity-body{display:grid;gap:8px;min-height:0;overflow:hidden;padding:9px 12px 11px}.pp-activity-steps{display:grid;gap:5px;overflow:visible}.pp-activity-step{display:grid;grid-template-columns:18px minmax(0,1fr);gap:7px;align-items:start;color:#a8b0aa}.pp-activity-step.is-done{color:#dff9ec}.pp-activity-step.is-running{color:#fff}.pp-activity-step.is-error{color:#ff9a9f}.pp-activity-step.is-skipped{opacity:.7}.pp-activity-mark{display:grid;place-items:center;width:16px;height:16px;margin-top:1px;border:1px solid rgba(168,176,170,.45);border-radius:50%;font-size:10px;font-weight:800;line-height:1}.pp-activity-step.is-done .pp-activity-mark{border-color:#46c58f;background:#46c58f;color:#07100d}.pp-activity-step.is-error .pp-activity-mark{border-color:#d95d5d;background:#d95d5d;color:#fff}.pp-activity-step.is-running .pp-activity-mark{border-color:#d8a545;border-top-color:transparent;animation:pp-activity-spin .75s linear infinite}.pp-activity-console{display:grid;gap:3px;max-height:min(150px,22vh);min-height:0;overflow:auto;padding-top:7px;border-top:1px solid rgba(255,255,255,.07);scrollbar-color:#46c58f #111513;scrollbar-width:thin}.pp-activity-console strong{position:sticky;top:0;z-index:1;padding-bottom:3px;background:#111513;color:#fff;font-size:10px;text-transform:uppercase;letter-spacing:.07em}.pp-activity-console p{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px;margin:0;color:#a8b0aa;overflow-wrap:anywhere}.pp-activity-console time{color:#46c58f;font-size:10px;font-variant-numeric:tabular-nums}@keyframes pp-activity-spin{to{transform:rotate(360deg)}}@keyframes pp-activity-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .pp-activity-toast{position:fixed;right:20px;bottom:72px;z-index:1000002;width:min(410px,calc(100vw - 28px));max-height:calc(100vh - 92px);box-sizing:border-box;overflow:hidden;border:1px solid rgba(70,197,143,.62);border-radius:12px;background:linear-gradient(145deg,rgba(24,31,28,.98),rgba(10,14,12,.98));color:#eff2ef;box-shadow:0 18px 48px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.035) inset;font:12px/1.4 Arial,Helvetica,sans-serif;animation:pp-activity-in .18s ease-out}.pp-activity-toast.is-error{border-color:rgba(217,93,93,.78)}.pp-activity-head{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:9px;align-items:center;padding:11px 12px 9px;border-bottom:1px solid rgba(255,255,255,.08)}.pp-activity-badge{display:grid;place-items:center;width:34px;height:34px;border:1px solid rgba(70,197,143,.55);border-radius:10px;background:rgba(70,197,143,.11);color:#46c58f;font-size:17px;font-weight:800}.pp-activity-toast.is-error .pp-activity-badge{border-color:rgba(217,93,93,.6);background:rgba(217,93,93,.12);color:#f17c7c}.pp-activity-title{min-width:0}.pp-activity-title strong,.pp-activity-title span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pp-activity-title strong{color:#fff;font-size:13px}.pp-activity-title span{color:#a8b0aa;font-size:10px}.pp-activity-percent{color:#46c58f;font-weight:800;font-variant-numeric:tabular-nums}.pp-activity-track{height:4px;background:rgba(255,255,255,.07)}.pp-activity-track span{display:block;width:var(--activity-progress,0%);height:100%;background:linear-gradient(90deg,#2e9f73,#55e69f);box-shadow:0 0 12px rgba(70,197,143,.5);transition:width .2s ease}.pp-activity-toast.is-error .pp-activity-track span{background:linear-gradient(90deg,#a93e46,#ef6d70)}.pp-activity-body{display:grid;gap:8px;min-height:0;overflow:hidden;padding:9px 12px 11px}.pp-activity-steps{display:grid;gap:5px;overflow:visible}.pp-activity-step{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:7px;align-items:start;color:#a8b0aa}.pp-activity-step.is-done{color:#dff9ec}.pp-activity-step.is-running{color:#fff}.pp-activity-step.is-error{color:#ff9a9f}.pp-activity-step.is-skipped{opacity:.7}.pp-activity-elapsed,.pp-sync-elapsed{color:#7faaa0;font-size:10px;font-variant-numeric:tabular-nums;white-space:nowrap}.pp-activity-step.is-running .pp-activity-elapsed{color:#d8a545}.pp-activity-mark{display:grid;place-items:center;width:16px;height:16px;margin-top:1px;border:1px solid rgba(168,176,170,.45);border-radius:50%;font-size:10px;font-weight:800;line-height:1}.pp-activity-step.is-done .pp-activity-mark{border-color:#46c58f;background:#46c58f;color:#07100d}.pp-activity-step.is-error .pp-activity-mark{border-color:#d95d5d;background:#d95d5d;color:#fff}.pp-activity-step.is-running .pp-activity-mark{border-color:#d8a545;border-top-color:transparent;animation:pp-activity-spin .75s linear infinite}.pp-activity-console{display:grid;gap:3px;max-height:min(150px,22vh);min-height:0;overflow:auto;padding-top:7px;border-top:1px solid rgba(255,255,255,.07);scrollbar-color:#46c58f #111513;scrollbar-width:thin}.pp-activity-console strong{position:sticky;top:0;z-index:1;padding-bottom:3px;background:#111513;color:#fff;font-size:10px;text-transform:uppercase;letter-spacing:.07em}.pp-activity-console p{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px;margin:0;color:#a8b0aa;overflow-wrap:anywhere}.pp-activity-console time{color:#46c58f;font-size:10px;font-variant-numeric:tabular-nums}@keyframes pp-activity-spin{to{transform:rotate(360deg)}}@keyframes pp-activity-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
     .good{color:var(--accent)}.bad{color:var(--bad)}.warn{color:var(--warn)}
     .pp-effectiveness-tip{display:inline-flex;align-items:center;justify-content:center;min-width:2ch;color:inherit;cursor:help;text-decoration:underline dotted transparent;text-underline-offset:2px}.pp-effectiveness-tip.is-left{justify-content:flex-start;text-align:left;min-width:0}.pp-effectiveness-tip:hover,.pp-effectiveness-tip:focus-visible{text-decoration-color:var(--accent);outline:none}
     .pp-hover-tooltip{position:fixed;left:0;top:0;z-index:1000001;min-width:220px;max-width:min(320px,calc(100vw - 16px));padding:10px 11px;border:1px solid var(--tip-accent,#46c58f);border-radius:8px;background:var(--tip-panel,#171a1a);color:var(--tip-text,#eff2ef);box-shadow:0 14px 30px rgba(0,0,0,.38),0 0 0 1px rgba(255,255,255,.04) inset;pointer-events:none}
@@ -3103,6 +3103,12 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       try { return typeof unsafeWindow !== 'undefined' ? unsafeWindow : window; } catch (error) { return window; }
     },
     userId() {
+      // Torn exposes the signed-in account ID in the readable numeric `uid`
+      // cookie before its page globals and navigation DOM exist. Use only that
+      // non-secret ID as an early cache identity hint; the Torn API remains the
+      // authoritative authentication and company-access check.
+      const cookieUserId = Utils.int(cookieValue('uid'), 0);
+      if (cookieUserId > 0) return String(cookieUserId);
       const page = PageData.win();
       const candidates = [page.userID, page.userid, page.User && page.User.id, page.User && page.User.userID, page.Torn && page.Torn.user && page.Torn.user.id];
       for (const value of candidates) {
@@ -6975,6 +6981,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     activityState: null,
     activitySyncId: '',
     activityTimer: null,
+    activityDismiss: null,
+    activityHovered: false,
 
     activityDocument() {
       return UI.root && UI.root.ownerDocument || (typeof document !== 'undefined' ? document : null);
@@ -6997,6 +7005,26 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       };
     },
 
+    elapsedLabel(milliseconds) {
+      const value = Number(milliseconds);
+      if (!Number.isFinite(value) || value < 0) return '';
+      return `${(value / 1000).toFixed(1)}s`;
+    },
+
+    activityElapsedMs(row) {
+      if (!row || typeof row !== 'object') return null;
+      const stored = Number(row.elapsedMs);
+      if (Number.isFinite(stored) && stored >= 0) return stored;
+      const startedAt = Number(row.startedAt);
+      if (row.status === 'running' && Number.isFinite(startedAt) && startedAt > 0) return Math.max(0, Date.now() - startedAt);
+      return null;
+    },
+
+    syncLogRowHtml(row) {
+      const elapsed = UI.elapsedLabel(row && row.elapsedMs);
+      return `<p><time>${Utils.esc(row && row.time || '')}</time><span>${Utils.esc(row && row.message || '')}${elapsed ? ` <small class="pp-sync-elapsed">(${Utils.esc(elapsed)})</small>` : ''}</span></p>`;
+    },
+
     activityHtml(activity) {
       const item = activity || UI.currentActivity();
       if (!item) return '';
@@ -7008,10 +7036,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const marks = { done: '&#10003;', error: '!', skipped: '&ndash;', pending: '&middot;', running: '' };
       const stepRows = steps.map((step) => {
         const status = ['done', 'error', 'skipped', 'pending', 'running'].includes(step && step.status) ? step.status : 'pending';
-        return `<div class="pp-activity-step is-${status}"><span class="pp-activity-mark" aria-hidden="true">${marks[status]}</span><span>${Utils.esc(step && (step.label || step.message) || '')}</span></div>`;
+        const elapsed = UI.elapsedLabel(UI.activityElapsedMs(step));
+        return `<div class="pp-activity-step is-${status}"><span class="pp-activity-mark" aria-hidden="true">${marks[status]}</span><span>${Utils.esc(step && (step.label || step.message) || '')}</span>${elapsed ? `<small class="pp-activity-elapsed">${Utils.esc(elapsed)}</small>` : '<small></small>'}</div>`;
       }).join('');
       const consoleHtml = consoleRows.length
-        ? `<div class="pp-activity-console" data-activity-scroll><strong>Sync console</strong>${consoleRows.map((row) => `<p><time>${Utils.esc(row.time || '')}</time><span>${Utils.esc(row.message || '')}</span></p>`).join('')}</div>`
+        ? `<div class="pp-activity-console" data-activity-scroll><strong>Sync console</strong>${consoleRows.map((row) => UI.syncLogRowHtml(row)).join('')}</div>`
         : '';
       return `<div class="pp-activity-head"><span class="pp-activity-badge" aria-hidden="true">${badge}</span><span class="pp-activity-title"><strong>${Utils.esc(item.title || 'Pythagoras CIS')}</strong><span>${Utils.esc(item.subtitle || '')}</span></span><span class="pp-activity-percent">${progress}%</span></div><div class="pp-activity-track" aria-hidden="true"><span></span></div><div class="pp-activity-body">${stepRows ? `<div class="pp-activity-steps">${stepRows}</div>` : ''}${consoleHtml}</div>`;
     },
@@ -7023,6 +7052,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       let node = doc.getElementById && doc.getElementById(`${APP.id}-activity`);
       if (!activity) {
         if (node) node.remove();
+        UI.activityHovered = false;
         return;
       }
       if (!node) {
@@ -7037,6 +7067,14 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       node.className = `pp-activity-toast${hasError ? ' is-error' : ''}`;
       node.style.setProperty('--activity-progress', `${Utils.clamp(Utils.int(activity.progress, 0), 0, 100)}%`);
       node.innerHTML = UI.activityHtml(activity);
+      node.onmouseenter = () => {
+        UI.activityHovered = true;
+        UI.pauseActivityDismiss();
+      };
+      node.onmouseleave = () => {
+        UI.activityHovered = false;
+        UI.resumeActivityDismiss();
+      };
       const scroller = node.querySelector('[data-activity-scroll]');
       if (scroller) scroller.scrollTop = scroller.scrollHeight;
     },
@@ -7044,6 +7082,49 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     clearActivityTimer() {
       clearTimeout(UI.activityTimer);
       UI.activityTimer = null;
+      UI.activityDismiss = null;
+    },
+
+    scheduleActivityDismiss(target, delay) {
+      UI.clearActivityTimer();
+      UI.activityDismiss = Object.assign({}, target || {}, {
+        remainingMs: Math.max(0, Utils.int(delay, 0)),
+        dueAt: 0
+      });
+      UI.resumeActivityDismiss();
+    },
+
+    pauseActivityDismiss() {
+      const dismiss = UI.activityDismiss;
+      if (!dismiss) return;
+      if (UI.activityTimer) {
+        dismiss.remainingMs = Math.max(0, Utils.int(dismiss.dueAt, Date.now()) - Date.now());
+        clearTimeout(UI.activityTimer);
+        UI.activityTimer = null;
+      }
+    },
+
+    resumeActivityDismiss() {
+      const dismiss = UI.activityDismiss;
+      if (!dismiss || UI.activityTimer || UI.activityHovered) return;
+      const delay = Math.max(0, Utils.int(dismiss.remainingMs, 0));
+      dismiss.dueAt = Date.now() + delay;
+      UI.activityTimer = setTimeout(() => {
+        UI.activityTimer = null;
+        const current = UI.activityDismiss;
+        UI.activityDismiss = null;
+        if (!current) return;
+        if (current.kind === 'startup') {
+          if (UI.activityState && UI.activityState.kind === 'startup') UI.activityState = null;
+          UI.renderActivityToast();
+          return;
+        }
+        const job = current.id && UI.syncJobs[current.id];
+        const statuses = Array.isArray(current.statuses) ? current.statuses : [];
+        if (job && (!statuses.length || statuses.includes(job.status))) delete UI.syncJobs[current.id];
+        if (UI.activitySyncId === current.id) UI.activitySyncId = '';
+        UI.updateSyncUi();
+      }, delay);
     },
 
     startStartupActivity() {
@@ -7056,6 +7137,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         subtitle: 'Preparing your company workspace',
         progress: 1,
         status: 'running',
+        startedAt: Date.now(),
         steps: []
       };
       UI.renderActivityToast();
@@ -7065,12 +7147,22 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (!UI.activityState || UI.activityState.kind !== 'startup') UI.startStartupActivity();
       const activity = UI.activityState;
       let step = activity.steps.find((row) => row.id === id);
+      const now = Date.now();
       if (!step) {
-        step = { id, label: String(label || ''), status: status || 'running' };
+        step = { id, label: String(label || ''), status: status || 'running', startedAt: now };
+        if (step.status !== 'running') {
+          step.finishedAt = now;
+          step.elapsedMs = 0;
+        }
         activity.steps.push(step);
       } else {
         step.label = String(label || step.label || '');
-        step.status = status || step.status || 'running';
+        const nextStatus = status || step.status || 'running';
+        if (step.status === 'running' && nextStatus !== 'running') {
+          step.finishedAt = now;
+          step.elapsedMs = Math.max(0, now - Utils.int(step.startedAt, now));
+        }
+        step.status = nextStatus;
       }
       activity.progress = Math.max(activity.progress || 0, Utils.clamp(Utils.int(progress, activity.progress || 0), 0, 100));
       UI.renderActivityToast();
@@ -7079,15 +7171,13 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     finishStartupActivity(message) {
       if (!UI.activityState || UI.activityState.kind !== 'startup') return;
       UI.startupStep('ready', message || 'CIS is ready', 'done', 100);
+      const ready = UI.activityState.steps.find((step) => step.id === 'ready');
+      if (ready) ready.elapsedMs = Math.max(0, Date.now() - Utils.int(UI.activityState.startedAt, Date.now()));
       const hasError = UI.activityState.steps.some((step) => step && step.status === 'error');
       UI.activityState.status = hasError ? 'error' : 'done';
       UI.activityState.subtitle = hasError ? 'Opened with a warning' : 'Workspace ready';
       UI.renderActivityToast();
-      UI.clearActivityTimer();
-      UI.activityTimer = setTimeout(() => {
-        if (UI.activityState && UI.activityState.kind === 'startup') UI.activityState = null;
-        UI.renderActivityToast();
-      }, 4200);
+      UI.scheduleActivityDismiss({ kind: 'startup' }, 4200);
     },
 
     prepareStartupState(state) {
@@ -12545,14 +12635,39 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const status = active.length ? `<p class="mh-warning">Running: ${Utils.esc(active.join(', '))}</p>` : '';
       const endpointSummary = UI.friendlyEndpointSummary(UI.endpointStatusSnapshot());
       if (!rows.length) return `<strong>Sync console</strong>${status}${endpointSummary}<p>No sync activity yet.</p>`;
-      return `<strong>Sync console</strong>${status}${endpointSummary}${rows.map((row) => `<p><time>${Utils.esc(row.time)}</time>${Utils.esc(row.message)}</p>`).join('')}`;
+      return `<strong>Sync console</strong>${status}${endpointSummary}${rows.map((row) => UI.syncLogRowHtml(row)).join('')}`;
     },
-    syncLogMessage(message) {
+    syncLogMessage(message, options) {
       const date = new Date();
       const time = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       UI.syncLogSeq += 1;
-      UI.syncLog.push({ seq: UI.syncLogSeq, time, message: String(message || '') });
+      const elapsedMs = Number(options && options.elapsedMs);
+      UI.syncLog.push({
+        seq: UI.syncLogSeq,
+        time,
+        message: String(message || ''),
+        elapsedMs: Number.isFinite(elapsedMs) && elapsedMs >= 0 ? elapsedMs : null
+      });
       UI.syncLog = UI.syncLog.slice(-24);
+      return UI.syncLogSeq;
+    },
+    setSyncLogElapsed(seq, elapsedMs) {
+      const row = UI.syncLog.find((item) => Utils.int(item && item.seq, 0) === Utils.int(seq, -1));
+      if (!row) return;
+      const value = Number(elapsedMs);
+      if (Number.isFinite(value) && value >= 0) row.elapsedMs = value;
+    },
+    completeRunningSyncStep(job, status, finishedAt) {
+      if (!job) return null;
+      job.steps = Array.isArray(job.steps) ? job.steps : [];
+      const step = job.steps[job.steps.length - 1];
+      if (!step || step.status !== 'running') return step || null;
+      const endedAt = Number.isFinite(Number(finishedAt)) ? Number(finishedAt) : Date.now();
+      step.status = status || 'done';
+      step.finishedAt = endedAt;
+      step.elapsedMs = Math.max(0, endedAt - Utils.int(step.startedAt, endedAt));
+      UI.setSyncLogElapsed(step.logSeq, step.elapsedMs);
+      return step;
     },
     updateSyncUi() {
       UI.renderActivityToast();
@@ -12583,28 +12698,33 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       UI.activityState = null;
       const activeActivity = UI.activitySyncId && UI.syncJobs[UI.activitySyncId];
       if (!activeActivity || activeActivity.status !== 'running' || id === 'sync-all') UI.activitySyncId = id;
+      const startedAt = Date.now();
+      const firstStep = { label: 'Starting', status: 'running', startedAt };
       UI.syncJobs[id] = {
         label,
         progress: 2,
         status: 'running',
-        startedAt: Date.now(),
+        startedAt,
         logStartSeq: UI.syncLogSeq + 1,
-        steps: [{ label: 'Starting', status: 'running' }]
+        steps: [firstStep]
       };
-      UI.syncLogMessage(`${label}: starting.`);
+      firstStep.logSeq = UI.syncLogMessage(`${label}: starting.`);
       UI.updateSyncUi();
     },
     syncStep(id, message, progress) {
       const job = UI.syncJobs[id] || { label: id, progress: 0, status: 'running', startedAt: Date.now(), steps: [] };
+      const now = Date.now();
       job.progress = Math.max(job.progress || 0, Utils.clamp(Utils.int(progress, job.progress || 0), 0, 100));
       job.status = 'running';
       job.steps = Array.isArray(job.steps) ? job.steps : [];
-      const last = job.steps[job.steps.length - 1];
-      if (last && last.status === 'running') last.status = 'done';
-      if (message) job.steps.push({ label: String(message), status: 'running' });
+      UI.completeRunningSyncStep(job, 'done', now);
+      if (message) {
+        const step = { label: String(message), status: 'running', startedAt: now };
+        step.logSeq = UI.syncLogMessage(`${job.label}: ${message}`);
+        job.steps.push(step);
+      }
       job.steps = job.steps.slice(-12);
       UI.syncJobs[id] = job;
-      if (message) UI.syncLogMessage(`${job.label}: ${message}`);
       UI.updateSyncUi();
     },
     reportRowsForApi(rows) {
@@ -13000,46 +13120,43 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     finishSync(id, message, options) {
       const warning = !!(options && options.warning);
       const job = UI.syncJobs[id] || { label: id, progress: 100, status: 'done', steps: [] };
+      const finishedAt = Date.now();
       job.progress = 100;
       job.status = warning ? 'warning' : 'done';
-      job.finishedAt = Date.now();
+      job.finishedAt = finishedAt;
       job.steps = Array.isArray(job.steps) ? job.steps : [];
-      job.steps.forEach((step) => { if (step.status === 'running') step.status = 'done'; });
-      job.steps.push({ label: message || 'Complete', status: 'done' });
+      UI.completeRunningSyncStep(job, 'done', finishedAt);
+      const totalMs = job.startedAt ? Math.max(0, job.finishedAt - job.startedAt) : 0;
+      job.steps.push({ label: message || 'Complete', status: 'done', startedAt: job.startedAt || finishedAt, finishedAt, elapsedMs: totalMs });
       job.steps = job.steps.slice(-12);
       UI.syncJobs[id] = job;
-      const elapsed = job.startedAt ? ` (${((job.finishedAt - job.startedAt) / 1000).toFixed(1)}s)` : '';
-      UI.syncLogMessage(`${job.label}: ${message || 'complete.'}${elapsed}`);
+      UI.syncLogMessage(`${job.label}: ${message || 'complete.'}`, { elapsedMs: totalMs });
       UI.updateSyncUi();
       const keepVisible = UI.activitySyncId === id ? 4800 : 2500;
-      setTimeout(() => {
-        if (UI.syncJobs[id] && ['done', 'warning'].includes(UI.syncJobs[id].status)) {
-          delete UI.syncJobs[id];
-          if (UI.activitySyncId === id) UI.activitySyncId = '';
-          UI.updateSyncUi();
-        }
+      if (UI.activitySyncId === id) UI.scheduleActivityDismiss({ kind: 'sync', id, statuses: ['done', 'warning'] }, keepVisible);
+      else setTimeout(() => {
+        if (UI.syncJobs[id] && ['done', 'warning'].includes(UI.syncJobs[id].status)) delete UI.syncJobs[id];
       }, keepVisible);
     },
     failSync(id, error) {
       const job = UI.syncJobs[id] || { label: id, progress: 100, status: 'error', steps: [] };
+      const finishedAt = Date.now();
       job.progress = 100;
       job.status = 'error';
-      job.finishedAt = Date.now();
+      job.finishedAt = finishedAt;
       job.steps = Array.isArray(job.steps) ? job.steps : [];
-      job.steps.forEach((step) => { if (step.status === 'running') step.status = 'error'; });
-      job.steps.push({ label: error && error.message ? error.message : String(error || 'Sync failed'), status: 'error' });
+      UI.completeRunningSyncStep(job, 'error', finishedAt);
+      const totalMs = job.startedAt ? Math.max(0, job.finishedAt - job.startedAt) : 0;
+      job.steps.push({ label: error && error.message ? error.message : String(error || 'Sync failed'), status: 'error', startedAt: job.startedAt || finishedAt, finishedAt, elapsedMs: totalMs });
       job.steps = job.steps.slice(-12);
       UI.syncJobs[id] = job;
-      const elapsed = job.startedAt ? ` after ${((job.finishedAt - job.startedAt) / 1000).toFixed(1)}s` : '';
-      UI.syncLogMessage(`${job.label}: failed${elapsed} - ${error && error.message ? error.message : error}`);
+      UI.syncLogMessage(`${job.label}: failed - ${error && error.message ? error.message : error}`, { elapsedMs: totalMs });
       UI.updateSyncUi();
-      setTimeout(() => {
-        if (UI.syncJobs[id] && UI.syncJobs[id].status === 'error') {
-          delete UI.syncJobs[id];
-          if (UI.activitySyncId === id) UI.activitySyncId = '';
-          UI.updateSyncUi();
-        }
-      }, UI.activitySyncId === id ? 9000 : 3000);
+      const keepVisible = UI.activitySyncId === id ? 9000 : 3000;
+      if (UI.activitySyncId === id) UI.scheduleActivityDismiss({ kind: 'sync', id, statuses: ['error'] }, keepVisible);
+      else setTimeout(() => {
+        if (UI.syncJobs[id] && UI.syncJobs[id].status === 'error') delete UI.syncJobs[id];
+      }, keepVisible);
     },
     syncControlPanel() {
       const disabled = UI.apiKeyMissing() || UI.isSyncBusy() ? ' disabled' : '';
@@ -15794,7 +15911,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const newsMessage = delta.length
           ? `Daily sync complete. ${delta.length} new company news entr${delta.length === 1 ? 'y' : 'ies'} synced.`
           : 'Daily sync complete. No newer company news was found.';
-        const message = `${newsMessage}${restockResult ? ` ${restockResult.message}` : ''}`;
+        // The restock result already has its own timed console line. Keep the
+        // final summary concise instead of repeating it a second time.
+        const message = newsMessage;
         UI.saveRender(message);
         UI.finishSync(syncId, message);
         return { ok: true, message, restocks: restockResult };
@@ -16624,12 +16743,17 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       }
       const olderUrl = older ? new URL(sync.nextUrl) : null;
       if (olderUrl && cutoff) olderUrl.searchParams.set('from', String(cutoff));
-      UI.beginSync(syncId, 'Sync exact stock purchase costs');
+      const existing = Store.normaliseStockOrders(state.company.stockOrders || [], companyId);
+      const latestStoredTimestamp = existing.reduce((latest, row) => Math.max(latest, Utils.int(row && row.timestamp, 0)), 0);
+      const latestFrom = Math.max(cutoff, Math.min(to, latestStoredTimestamp || cutoff));
+      if (!automatic) UI.beginSync(syncId, 'Sync exact stock purchase costs');
       try {
-        // One page per sync; older-page progress stays separate from latest refreshes.
+        // One page per sync; older-page progress stays separate from latest
+        // refreshes. Latest checks begin at the newest saved purchase (inclusive
+        // for safe same-second deduplication) instead of rereading old rows.
         const data = older
           ? await ApiClient.requestV2Url(olderUrl.toString(), state.settings.apiKey)
-          : await ApiClient.companyLog(6282, state.settings.apiKey, Object.assign({ limit: 100, sort: 'DESC', to }, cutoff ? { from: cutoff } : {}));
+          : await ApiClient.companyLog(6282, state.settings.apiKey, Object.assign({ limit: 100, sort: 'DESC', to }, latestFrom ? { from: latestFrom } : {}));
         if (UI.state !== state || String(state.settings.companyId || state.company.profile.id || '') !== companyId) throw new Error('Company changed during stock cost sync. Please sync again.');
         if (!data || (!Array.isArray(data.log) && (!data.log || typeof data.log !== 'object'))) throw new Error('Torn did not return stock-order logs. Check that your key has user log permission.');
         const rawRows = Array.isArray(data.log) ? data.log : Object.entries(data.log).map(([id, row]) => Object.assign({}, row, { id: row && row.id || id }));
@@ -16642,7 +16766,6 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         if (ApiClient.nextLink(data) && !pageSync.nextUrl) throw new Error('Torn returned an unsupported stock-order history link.');
         const nextTo = pageSync.nextUrl ? Utils.int(new URL(pageSync.nextUrl).searchParams.get('to'), oldest) : 0;
         const from = Math.max(cutoff, pageSync.nextUrl ? Math.min(oldest, nextTo + 1) : 0);
-        const existing = Store.normaliseStockOrders(state.company.stockOrders || [], companyId);
         state.company.stockOrders = Store.normaliseStockOrders(existing.concat(incoming), companyId);
         state.company.stockOrderSync = Store.normaliseStockOrderSync({
           lastSynced: Utils.nowIso(),
@@ -16655,12 +16778,14 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         Store.save(state);
         if (!automatic) await Store.saveWorkspaceMirror(state, { reason: 'stock-purchase-costs', timeout: 30000 });
         const added = state.company.stockOrders.length - existing.length;
-        const message = `Restock costs synced: ${added} new purchase${added === 1 ? '' : 's'}.${state.company.stockOrderSync.nextUrl ? ' Load older restocks to fill earlier days.' : ''}`;
-        UI.finishSync(syncId, message);
+        const message = added
+          ? `Restock costs synced: ${added} new purchase${added === 1 ? '' : 's'}.${state.company.stockOrderSync.nextUrl ? ' Load older restocks to fill earlier days.' : ''}`
+          : `Restock log checked: no new purchases.${state.company.stockOrderSync.nextUrl ? ' Load older restocks to fill earlier days.' : ''}`;
+        if (!automatic) UI.finishSync(syncId, message);
         if (!automatic) UI.saveRender(message);
         return { ok: true, added, message };
       } catch (error) {
-        UI.failSync(syncId, error);
+        if (!automatic) UI.failSync(syncId, error);
         const message = `Restock costs were not synced: ${error.message || 'request failed'}. Saved purchases have been kept.`;
         if (!automatic) UI.saveRender(message);
         return { ok: false, message };
