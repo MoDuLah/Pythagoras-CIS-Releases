@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.2.3
+// @version      3.2.4
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
 // @author       MoDuL [4022159]
 // @match        https://www.torn.com/companies.php*
@@ -43,6 +43,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     staffEditsKey: 'pp_cis_staff_card_edits_v2',
     ledgerPendingKey: 'pp_cis_ledger_pending_v2',
     syncCacheKey: 'pp_cis_sync_cache_v1',
+    sessionIdentityKey: 'pp_cis_verified_session_identity_v1',
     notificationDismissalsKey: 'pp_cis_notification_dismissals_v1',
     uiPreferencesKey: 'pp_cis_ui_preferences_v1',
     stockEditsKey: 'pp_cis_stock_edits_v1',
@@ -50,7 +51,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.2.3',
+    version: '3.2.4',
     popupName: 'pythagoras-cis-popup'
   };
 
@@ -243,6 +244,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       globalPromoDiscount: 0,
       maxTotalDiscount: 90,
       logTrigger: '!train',
+      trainingOrderDismissals: {},
       theme: BUILD_CONFIG.enabled && BUILD_CONFIG.defaultTheme ? BUILD_CONFIG.defaultTheme : 'modul',
       supportUrl: BUILD_CONFIG.enabled ? BUILD_CONFIG.faqUrl : '',
       bugReportUrl: BUILD_CONFIG.enabled ? BUILD_CONFIG.bugReportUrl : '',
@@ -362,7 +364,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     .pp-table tr.pp-stock-warning td{background:rgba(216,165,69,.08)}.pp-table tr.pp-detail-row td{background:rgba(255,255,255,.035);white-space:normal}.pp-analytics-detail{display:grid;gap:8px;padding:8px}.pp-analytics-detail .pp-wrap{display:inline-block;max-width:100%}.pp-analytics-detail-table{width:max-content;border-collapse:collapse;min-width:0}.pp-analytics-detail-table th,.pp-analytics-detail-table td{padding:6px 9px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}.pp-analytics-detail-table th{color:var(--muted);font-size:12px}.pp-expand-btn{min-width:30px;padding:4px 8px}
     .pp-table.is-compact{min-width:0}.pp-people-table th,.pp-people-table td,.pp-effectiveness-table th,.pp-effectiveness-table td{text-align:center}.pp-people-table .pp-pill{justify-content:center}.pp-report-actions{margin-top:10px}
 .pp-inline{width:auto;max-width:calc(100% - 8px);min-height:30px;border:1px solid var(--line);border-radius:6px;background:#0f1111;color:var(--text);padding:5px 7px;margin-left:4px;margin-right:4px}.pp-fit{width:auto;max-width:180px}.pp-tiny{width:5ch;max-width:5ch;text-align:right}.pp-capacity{width:9ch;max-width:9ch;text-align:right}.pp-stock-qty{width:8ch;max-width:8ch;text-align:right}.pp-name{width:150px}.pp-row-actions{display:flex;gap:6px;flex-wrap:wrap;min-width:0}.pp-row-actions>*{min-width:0}.pp-row-actions .pp-btn{margin-left:0;margin-right:0}.pp-btn{margin-left:4px;margin-right:4px}
-    .pp-ledger-add-form{grid-template-columns:repeat(auto-fit,minmax(84px,max-content));justify-content:start;align-items:end}.pp-ledger-add-form .pp-field{overflow:visible}.pp-ledger-add-form .pp-input,.pp-ledger-add-form .pp-select{width:var(--ledger-field-width,auto);min-width:var(--ledger-field-min,8ch);max-width:min(var(--ledger-field-max,24ch),calc(100vw - 48px))}.pp-ledger-staff-field{--ledger-field-width:26ch;--ledger-field-max:30ch}.pp-ledger-date-field{--ledger-field-width:13ch;--ledger-field-max:14ch}.pp-ledger-money-field{--ledger-field-width:15ch;--ledger-field-max:16ch}.pp-ledger-price-field{--ledger-field-width:12ch;--ledger-field-max:13ch}.pp-ledger-small-field{--ledger-field-width:7ch;--ledger-field-max:8ch}.pp-ledger-contract-field{--ledger-field-width:20ch;--ledger-field-max:22ch}.pp-ledger-check-field{min-width:15ch}.pp-checkline{display:flex;gap:10px;align-items:center;min-height:34px;white-space:nowrap}.pp-ledger-preview-field{grid-column:span 2;min-width:min(40ch,100%)}.pp-ledger-preview-field .pp-btn{width:min(32ch,100%)}.pp-ledger-row.is-done td{opacity:.58}.pp-ledger-id{font-weight:700;color:var(--accent)}.pp-order-trains{display:grid;grid-template-columns:repeat(2,max-content);gap:6px 8px;align-items:end}.pp-order-trains label,.pp-order-discounts label{display:grid;gap:3px;color:var(--muted);font-size:12px}.pp-order-discounts{display:grid;gap:4px}.pp-readonly-value{color:var(--text);white-space:nowrap}.pp-readonly-sub{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+    .pp-ledger-add-form{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;min-width:0}.pp-ledger-add-form .pp-field{flex:0 0 var(--ledger-field-width,10ch);min-width:0;overflow:visible}.pp-ledger-add-form .pp-input,.pp-ledger-add-form .pp-select{width:100%;min-width:0;max-width:100%}.pp-ledger-staff-field{--ledger-field-width:30ch}.pp-ledger-date-field{--ledger-field-width:13ch}.pp-ledger-money-field{--ledger-field-width:15ch}.pp-ledger-price-field{--ledger-field-width:12ch}.pp-ledger-small-field{--ledger-field-width:7ch}.pp-ledger-contract-field{--ledger-field-width:20ch}.pp-ledger-check-field{--ledger-field-width:9ch}.pp-checkline{display:flex;gap:6px;align-items:center;min-height:34px;white-space:nowrap}.pp-ledger-preview-field{flex:1 0 100%!important;min-width:0}.pp-ledger-preview-field .pp-btn{width:min(32ch,100%)}.pp-ledger-row.is-done td{opacity:.58}.pp-ledger-id{font-weight:700;color:var(--accent)}.pp-order-trains{display:grid;grid-template-columns:repeat(2,max-content);gap:6px 8px;align-items:end}.pp-order-trains label,.pp-order-discounts label{display:grid;gap:3px;color:var(--muted);font-size:12px}.pp-order-discounts{display:grid;gap:4px}.pp-readonly-value{color:var(--text);white-space:nowrap}.pp-readonly-sub{display:block;color:var(--muted);font-size:12px;margin-top:3px}
     .pp-settings-nav,.pp-action-grid,.pp-report-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.pp-settings-nav{grid-column:span 12}.pp-member-card{grid-column:span 12}.pp-hidden{display:none!important}.pp-range-row{display:grid;grid-template-columns:auto minmax(140px,1fr) auto;gap:8px;align-items:center}.pp-analytics-scroll{max-height:min(64vh,620px);overflow:auto}.pp-analytics-scroll .pp-table th,.pp-analytics-scroll .pp-table td{text-align:center;padding-left:14px;padding-right:14px}.pp-past-scroll{max-height:430px;overflow:auto}.pp-stars{letter-spacing:1px;color:#5f6662}.pp-stars span{color:#FFDD00}.pp-table-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0 6px;color:#fff;font-weight:700}.pp-sort{border:0;background:transparent;color:var(--muted);font:inherit;font-weight:700;padding:0;cursor:pointer}.pp-sort.is-active{color:var(--accent)}.pp-card-count{align-self:center;color:var(--muted);font-size:12px}.pp-report-options label{display:flex;align-items:center;gap:6px;color:var(--muted)}.pp-training-pills{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}.pp-training-day{display:grid;gap:7px;align-items:start;border:1px solid var(--line);border-radius:8px;background:#121615;padding:8px}.pp-training-day strong{color:#fff}.pp-pill-list{display:flex;flex-wrap:wrap;gap:6px}.pp-percent-bar{position:relative;min-height:24px;border:1px solid var(--line);border-radius:7px;background-image:linear-gradient(90deg,rgba(255,255,255,.14) 1px,transparent 1px);background-size:10% 100%;background-color:#101312;overflow:hidden}.pp-percent-bar span{position:absolute;inset:0 auto 0 0;width:var(--percent);background:linear-gradient(90deg,var(--bad),var(--accent))}.pp-percent-bar b{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:12px;text-shadow:-1px -1px 0 #000,0 -1px 0 #000,1px -1px 0 #000,-1px 0 0 #000,1px 0 0 #000,-1px 1px 0 #000,0 1px 0 #000,1px 1px 0 #000}.pp-stock-summary{margin-bottom:12px}.pp-stock-summary .pp-stat strong{font-size:16px}.pp-stock-na{color:var(--muted);opacity:.6}.pp-stock-restock{display:grid;gap:2px}.pp-stock-restock b{color:#fff;font-size:12px;font-weight:700}.pp-stock-restock small{color:var(--muted);font-size:11px}.pp-modal-backdrop{position:absolute;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.58)}.pp-modal-card{width:min(720px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;box-shadow:0 18px 54px rgba(0,0,0,.5)}.pp-card-form{display:grid;gap:12px}.pp-card-section{border:1px solid var(--line);border-radius:8px;background:#121615;overflow:hidden}.pp-card-section summary{list-style:none}.pp-card-section summary::-webkit-details-marker{display:none}.pp-card-section-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;cursor:pointer}.pp-card-section[open] .pp-card-section-head{border-bottom:1px solid rgba(255,255,255,.08)}.pp-card-section-head h4{margin:0;color:#fff;font-size:13px;line-height:1.2}.pp-card-section-body{padding:12px}.pp-card-section-body .pp-form{gap:10px}.pp-history-stack{display:grid;gap:8px}.pp-history-item{border:1px solid var(--line);border-radius:8px;background:#101312}.pp-history-item summary{list-style:none;cursor:pointer;padding:10px 12px;color:#fff;font-weight:700}.pp-history-item summary::-webkit-details-marker{display:none}.pp-history-item[open] summary{border-bottom:1px solid rgba(255,255,255,.08)}.pp-history-body{padding:10px 12px}.pp-card-header-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
     .pp-pill{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:3px 8px;border-radius:999px;border:1px solid var(--line);background:#111313;color:var(--muted);white-space:nowrap}.pp-pill:before{content:'';width:7px;height:7px;border-radius:50%;background:var(--pill-color,var(--muted))}.pp-date-pill:before{display:none}
     .pp-changelog{display:grid;gap:8px}.pp-changelog details{border:1px solid var(--line);border-radius:8px;background:#121615;padding:8px}.pp-changelog summary{cursor:pointer;color:#fff;font-weight:700}.pp-changelog ul{margin:8px 0 0 18px;padding:0;color:var(--muted)}.pp-changelog li{margin:4px 0}.pp-role-history{display:grid;gap:8px;border:1px solid var(--line);border-radius:8px;background:#121615;padding:10px}.pp-role-history>div+div{border-top:1px solid rgba(255,255,255,.08);padding-top:8px}.pp-card-userid{font:inherit;color:var(--accent);text-decoration:none}.pp-card-userid:hover{text-decoration:underline}
@@ -379,7 +381,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     .pp-timeline-grid{align-items:stretch}.pp-timeline-panel,.pp-analytics-panel{display:flex;flex-direction:column;height:min(74vh,760px);align-self:stretch}.pp-timeline-panel.is-collapsed,.pp-analytics-panel.is-collapsed{height:auto}.pp-timeline-panel .pp-content,.pp-analytics-panel .pp-content{display:flex;flex:1 1 auto;flex-direction:column;min-height:0;overflow:hidden}.pp-timeline{display:grid;flex:1 1 auto;gap:8px;min-height:0;overflow:auto;padding-right:4px}.pp-analytics-panel .pp-analytics-scroll{flex:1 1 auto;max-height:none;min-height:0}.pp-event{display:grid;gap:4px;padding:9px 10px;border-left:3px solid var(--event-color,var(--muted));background:#121615;border-radius:0 6px 6px 0}.pp-event time{color:var(--muted);font-size:12px}.pp-event strong{color:#fff}
     .pp-kv{display:grid;grid-template-columns:minmax(110px,.8fr) minmax(0,1.2fr);gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)}.pp-kv>span:first-child{color:var(--muted)}
     .pp-toast{position:fixed;right:20px;bottom:20px;max-width:min(420px,calc(100vw - 36px));border:1px solid rgba(70,197,143,.55);border-radius:8px;background:#102019;color:#effff8;padding:10px 12px;box-shadow:0 12px 28px rgba(0,0,0,.35);z-index:1000001}.pp-toast-confirm{display:grid;gap:8px;border-color:rgba(216,165,69,.75);background:#20180d}.pp-toast-confirm strong{color:#fff}.pp-toast-actions{display:flex;gap:6px;flex-wrap:wrap}.pp-empty{color:var(--muted);padding:12px;border:1px dashed var(--line);border-radius:8px;background:#111313}
-    .pp-activity-toast{position:fixed;right:20px;bottom:72px;z-index:1000002;width:min(410px,calc(100vw - 28px));box-sizing:border-box;overflow:hidden;border:1px solid rgba(70,197,143,.62);border-radius:12px;background:linear-gradient(145deg,rgba(24,31,28,.98),rgba(10,14,12,.98));color:#eff2ef;box-shadow:0 18px 48px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.035) inset;font:12px/1.4 Arial,Helvetica,sans-serif;animation:pp-activity-in .18s ease-out}.pp-activity-toast.is-error{border-color:rgba(217,93,93,.78)}.pp-activity-head{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:9px;align-items:center;padding:11px 12px 9px;border-bottom:1px solid rgba(255,255,255,.08)}.pp-activity-badge{display:grid;place-items:center;width:34px;height:34px;border:1px solid rgba(70,197,143,.55);border-radius:10px;background:rgba(70,197,143,.11);color:#46c58f;font-size:17px;font-weight:800}.pp-activity-toast.is-error .pp-activity-badge{border-color:rgba(217,93,93,.6);background:rgba(217,93,93,.12);color:#f17c7c}.pp-activity-title{min-width:0}.pp-activity-title strong,.pp-activity-title span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pp-activity-title strong{color:#fff;font-size:13px}.pp-activity-title span{color:#a8b0aa;font-size:10px}.pp-activity-percent{color:#46c58f;font-weight:800;font-variant-numeric:tabular-nums}.pp-activity-track{height:4px;background:rgba(255,255,255,.07)}.pp-activity-track span{display:block;width:var(--activity-progress,0%);height:100%;background:linear-gradient(90deg,#2e9f73,#55e69f);box-shadow:0 0 12px rgba(70,197,143,.5);transition:width .2s ease}.pp-activity-toast.is-error .pp-activity-track span{background:linear-gradient(90deg,#a93e46,#ef6d70)}.pp-activity-body{display:grid;gap:8px;max-height:min(260px,38vh);overflow:auto;padding:9px 12px 11px;scrollbar-color:#46c58f #111513;scrollbar-width:thin}.pp-activity-steps{display:grid;gap:5px}.pp-activity-step{display:grid;grid-template-columns:18px minmax(0,1fr);gap:7px;align-items:start;color:#a8b0aa}.pp-activity-step.is-done{color:#dff9ec}.pp-activity-step.is-running{color:#fff}.pp-activity-step.is-error{color:#ff9a9f}.pp-activity-step.is-skipped{opacity:.7}.pp-activity-mark{display:grid;place-items:center;width:16px;height:16px;margin-top:1px;border:1px solid rgba(168,176,170,.45);border-radius:50%;font-size:10px;font-weight:800;line-height:1}.pp-activity-step.is-done .pp-activity-mark{border-color:#46c58f;background:#46c58f;color:#07100d}.pp-activity-step.is-error .pp-activity-mark{border-color:#d95d5d;background:#d95d5d;color:#fff}.pp-activity-step.is-running .pp-activity-mark{border-color:#d8a545;border-top-color:transparent;animation:pp-activity-spin .75s linear infinite}.pp-activity-console{display:grid;gap:3px;padding-top:7px;border-top:1px solid rgba(255,255,255,.07)}.pp-activity-console strong{color:#fff;font-size:10px;text-transform:uppercase;letter-spacing:.07em}.pp-activity-console p{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px;margin:0;color:#a8b0aa;overflow-wrap:anywhere}.pp-activity-console time{color:#46c58f;font-size:10px;font-variant-numeric:tabular-nums}@keyframes pp-activity-spin{to{transform:rotate(360deg)}}@keyframes pp-activity-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .pp-activity-toast{position:fixed;right:20px;bottom:72px;z-index:1000002;width:min(410px,calc(100vw - 28px));max-height:calc(100vh - 92px);box-sizing:border-box;overflow:hidden;border:1px solid rgba(70,197,143,.62);border-radius:12px;background:linear-gradient(145deg,rgba(24,31,28,.98),rgba(10,14,12,.98));color:#eff2ef;box-shadow:0 18px 48px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.035) inset;font:12px/1.4 Arial,Helvetica,sans-serif;animation:pp-activity-in .18s ease-out}.pp-activity-toast.is-error{border-color:rgba(217,93,93,.78)}.pp-activity-head{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:9px;align-items:center;padding:11px 12px 9px;border-bottom:1px solid rgba(255,255,255,.08)}.pp-activity-badge{display:grid;place-items:center;width:34px;height:34px;border:1px solid rgba(70,197,143,.55);border-radius:10px;background:rgba(70,197,143,.11);color:#46c58f;font-size:17px;font-weight:800}.pp-activity-toast.is-error .pp-activity-badge{border-color:rgba(217,93,93,.6);background:rgba(217,93,93,.12);color:#f17c7c}.pp-activity-title{min-width:0}.pp-activity-title strong,.pp-activity-title span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pp-activity-title strong{color:#fff;font-size:13px}.pp-activity-title span{color:#a8b0aa;font-size:10px}.pp-activity-percent{color:#46c58f;font-weight:800;font-variant-numeric:tabular-nums}.pp-activity-track{height:4px;background:rgba(255,255,255,.07)}.pp-activity-track span{display:block;width:var(--activity-progress,0%);height:100%;background:linear-gradient(90deg,#2e9f73,#55e69f);box-shadow:0 0 12px rgba(70,197,143,.5);transition:width .2s ease}.pp-activity-toast.is-error .pp-activity-track span{background:linear-gradient(90deg,#a93e46,#ef6d70)}.pp-activity-body{display:grid;gap:8px;min-height:0;overflow:hidden;padding:9px 12px 11px}.pp-activity-steps{display:grid;gap:5px;overflow:visible}.pp-activity-step{display:grid;grid-template-columns:18px minmax(0,1fr);gap:7px;align-items:start;color:#a8b0aa}.pp-activity-step.is-done{color:#dff9ec}.pp-activity-step.is-running{color:#fff}.pp-activity-step.is-error{color:#ff9a9f}.pp-activity-step.is-skipped{opacity:.7}.pp-activity-mark{display:grid;place-items:center;width:16px;height:16px;margin-top:1px;border:1px solid rgba(168,176,170,.45);border-radius:50%;font-size:10px;font-weight:800;line-height:1}.pp-activity-step.is-done .pp-activity-mark{border-color:#46c58f;background:#46c58f;color:#07100d}.pp-activity-step.is-error .pp-activity-mark{border-color:#d95d5d;background:#d95d5d;color:#fff}.pp-activity-step.is-running .pp-activity-mark{border-color:#d8a545;border-top-color:transparent;animation:pp-activity-spin .75s linear infinite}.pp-activity-console{display:grid;gap:3px;max-height:min(150px,22vh);min-height:0;overflow:auto;padding-top:7px;border-top:1px solid rgba(255,255,255,.07);scrollbar-color:#46c58f #111513;scrollbar-width:thin}.pp-activity-console strong{position:sticky;top:0;z-index:1;padding-bottom:3px;background:#111513;color:#fff;font-size:10px;text-transform:uppercase;letter-spacing:.07em}.pp-activity-console p{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px;margin:0;color:#a8b0aa;overflow-wrap:anywhere}.pp-activity-console time{color:#46c58f;font-size:10px;font-variant-numeric:tabular-nums}@keyframes pp-activity-spin{to{transform:rotate(360deg)}}@keyframes pp-activity-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
     .good{color:var(--accent)}.bad{color:var(--bad)}.warn{color:var(--warn)}
     .pp-effectiveness-tip{display:inline-flex;align-items:center;justify-content:center;min-width:2ch;color:inherit;cursor:help;text-decoration:underline dotted transparent;text-underline-offset:2px}.pp-effectiveness-tip.is-left{justify-content:flex-start;text-align:left;min-width:0}.pp-effectiveness-tip:hover,.pp-effectiveness-tip:focus-visible{text-decoration-color:var(--accent);outline:none}
     .pp-hover-tooltip{position:fixed;left:0;top:0;z-index:1000001;min-width:220px;max-width:min(320px,calc(100vw - 16px));padding:10px 11px;border:1px solid var(--tip-accent,#46c58f);border-radius:8px;background:var(--tip-panel,#171a1a);color:var(--tip-text,#eff2ef);box-shadow:0 14px 30px rgba(0,0,0,.38),0 0 0 1px rgba(255,255,255,.04) inset;pointer-events:none}
@@ -396,7 +398,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     .pp-hover-tooltip-empty{color:var(--tip-muted,#a8b0aa)}
     @media (max-width:860px){#pythagoras-cis{top:8px;right:8px;left:8px!important;width:auto;max-height:calc(100vh - 16px);resize:none}.pp-titlebar{grid-template-columns:1fr;cursor:default}.pp-actions{justify-content:flex-start}.pp-panel.is-half,.pp-panel.is-third{grid-column:span 12}.pp-form{grid-template-columns:repeat(2,minmax(0,1fr))}.pp-field.span-2,.pp-field.span-3,.pp-field.span-4,.pp-field.span-6,.pp-settings-nav,.pp-action-grid,.pp-report-options{grid-column:span 2}.pp-statline,.pp-settings-nav,.pp-action-grid,.pp-report-options,.pp-operational,.pp-theme-editor{grid-template-columns:repeat(2,minmax(0,1fr))}.pp-priority-grid,.pp-notification-grid{grid-template-columns:1fr}.pp-discount-row{grid-template-columns:repeat(2,minmax(0,1fr))}.pp-timeline-panel,.pp-analytics-panel{height:min(72vh,680px)}}
     @media (max-width:860px){.pp-sync-center{grid-template-columns:1fr}.pp-sync-console{max-height:150px}}
-    @media (max-width:560px){#pythagoras-cis{top:0;right:0;left:0!important;width:100vw;max-height:100vh;border-radius:0}.pp-body{padding:8px}.pp-head{padding:14px 76px 12px 10px}.pp-grid,.pp-form,.pp-ledger-add-form,.pp-statline,.pp-operational,.pp-settings-nav,.pp-action-grid,.pp-report-options,.pp-theme-editor,.pp-discount-row{grid-template-columns:1fr}.pp-field,.pp-field.span-2,.pp-field.span-3,.pp-field.span-4,.pp-field.span-6,.pp-ledger-preview-field{grid-column:span 1}.pp-ledger-add-form .pp-input,.pp-ledger-add-form .pp-select{width:calc(100vw - 44px);max-width:calc(100vw - 44px)}.pp-calendar{grid-template-columns:1fr;overflow-x:visible}.pp-table{min-width:680px}.pp-modal-card{width:calc(100vw - 16px);max-height:calc(100vh - 16px)}.pp-notification-rule{grid-template-columns:1fr}.pp-toast{right:10px;bottom:10px}.pp-activity-toast{right:8px;bottom:62px;width:calc(100vw - 16px)}}
+    @media (max-width:560px){#pythagoras-cis{top:0;right:0;left:0!important;width:100vw;max-height:100vh;border-radius:0}.pp-body{padding:8px}.pp-head{padding:14px 76px 12px 10px}.pp-grid,.pp-form,.pp-ledger-add-form,.pp-statline,.pp-operational,.pp-settings-nav,.pp-action-grid,.pp-report-options,.pp-theme-editor,.pp-discount-row{grid-template-columns:1fr}.pp-ledger-add-form{display:grid}.pp-field,.pp-field.span-2,.pp-field.span-3,.pp-field.span-4,.pp-field.span-6,.pp-ledger-preview-field{grid-column:span 1}.pp-ledger-add-form .pp-field,.pp-ledger-add-form .pp-input,.pp-ledger-add-form .pp-select{width:calc(100vw - 44px);max-width:calc(100vw - 44px)}.pp-calendar{grid-template-columns:1fr;overflow-x:visible}.pp-table{min-width:680px}.pp-modal-card{width:calc(100vw - 16px);max-height:calc(100vh - 16px)}.pp-notification-rule{grid-template-columns:1fr}.pp-toast{right:10px;bottom:10px}.pp-activity-toast{right:8px;bottom:62px;width:calc(100vw - 16px)}}
     @media (prefers-reduced-motion:reduce){.pp-activity-toast,.pp-activity-step.is-running .pp-activity-mark{animation:none}.pp-activity-track span{transition:none}}
   `;
 
@@ -778,6 +780,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
   const Store = {
     localSaveSeq: 0,
     testimonialsSaveRef: null,
+    syncCacheMemory: null,
+    serverReportSignatures: new Map(),
+    serverReportSignaturesReady: false,
     load() {
       const profile = Store.loadProfile();
       let state = Store.applyProfile(Store.applyAdminConfig(Store.migrate(Utils.clone(DEFAULTS))), profile);
@@ -785,14 +790,23 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       state.testimonials = Store.mergeTestimonials(state.testimonials, Store.loadTestimonialsLocal());
       return Store.applyNotificationDismissals(Store.applyLedgerPending(Store.applyStaffEditCache(state, Store.loadStaffLocalEdits()), Store.loadLedgerPending()), Store.loadNotificationDismissals());
     },
-    async loadAsync(onProgress) {
+    async loadAsync(onProgress, options) {
       const report = typeof onProgress === 'function' ? onProgress : () => {};
+      const applyLocalLayers = (target, values) => {
+        const local = values || {};
+        let next = Store.applyLedgerPending(Store.applyStaffEditCache(target, local.staffEditCache), local.ledgerPending);
+        Store.applyUiPreferences(next, local.uiPreferences);
+        Store.applyStockLocalEdits(next, local.stockLocalEdits);
+        next.testimonials = Store.mergeTestimonials(next.testimonials, local.localTestimonials);
+        return Store.applyNotificationDismissals(Store.applyLedgerPending(next, local.ledgerPending), local.dismissals);
+      };
       report('saved', 'Reading saved identity and preferences', 'running', 5);
       const profile = await Store.loadProfileAsync();
       let state = Store.applyProfile(Store.applyAdminConfig(Store.migrate(Utils.clone(DEFAULTS))), profile);
-      let [staffEditCache, ledgerPending, uiPreferences, stockLocalEdits, legacyRaw, dismissals, localTestimonials] = await Promise.all([
+      let [staffEditCache, ledgerPending, uiPreferences, stockLocalEdits, legacyRaw, dismissals, localTestimonials, verifiedIdentity, syncCache] = await Promise.all([
         Store.loadStaffLocalEditsAsync(), Store.loadLedgerPendingAsync(), Store.loadUiPreferencesAsync(),
-        Store.loadStockLocalEditsAsync(), Store.rawGetAsync(APP.storageKey), Store.loadNotificationDismissalsAsync(), Store.loadTestimonialsLocalAsync()
+        Store.loadStockLocalEditsAsync(), Store.rawGetAsync(APP.storageKey), Store.loadNotificationDismissalsAsync(), Store.loadTestimonialsLocalAsync(),
+        Store.loadVerifiedSessionIdentityAsync(), Store.loadSyncCacheAsync()
       ]);
       if (legacyRaw) {
         const legacy = Store.loadFromRaw(legacyRaw);
@@ -810,7 +824,20 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       state.settings.userId = state.settings.userId || PageData.userId();
       state.settings.userName = state.settings.userName || PageData.userName();
       state.settings.companyId = state.settings.companyId || state.company.profile.id || PageData.companyId();
+      const localLayers = { staffEditCache, ledgerPending, uiPreferences, stockLocalEdits, dismissals, localTestimonials };
+      state = applyLocalLayers(state, localLayers);
+      const startupCache = Store.startupSyncCacheInfo(state, verifiedIdentity, syncCache);
+      if (startupCache.canOpen) {
+        state = Store.applySyncCache(state, { deferReclassify: true }, syncCache);
+        report('cache', 'Cached company workspace opened', 'done', 18);
+        if (options && typeof options.onCachedState === 'function') {
+          await Promise.resolve(options.onCachedState(state, startupCache));
+        }
+      } else {
+        report('cache', `Cached company workspace unavailable: ${startupCache.reason || 'no saved data'}`, 'skipped', 18);
+      }
       const apiKey = String(state.settings.apiKey || '').trim();
+      let workspaceLoaded = false;
       if (apiKey) {
         let contacted = false;
         report('contact', 'Contacting Torn identity service', 'running', 22);
@@ -834,8 +861,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             report('workspace', "Entering the company's saved workspace", 'running', 56);
             try {
               state = await Store.loadCloudWorkspace(state, { strict: true });
+              workspaceLoaded = true;
+              await Store.saveVerifiedSessionIdentity(state);
               report('workspace', "Company's saved workspace loaded", 'done', 72);
             } catch (error) {
+              Store.clearVerifiedSessionIdentity();
               state.sync = state.sync || {};
               state.sync.workspaceLoadError = error && error.message ? error.message : String(error);
               report('workspace', 'Company workspace could not be loaded', 'error', 72);
@@ -860,13 +890,13 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         report('identity', 'Identity check waits for an API key', 'skipped', 48);
         report('workspace', 'Company workspace waits for identity', 'skipped', 72);
       }
-      state = Store.applyLedgerPending(Store.applyStaffEditCache(state, staffEditCache), ledgerPending);
-      Store.applyUiPreferences(state, uiPreferences);
       // Startup reclassifies once, in batches, before the first interactive render.
-      const cachedState = Store.applySyncCache(state, { deferReclassify: true });
-      Store.applyStockLocalEdits(Store.applyUiPreferences(cachedState, uiPreferences), stockLocalEdits);
-      cachedState.testimonials = Store.mergeTestimonials(cachedState.testimonials, localTestimonials);
-      return Store.applyNotificationDismissals(Store.applyLedgerPending(cachedState, ledgerPending), dismissals);
+      // A successful cloud bootstrap is authoritative. Reapplying an older
+      // cache here can resurrect deleted orders or overwrite fresh sync data.
+      const cachedState = workspaceLoaded ? state : Store.applySyncCache(state, { deferReclassify: true }, syncCache);
+      const finalState = applyLocalLayers(cachedState, { staffEditCache, ledgerPending, uiPreferences, stockLocalEdits, dismissals, localTestimonials });
+      if (workspaceLoaded) Store.updateSyncCache(finalState, ['business', 'employees', 'stock', 'news', 'trainingLog', 'planner']);
+      return finalState;
     },
     loadProfile() {
       const raw = Store.rawGet(APP.profileKey);
@@ -1075,6 +1105,52 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     },
     ledgerSourceKind(entry) {
       return String(entry && (entry.sourceKind || entry.source_kind || entry.source) || '').trim().toLowerCase();
+    },
+    normaliseTrainingOrderDismissals(value) {
+      const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+      return Object.entries(source)
+        .map(([rawId, raw]) => {
+          const eventId = String(rawId || raw && (raw.sourceEventId || raw.eventId) || '').trim().replace(/^log4810:/i, '');
+          if (!eventId || eventId.includes(':')) return null;
+          const row = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+          return [eventId, {
+            sourceEventId: eventId,
+            orderId: String(row.orderId || '').trim(),
+            playerId: String(row.playerId || '').trim(),
+            playerName: String(row.playerName || '').trim().slice(0, 80),
+            deletedAt: String(row.deletedAt || '').trim() || Utils.nowIso()
+          }];
+        })
+        .filter(Boolean)
+        .sort((a, b) => Utils.dateTimestamp(b[1].deletedAt) - Utils.dateTimestamp(a[1].deletedAt))
+        .slice(0, 500)
+        .reduce((next, [eventId, row]) => {
+          next[eventId] = row;
+          return next;
+        }, {});
+    },
+    trainingOrderDismissals(state) {
+      const settings = state && state.settings || {};
+      settings.trainingOrderDismissals = Store.normaliseTrainingOrderDismissals(settings.trainingOrderDismissals);
+      return settings.trainingOrderDismissals;
+    },
+    isTrainingOrderDismissed(state, eventId) {
+      const id = String(eventId || '').trim().replace(/^log4810:/i, '');
+      return !!(id && Store.trainingOrderDismissals(state)[id]);
+    },
+    dismissTrainingOrder(state, entry) {
+      const eventId = Store.ledgerSourceEventId(entry);
+      if (!state || !eventId) return false;
+      const dismissals = Store.trainingOrderDismissals(state);
+      dismissals[eventId] = {
+        sourceEventId: eventId,
+        orderId: String(entry && entry.orderId || '').trim(),
+        playerId: String(entry && entry.playerId || '').trim(),
+        playerName: String(entry && entry.playerName || '').trim().slice(0, 80),
+        deletedAt: Utils.nowIso()
+      };
+      state.settings.trainingOrderDismissals = Store.normaliseTrainingOrderDismissals(dismissals);
+      return true;
     },
     ledgerIsManual(entry) {
       return ['manual', 'manual_add', 'manual-entry'].includes(Store.ledgerSourceKind(entry));
@@ -1639,16 +1715,17 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       return state;
     },
     parseLedgerPending(raw) {
-      if (!raw) return { orders: [], updatedAt: '' };
+      if (!raw) return { orders: [], updatedAt: '', replace: false };
       try {
         const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
         return {
           orders: Array.isArray(parsed && parsed.orders) ? parsed.orders : [],
-          updatedAt: String(parsed && parsed.updatedAt || '')
+          updatedAt: String(parsed && parsed.updatedAt || ''),
+          replace: parsed && parsed.replace === true
         };
       } catch (error) {
         console.warn('[Pythagoras Project - CIS] Could not read pending ledger orders.', error);
-        return { orders: [], updatedAt: '' };
+        return { orders: [], updatedAt: '', replace: false };
       }
     },
     loadLedgerPending() {
@@ -1659,11 +1736,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     },
     saveLedgerPendingOrders(orders) {
       const rows = Array.isArray(orders) ? orders : [];
-      if (!rows.length) {
-        Store.rawDelete(APP.ledgerPendingKey);
-        return;
-      }
-      Store.rawSet(APP.ledgerPendingKey, JSON.stringify({ orders: rows, updatedAt: Utils.nowIso() }));
+      // Pending ledger state is a complete replacement, including an empty
+      // ledger after the last order is deleted. A merge cannot express deletes.
+      Store.rawSet(APP.ledgerPendingKey, JSON.stringify({ orders: rows, replace: true, updatedAt: Utils.nowIso() }));
     },
     clearLedgerPending() {
       Store.rawDelete(APP.ledgerPendingKey);
@@ -1707,8 +1782,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     },
     applyLedgerPending(state, pending) {
       const rows = pending && Array.isArray(pending.orders) ? pending.orders : [];
-      if (!rows.length) return state;
-      state.ledger = Store.mergeLedgerRows(state.ledger || [], rows);
+      if (pending && pending.replace === true) {
+        state.ledger = Store.dedupeLedgerEventRows(rows).rows;
+        return state;
+      }
+      if (rows.length) state.ledger = Store.mergeLedgerRows(state.ledger || [], rows);
       return state;
     },
     profileFromState(state) {
@@ -1864,6 +1942,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       };
     },
     clearCompanyLocalCaches() {
+      Store.clearVerifiedSessionIdentity();
+      Store.syncCacheMemory = null;
+      Store.serverReportSignatures = new Map();
+      Store.serverReportSignaturesReady = false;
       [APP.staffEditsKey, APP.ledgerPendingKey, APP.syncCacheKey, APP.notificationDismissalsKey, APP.stockEditsKey].forEach((key) => Store.rawDelete(key));
     },
     saveProfile(state) {
@@ -1934,6 +2016,143 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const identity = Store.syncCacheIdentity(state);
       return !!(cache && cache.userId === identity.userId && cache.companyId === identity.companyId);
     },
+    verifiedSessionIdentityTtlMs() {
+      return 30 * 60 * 1000;
+    },
+    verifiedSessionStorage() {
+      try {
+        const page = PageData.win();
+        if (page && page.sessionStorage) return page.sessionStorage;
+      } catch (error) {}
+      try { return window.sessionStorage || null; } catch (error) { return null; }
+    },
+    loadVerifiedSessionIdentity() {
+      try {
+        const storage = Store.verifiedSessionStorage();
+        const raw = storage && storage.getItem(APP.sessionIdentityKey);
+        const parsed = raw ? JSON.parse(raw) : null;
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+      } catch (error) {
+        return null;
+      }
+    },
+    parseVerifiedSessionIdentity(raw) {
+      try {
+        const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+      } catch (error) {
+        return null;
+      }
+    },
+    async loadVerifiedSessionIdentityAsync() {
+      const sessionIdentity = Store.loadVerifiedSessionIdentity();
+      const persistedIdentity = Store.parseVerifiedSessionIdentity(await Store.rawGetAsync(APP.sessionIdentityKey));
+      const sessionAt = Utils.dateTimestamp(sessionIdentity && sessionIdentity.verifiedAt);
+      const persistedAt = Utils.dateTimestamp(persistedIdentity && persistedIdentity.verifiedAt);
+      return persistedAt > sessionAt ? persistedIdentity : sessionIdentity;
+    },
+    async saveVerifiedSessionIdentity(state) {
+      const identity = Store.syncCacheIdentity(state);
+      if (!identity.userId || !identity.companyId) return;
+      const payload = JSON.stringify({
+        userId: identity.userId,
+        companyId: identity.companyId,
+        verifiedAt: Utils.nowIso()
+      });
+      try {
+        const storage = Store.verifiedSessionStorage();
+        if (storage) storage.setItem(APP.sessionIdentityKey, payload);
+      } catch (error) {}
+      await Store.rawSetAsync(APP.sessionIdentityKey, payload);
+    },
+    clearVerifiedSessionIdentity() {
+      try {
+        const storage = Store.verifiedSessionStorage();
+        if (storage) storage.removeItem(APP.sessionIdentityKey);
+      } catch (error) {}
+      Store.rawDelete(APP.sessionIdentityKey);
+    },
+    verifiedSessionIdentityMatches(state, candidate) {
+      const identity = Store.syncCacheIdentity(state);
+      const verified = candidate || Store.loadVerifiedSessionIdentity();
+      const verifiedAt = Utils.dateTimestamp(verified && verified.verifiedAt) * 1000;
+      return !!(verified && verified.userId === identity.userId && verified.companyId === identity.companyId
+        && verifiedAt > 0 && Date.now() >= verifiedAt && Date.now() - verifiedAt <= Store.verifiedSessionIdentityTtlMs());
+    },
+    startupSyncCacheMatchesPage(state, verifiedIdentity, cache) {
+      const identity = Store.syncCacheIdentity(state);
+      const pageUserId = String(PageData.userId() || '').trim();
+      const pageCompanyId = String(PageData.companyId() || '').trim();
+      // At document-start Torn may not have exposed either live ID yet. A recent
+      // verified marker in the page tab bridges that gap across Ctrl+R; any live
+      // ID which is already available must still agree with the cached identity.
+      if (!identity.userId || !identity.companyId) return false;
+      if (pageUserId && identity.userId !== pageUserId) return false;
+      if (pageCompanyId && identity.companyId !== pageCompanyId) return false;
+      const verified = verifiedIdentity || Store.loadVerifiedSessionIdentity();
+      if (verified && (String(verified.userId || '') !== identity.userId || String(verified.companyId || '') !== identity.companyId)) return false;
+      if (!Store.syncCacheMatches(state, cache || Store.loadSyncCache())) return false;
+      // The saved profile and cache are both written only after an authenticated
+      // company load. This remains a display-only fast path while the live
+      // Torn/Pythagoras access check continues in the background.
+      return true;
+    },
+    startupSyncCacheInfo(state, verifiedIdentity, cache) {
+      const identity = Store.syncCacheIdentity(state);
+      const pageUserId = String(PageData.userId() || '').trim();
+      const pageCompanyId = String(PageData.companyId() || '').trim();
+      if (!identity.userId || !identity.companyId) return { canOpen: false, sliceCount: 0, sliceKeys: [], reason: 'saved identity is incomplete' };
+      if (pageUserId && identity.userId !== pageUserId) return { canOpen: false, sliceCount: 0, sliceKeys: [], reason: 'Torn user does not match the saved user' };
+      if (pageCompanyId && identity.companyId !== pageCompanyId) return { canOpen: false, sliceCount: 0, sliceKeys: [], reason: 'Torn company does not match the saved company' };
+      if (!Store.startupSyncCacheMatchesPage(state, verifiedIdentity, cache)) return { canOpen: false, sliceCount: 0, sliceKeys: [], reason: 'saved cache identity does not match the saved profile' };
+      const sliceKeys = Object.keys(Store.validSyncCacheSlices(state, cache));
+      return { canOpen: sliceKeys.length > 0, sliceCount: sliceKeys.length, sliceKeys, reason: sliceKeys.length ? '' : 'saved data is missing or expired' };
+    },
+    reportUploadSignature(raw) {
+      const row = raw && typeof raw === 'object' ? raw : {};
+      const reportDate = Utils.dateInput(row.reportDate || row.report_date || row.date) || Utils.dayKey(row.timestamp);
+      if (!reportDate) return '';
+      const wages = Utils.num(row.wages ?? row.wageTotal ?? row.wage_total, null);
+      const adBudget = Utils.num(row.adBudget ?? row.ad_budget ?? row.advertisingBudget ?? row.advertising_budget ?? row.advertisement_budget, null);
+      const wagesKnown = wages !== null && row.wagesKnown !== false && row.wages_known !== false;
+      const adBudgetKnown = adBudget !== null && row.adBudgetKnown !== false && row.ad_budget_known !== false && row.advertisingBudgetKnown !== false;
+      return JSON.stringify([
+        reportDate,
+        Utils.int(row.timestamp, 0),
+        Utils.int(row.customers, 0),
+        Utils.int(row.income ?? row.grossIncome ?? row.gross_income, 0),
+        wagesKnown ? wages : null,
+        wagesKnown,
+        adBudgetKnown ? adBudget : null,
+        adBudgetKnown
+      ]);
+    },
+    captureServerReportSignatures(rows) {
+      Store.serverReportSignatures = new Map();
+      (Array.isArray(rows) ? rows : []).forEach((row) => {
+        const date = Utils.dateInput(row && (row.reportDate || row.report_date || row.date)) || Utils.dayKey(row && row.timestamp);
+        const signature = Store.reportUploadSignature(row);
+        if (date && signature) Store.serverReportSignatures.set(date, signature);
+      });
+      Store.serverReportSignaturesReady = Array.isArray(rows);
+    },
+    changedServerReportRows(rows) {
+      const source = Array.isArray(rows) ? rows : [];
+      if (!Store.serverReportSignaturesReady) return source;
+      return source.filter((row) => {
+        const date = Utils.dateInput(row && (row.reportDate || row.report_date || row.date)) || Utils.dayKey(row && row.timestamp);
+        const signature = Store.reportUploadSignature(row);
+        return !date || !signature || Store.serverReportSignatures.get(date) !== signature;
+      });
+    },
+    markServerReportRows(rows) {
+      (Array.isArray(rows) ? rows : []).forEach((row) => {
+        const date = Utils.dateInput(row && (row.reportDate || row.report_date || row.date)) || Utils.dayKey(row && row.timestamp);
+        const signature = Store.reportUploadSignature(row);
+        if (date && signature) Store.serverReportSignatures.set(date, signature);
+      });
+      Store.serverReportSignaturesReady = true;
+    },
     parseSyncCache(raw) {
       if (!raw) return null;
       try {
@@ -1945,17 +2164,26 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       }
     },
     loadSyncCache() {
-      return Store.parseSyncCache(Store.rawGet(APP.syncCacheKey));
+      if (Store.syncCacheMemory) return Store.syncCacheMemory;
+      Store.syncCacheMemory = Store.parseSyncCache(Store.rawGet(APP.syncCacheKey));
+      return Store.syncCacheMemory;
+    },
+    async loadSyncCacheAsync() {
+      const cache = Store.parseSyncCache(await Store.rawGetAsync(APP.syncCacheKey));
+      Store.syncCacheMemory = cache;
+      return cache;
     },
     saveSyncCache(cache) {
       if (!cache || !cache.slices || !Object.keys(cache.slices).length) {
+        Store.syncCacheMemory = null;
         Store.rawDelete(APP.syncCacheKey);
         return;
       }
+      Store.syncCacheMemory = cache;
       Store.rawSet(APP.syncCacheKey, JSON.stringify(cache));
     },
-    validSyncCacheSlices(state) {
-      const cache = Store.loadSyncCache();
+    validSyncCacheSlices(state, loadedCache) {
+      const cache = loadedCache || Store.loadSyncCache();
       if (!Store.syncCacheMatches(state, cache)) return {};
       const now = Date.now();
       const slices = cache.slices && typeof cache.slices === 'object' && !Array.isArray(cache.slices) ? cache.slices : {};
@@ -1973,9 +2201,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       }
       return valid;
     },
-    applySyncCache(state, options) {
+    applySyncCache(state, options, loadedCache) {
       if (!state) return state;
-      const slices = Store.validSyncCacheSlices(state);
+      const slices = Store.validSyncCacheSlices(state, loadedCache);
       const cloneSlice = (key) => slices[key] ? Utils.clone(slices[key]) : null;
       const business = cloneSlice('business');
       if (business) {
@@ -2321,6 +2549,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         usedTrains: Utils.int(row.used_trains, 0),
         contractType: row.contract_type || 'paid',
         manualDiscount: Utils.int(row.manual_discount, 0),
+        merits: Utils.int(row.merits, 0),
         applyDiscount: row.apply_discount !== false,
         paid: !!row.paid,
         done: !!row.done,
@@ -2403,6 +2632,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const company = data.company || {};
       const settings = data.settings && typeof data.settings === 'object' && !Array.isArray(data.settings) ? data.settings : {};
       const watermarks = data.watermarks && typeof data.watermarks === 'object' && !Array.isArray(data.watermarks) ? data.watermarks : {};
+      Store.captureServerReportSignatures(data.dailyReports);
       const plain = (value) => value && typeof value === 'object' && !Array.isArray(value) ? value : {};
       const mergeCloudObjects = (target, sources) => {
         sources.forEach((source) => {
@@ -2582,6 +2812,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       Store.saveCompanySnapshots(snapshots);
     },
     clearAll() {
+      Store.clearVerifiedSessionIdentity();
+      Store.syncCacheMemory = null;
       Store.rawDelete(APP.profileKey);
       Store.rawDelete(APP.storageKey);
       Store.rawDelete(APP.companiesKey);
@@ -3049,6 +3281,21 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       } catch (error) {
         return '';
       }
+    },
+    userLogCursor(url) {
+      const toRaw = String(url && url.searchParams && url.searchParams.get('to') || '').trim();
+      const nanostamp = String(url && url.searchParams && url.searchParams.get('nanostamp') || '').trim();
+      if (!/^\d+$/.test(toRaw) || (nanostamp && !/^\d+$/.test(nanostamp))) return null;
+      const to = Number(toRaw);
+      if (!Number.isSafeInteger(to) || to < 0) return null;
+      return { to, nanostamp };
+    },
+    userLogCursorAdvances(previous, next) {
+      if (!previous || !next) return false;
+      if (next.to < previous.to) return true;
+      // Torn can keep the same second while advancing through 100+ logs by
+      // changing its nanosecond cursor. Exact URL repetition is checked too.
+      return next.to === previous.to && !!next.nanostamp && next.nanostamp !== previous.nanostamp;
     },
     userLog(targetUserId, key, params) {
       const target = String(targetUserId || '').trim();
@@ -4057,6 +4304,16 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         if (!match) return;
         if (match.id) entry.playerId = String(match.id);
         if (match.name) entry.playerName = match.name;
+        const matchedMerits = Utils.clamp(Utils.int(
+          match.merits ?? match.effectiveness_merits ?? (match.effectiveness && match.effectiveness.merits),
+          0
+        ), 0, 10);
+        // The current API training_orders table predates the merits field. Fill
+        // missing/zero legacy rows from the matched current or past staff card.
+        if (matchedMerits > 0 && Utils.int(entry.merits, 0) === 0) {
+          entry.merits = matchedMerits;
+          entry.meritsSource = 'staff-card';
+        }
       });
     },
     importFingerprint(entry) {
@@ -4077,6 +4334,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const uniqueCandidates = new Map();
       (Array.isArray(candidates) ? candidates : []).forEach((candidate) => {
         const eventId = Store.ledgerSourceEventId(candidate);
+        if (Store.isTrainingOrderDismissed(state, eventId)) return;
         const fingerprint = Ledger.importFingerprint(candidate);
         if (eventId && fingerprint && !uniqueCandidates.has(eventId)) uniqueCandidates.set(eventId, Object.assign({}, candidate, { sourceEventId: eventId }));
       });
@@ -4262,6 +4520,28 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         paid,
         done: Boolean(entry.done) || rawRemaining <= 0
       };
+    },
+    previewText(entry, settings) {
+      const totals = Ledger.totals(entry, settings);
+      const effective = totals.totalTrains ? Math.round(totals.finalCost / totals.totalTrains) : totals.price;
+      const saved = Math.max(0, totals.baseCost - totals.finalCost);
+      const parts = [
+        `Final cost: ${Utils.money(totals.finalCost)} (${totals.totalDiscount}% discount)`,
+        `discount saves ${Utils.money(saved)}`,
+        `effective ${Utils.money(effective)} / train`,
+        `${totals.remaining} remaining`
+      ];
+      if (totals.payment > 0 && totals.balance > 0) {
+        parts.push(`${Utils.money(totals.balance)} customer credit`);
+        const next = Ledger.totals(Object.assign({}, entry, { totalTrains: totals.totalTrains + 1, done: false }), settings);
+        const shortfall = Math.max(0, next.finalCost - totals.payment);
+        if (shortfall > 0) parts.push(`next full train needs ${Utils.money(shortfall)} more`);
+      } else if (totals.payment > 0 && totals.balance < 0) {
+        parts.push(`${Utils.money(Math.abs(totals.balance))} still due`);
+      } else if (totals.payment > 0) {
+        parts.push('paid exactly');
+      }
+      return parts.join(', ');
     },
     summary(entries, settings) {
       return entries.reduce((sum, entry) => {
@@ -6731,9 +7011,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         return `<div class="pp-activity-step is-${status}"><span class="pp-activity-mark" aria-hidden="true">${marks[status]}</span><span>${Utils.esc(step && (step.label || step.message) || '')}</span></div>`;
       }).join('');
       const consoleHtml = consoleRows.length
-        ? `<div class="pp-activity-console"><strong>Sync console</strong>${consoleRows.map((row) => `<p><time>${Utils.esc(row.time || '')}</time><span>${Utils.esc(row.message || '')}</span></p>`).join('')}</div>`
+        ? `<div class="pp-activity-console" data-activity-scroll><strong>Sync console</strong>${consoleRows.map((row) => `<p><time>${Utils.esc(row.time || '')}</time><span>${Utils.esc(row.message || '')}</span></p>`).join('')}</div>`
         : '';
-      return `<div class="pp-activity-head"><span class="pp-activity-badge" aria-hidden="true">${badge}</span><span class="pp-activity-title"><strong>${Utils.esc(item.title || 'Pythagoras CIS')}</strong><span>${Utils.esc(item.subtitle || '')}</span></span><span class="pp-activity-percent">${progress}%</span></div><div class="pp-activity-track" aria-hidden="true"><span></span></div><div class="pp-activity-body" data-activity-scroll>${stepRows ? `<div class="pp-activity-steps">${stepRows}</div>` : ''}${consoleHtml}</div>`;
+      return `<div class="pp-activity-head"><span class="pp-activity-badge" aria-hidden="true">${badge}</span><span class="pp-activity-title"><strong>${Utils.esc(item.title || 'Pythagoras CIS')}</strong><span>${Utils.esc(item.subtitle || '')}</span></span><span class="pp-activity-percent">${progress}%</span></div><div class="pp-activity-track" aria-hidden="true"><span></span></div><div class="pp-activity-body">${stepRows ? `<div class="pp-activity-steps">${stepRows}</div>` : ''}${consoleHtml}</div>`;
     },
 
     renderActivityToast() {
@@ -6810,6 +7090,24 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       }, 4200);
     },
 
+    prepareStartupState(state) {
+      if (!state) return false;
+      const standalonePopup = UI.isStandalonePopup();
+      state.ui.minimized = !standalonePopup && state.ui.startMinimized === true;
+      if (standalonePopup) {
+        try { window.name = APP.popupName; } catch (error) {}
+        state.ui.mode = 'popup';
+      }
+      state.settings.userId = state.settings.userId || PageData.userId();
+      state.settings.userName = state.settings.userName || PageData.userName();
+      state.settings.companyId = state.settings.companyId || PageData.companyId();
+      Company.dedupeStaff(state);
+      Company.removeDirectorsFromStaff(state);
+      Ledger.prepare(state);
+      Company.syncTrainingSetup(state);
+      return standalonePopup;
+    },
+
     async init() {
       const startedAt = Date.now();
       UI.installCss(document);
@@ -6820,7 +7118,19 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       document.body.appendChild(UI.root);
       UI.startStartupActivity();
       await new Promise((resolve) => setTimeout(resolve, 0));
-      UI.state = await Store.loadAsync((id, label, status, progress) => UI.startupStep(id, label, status, progress));
+      let cachedDashboardOpened = false;
+      UI.state = await Store.loadAsync(
+        (id, label, status, progress) => UI.startupStep(id, label, status, progress),
+        {
+          onCachedState(cachedState) {
+            UI.state = cachedState;
+            UI.prepareStartupState(UI.state);
+            UI.render(UI.root, document);
+            cachedDashboardOpened = true;
+            UI.startupStep('cache', 'Cached dashboard ready; checking current access in the background', 'done', 20);
+          }
+        }
+      );
       const loadedAt = Date.now();
       UI.startupStep('history', 'Preparing saved company history', 'running', 78);
       if (UI.state.ui.timelineEnabled !== false && UI.state.staff.timeline.length) {
@@ -6832,19 +7142,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         await new Promise((resolve) => setTimeout(resolve, 0));
       }
       UI.startupStep('history', 'Saved company history prepared', 'done', 92);
-      const standalonePopup = UI.isStandalonePopup();
-      UI.state.ui.minimized = !standalonePopup && UI.state.ui.startMinimized === true;
-      if (standalonePopup) {
-        try { window.name = APP.popupName; } catch (error) {}
-        UI.state.ui.mode = 'popup';
-      }
-      UI.state.settings.userId = UI.state.settings.userId || PageData.userId();
-      UI.state.settings.userName = UI.state.settings.userName || PageData.userName();
-      UI.state.settings.companyId = UI.state.settings.companyId || PageData.companyId();
-      Company.dedupeStaff(UI.state);
-      Company.removeDirectorsFromStaff(UI.state);
-      Ledger.prepare(UI.state);
-      Company.syncTrainingSetup(UI.state);
+      const standalonePopup = UI.prepareStartupState(UI.state);
       // Opening a page is not a new operating-cost observation or a workspace edit.
       Store.save(UI.state, { skipMirror: true });
       if (Object.keys(UI.state.staff.localEdits || {}).length && Store.canUseCloudWorkspace(UI.state)) UI.scheduleStaffCardCloudSave(1500);
@@ -6860,7 +7158,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         UI.toast([transitionNotice, workspaceLoadError ? `Workspace access was not loaded: ${workspaceLoadError}` : ''].filter(Boolean).join(' '));
       }
       const renderedAt = Date.now();
-      UI.startupTimings = { workspaceMs: loadedAt - startedAt, historyMs: preparedAt - loadedAt, renderMs: renderedAt - preparedAt, totalMs: renderedAt - startedAt };
+      UI.startupTimings = { cachedDashboardOpened, workspaceMs: loadedAt - startedAt, historyMs: preparedAt - loadedAt, renderMs: renderedAt - preparedAt, totalMs: renderedAt - startedAt };
       console.info('[Pythagoras Project - CIS] Startup timings (ms)', UI.startupTimings);
       UI.scheduleTrainingHighlight();
       window.addEventListener('hashchange', UI.scheduleTrainingHighlight);
@@ -7654,7 +7952,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     topBarSyncButtons() {
       const disabled = UI.apiKeyMissing() || UI.isSyncBusy() ? ' disabled' : '';
       return `<div class="pp-title-sync" aria-label="Sync controls">
-        <button class="pp-btn is-primary ${UI.syncProgressClass('sync-all')}" style="${UI.syncProgressStyle('sync-all')}" type="button" data-action="sync-all" data-sync-action="sync-all" title="Sync business, employees, stock, latest news, training actions, wages, roles, and restocking costs"${disabled}>Sync all</button>
+        <button class="pp-btn is-primary ${UI.syncProgressClass('smart-sync')}" style="${UI.syncProgressStyle('smart-sync')}" type="button" data-action="smart-sync" data-sync-action="smart-sync" title="Quick daily check for new company activity and stale business data"${disabled}>Daily sync</button>
+        <button class="pp-btn ${UI.syncProgressClass('sync-all')}" style="${UI.syncProgressStyle('sync-all')}" type="button" data-action="sync-all" data-sync-action="sync-all" title="Full business, staff, history, wage, role, and stock rebuild"${disabled}>Sync all</button>
       </div>`;
     },
 
@@ -12044,12 +12343,15 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (UI.state.settings.companyId) {
         try {
           UI.state = await Store.loadCloudWorkspace(UI.state, { strict: true });
+          await Store.saveVerifiedSessionIdentity(UI.state);
         } catch (error) {
+          Store.clearVerifiedSessionIdentity();
           workspaceError = error && error.message ? error.message : String(error);
           UI.state.sync = UI.state.sync || {};
           UI.state.sync.workspaceLoadError = workspaceError;
         }
       } else {
+        Store.clearVerifiedSessionIdentity();
         workspaceError = 'This Torn account is not currently attached to a company.';
         UI.state.sync = UI.state.sync || {};
         UI.state.sync.workspaceLoadError = workspaceError;
@@ -12229,8 +12531,12 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (news.lastSynced) result['company/news'] = `Cached · ${(state.staff && state.staff.timeline || []).length.toLocaleString()} saved records`;
       if (budget.lastSynced) result['user/log:6283'] = `Cached · ${(company.adBudgetChangeEvents || []).length} saved changes`;
       if (staff.lastSynced) result['user/log:6263,6265,6267'] = `Cached latest page · ${staff.trainingRows || 0} training actions, ${staff.wageChanges || 0} wage changes, ${staff.roleChanges || 0} role changes`;
-      if (budget.lastError) result['user/log:6283'] = `Failed: ${budget.lastError}`;
-      if (staff.lastError) result['user/log:6263,6265,6267'] = `Failed: ${staff.lastError}`;
+      if (budget.lastError) result['user/log:6283'] = budget.lastSynced
+        ? `Cached with warning · ${(company.adBudgetChangeEvents || []).length} saved changes · Latest refresh failed: ${budget.lastError}`
+        : `Failed: ${budget.lastError}`;
+      if (staff.lastError) result['user/log:6263,6265,6267'] = staff.lastSynced
+        ? `Cached with warning · saved history retained · Latest refresh failed: ${staff.lastError}`
+        : `Failed: ${staff.lastError}`;
       return result;
     },
     syncConsoleHtml() {
@@ -12632,7 +12938,15 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       }
       const parts = payloads || UI.defaultSyncPayload(id);
       const requests = [];
-      if (parts.business) requests.push({ label: 'business profile', path: '/sync/business', payload: UI.businessPayloadForApi(), timeout: 30000 });
+      const carriesReportRows = Array.isArray(parts.reports) && parts.reports.length > 0;
+      if (parts.business) {
+        const businessPayload = UI.businessPayloadForApi();
+        // When this sync also carries report deltas, those rows are the single
+        // source for operating-cost updates. Avoid sending the full history in
+        // the business request and then sending it again as report batches.
+        if (carriesReportRows) businessPayload.operatingCostHistory = [];
+        requests.push({ label: 'business profile', path: '/sync/business', payload: businessPayload, timeout: 30000 });
+      }
       if (parts.staff) {
         const staffPayload = parts.staff === true ? UI.staffPayloadForApi() : parts.staff;
         if ((staffPayload.members || []).length || (staffPayload.snapshots || []).length) requests.push({ label: 'staff', path: '/sync/staff', payload: staffPayload, timeout: 30000 });
@@ -12648,11 +12962,14 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           requests.push({ label: `events ${start + 1}-${start + chunk.length}`, path: '/sync/events', payload: { events: chunk }, timeout: 30000 });
         }
       }
-      if (parts.reports) {
-        const reports = UI.reportRowsForApi(parts.reports);
+      if (carriesReportRows) {
+        const preparedReports = UI.reportRowsForApi(parts.reports);
+        const reports = Store.changedServerReportRows(preparedReports);
+        const unchanged = preparedReports.length - reports.length;
+        if (unchanged) UI.syncStep(id, `Daily reports: ${unchanged.toLocaleString()} already match the Pythagoras API; ${reports.length.toLocaleString()} new or changed.`, 84);
         for (let start = 0; start < reports.length; start += 500) {
           const chunk = reports.slice(start, start + 500);
-          requests.push({ label: `daily reports ${start + 1}-${start + chunk.length}`, path: '/sync/reports', payload: { reports: chunk }, timeout: 30000 });
+          requests.push({ label: `daily reports ${start + 1}-${start + chunk.length}`, path: '/sync/reports', payload: { reports: chunk }, timeout: 30000, reportRows: chunk });
         }
       }
       if (parts.orders) {
@@ -12673,15 +12990,18 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         UI.syncStep(id, `uploading ${request.label} to Pythagoras API.`, progress);
         const result = await Store.cisCompanyApi(UI.state, request.path, request.payload, request.timeout);
         if (!result || !result.ok) throw new Error(result && result.reason || `${request.label} upload failed.`);
+        if (request.reportRows) Store.markServerReportRows(request.reportRows);
         summary[request.label] = result.saved || result.summary || true;
       }
+      await Store.saveVerifiedSessionIdentity(UI.state);
       UI.syncStep(id, 'Pythagoras API accepted the parsed data.', 98);
       return summary;
     },
-    finishSync(id, message) {
+    finishSync(id, message, options) {
+      const warning = !!(options && options.warning);
       const job = UI.syncJobs[id] || { label: id, progress: 100, status: 'done', steps: [] };
       job.progress = 100;
-      job.status = 'done';
+      job.status = warning ? 'warning' : 'done';
       job.finishedAt = Date.now();
       job.steps = Array.isArray(job.steps) ? job.steps : [];
       job.steps.forEach((step) => { if (step.status === 'running') step.status = 'done'; });
@@ -12693,7 +13013,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       UI.updateSyncUi();
       const keepVisible = UI.activitySyncId === id ? 4800 : 2500;
       setTimeout(() => {
-        if (UI.syncJobs[id] && UI.syncJobs[id].status === 'done') {
+        if (UI.syncJobs[id] && ['done', 'warning'].includes(UI.syncJobs[id].status)) {
           delete UI.syncJobs[id];
           if (UI.activitySyncId === id) UI.activitySyncId = '';
           UI.updateSyncUi();
@@ -12727,10 +13047,15 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const backfillTitle = UI.canUseHistoricalBackfill() ? 'Fetch older company news within your entitlement window' : UI.historyWindowMessage();
       return `<div class="pp-sync-center" data-tour="sync-center">
         <div class="pp-sync-groups">
-        <div class="pp-sync-group" data-tour="sync-all">
+        <div class="pp-sync-group">
           <span class="pp-sync-group-title">Daily sync</span>
-          <span class="pp-note mh-muted">Refreshes business, current employees, services sold, latest news, exact training actions, wage and role history, advertising changes, and restocking costs.</span>
-          <button class="pp-btn is-primary ${UI.syncProgressClass('sync-all')}" style="${UI.syncProgressStyle('sync-all')}" type="button" data-action="sync-all" data-sync-action="sync-all"${disabled}>Sync all</button>
+          <span class="pp-note mh-muted">Checks only new company activity and refreshes business, employees, stock, advertising, or restocking data when stale.</span>
+          <button class="pp-btn is-primary ${UI.syncProgressClass('smart-sync')}" style="${UI.syncProgressStyle('smart-sync')}" type="button" data-action="smart-sync" data-sync-action="smart-sync"${disabled}>Daily sync</button>
+        </div>
+        <div class="pp-sync-group" data-tour="sync-all">
+          <span class="pp-sync-group-title">Full rebuild</span>
+          <span class="pp-note mh-muted">Refreshes business, current employees, stock, latest news, exact training actions, wages, roles, advertising changes, and restocking costs.</span>
+          <button class="pp-btn ${UI.syncProgressClass('sync-all')}" style="${UI.syncProgressStyle('sync-all')}" type="button" data-action="sync-all" data-sync-action="sync-all"${disabled}>Sync all</button>
         </div>
         <div class="pp-sync-group">
           <span class="pp-sync-group-title">History tools</span>
@@ -14093,9 +14418,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         form.payment.value = Ledger.totals(seed, UI.state.settings).finalCost.toLocaleString('en-US');
       }
       const entry = Ledger.fromForm(form, UI.state.settings);
-      const totals = Ledger.totals(entry, UI.state.settings);
-      const effective = totals.totalTrains ? Math.round(totals.finalCost / totals.totalTrains) : totals.price;
-      preview.textContent = `Final cost: ${Utils.money(totals.finalCost)} (${totals.totalDiscount}% discount), effective ${Utils.money(effective)} / train, ${totals.remaining} remaining`;
+      preview.textContent = Ledger.previewText(entry, UI.state.settings);
     },
 
     updateLedgerField(field) {
@@ -14470,6 +14793,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     deleteLedger(id) {
       const removed = UI.state.ledger.find((entry) => entry.id === id);
       if (!removed) return;
+      const dismissedImportedOrder = Store.dismissTrainingOrder(UI.state, removed);
       UI.state.ledger = UI.state.ledger.filter((entry) => entry.id !== id);
       Planner.build(UI.state);
       UI.recordLedgerPending();
@@ -14477,6 +14801,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       UI.removeLedgerRow(id);
       UI.updateLedgerSummary();
       Store.save(UI.state);
+      Store.updateSyncCache(UI.state, ['trainingLog', 'planner']);
+      if (dismissedImportedOrder) UI.scheduleSettingsCloudSave(250);
       UI.scheduleWorkspaceMirrorSave('ledger-delete', 1800);
       UI.toast(`Training order ${removed.orderId || ''} deleted.`.trim());
     },
@@ -15218,7 +15544,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const actions = new Map((reusable ? previous.events : []).map((action) => [action.id, action]));
       const seen = new Set();
       let nextUrl = '';
-      let cursorTo = through;
+      let cursor = { to: through, nanostamp: '' };
       let pages = 0;
       do {
         UI.syncStep('staff-history', `Reading hire/wage history page ${pages + 1}${from ? ' (new changes)' : ' (back to joining dates)'}.`, Math.min(85, 25 + pages));
@@ -15242,9 +15568,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         if (nextUrl) {
           const url = new URL(nextUrl);
           if (url.protocol !== 'https:' || url.pathname.replace(/\/$/, '') !== '/v2/user/log' || url.searchParams.has('target') || String(url.searchParams.get('log') || '').split(',').sort().join(',') !== '6242,6265') throw new Error('Unexpected hire/wage history endpoint.');
-          const olderTo = Utils.num(url.searchParams.get('to'), null);
-          if (olderTo === null || olderTo >= cursorTo || olderTo < 0) throw new Error('Hire/wage pagination did not advance to older records.');
-          cursorTo = olderTo;
+          const nextCursor = ApiClient.userLogCursor(url);
+          if (!ApiClient.userLogCursorAdvances(cursor, nextCursor)) throw new Error('Hire/wage pagination did not advance to older records.');
+          cursor = nextCursor;
           if (from) url.searchParams.set('from', String(from));
           nextUrl = url.toString();
           if (seen.has(nextUrl)) throw new Error('Torn repeated a hire/wage history cursor. Existing history was kept.');
@@ -15371,9 +15697,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
 
         Store.save(UI.state);
         Store.updateSyncCache(UI.state, ['business', 'employees', 'stock', 'news', 'trainingLog']);
-        const message = `Sync all complete.${warnings.length ? ` ${warnings.join(' ')}` : ''}`;
+        const message = warnings.length
+          ? `Sync all completed with warnings. ${warnings.join(' ')}`
+          : 'Sync all complete.';
         UI.saveRender(message);
-        UI.finishSync(syncId, message);
+        UI.finishSync(syncId, message, { warning: warnings.length > 0 });
         return { ok: true, partial: warnings.length > 0, message, business: businessResult, news: newsResult, staffHistory: staffHistoryResult };
       } catch (error) {
         UI.failSync(syncId, error);
@@ -15390,7 +15718,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         UI.toast('Add an API key first.');
         return;
       }
-      UI.beginSync(syncId, 'Smart sync');
+      UI.beginSync(syncId, 'Daily sync');
       try {
         UI.syncStep(syncId, 'Using the verified current-company workspace.', 8);
         Company.dedupeStaff(UI.state);
@@ -15464,8 +15792,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         Store.save(UI.state);
         Store.updateSyncCache(UI.state, ['business', 'employees', 'stock', 'news', 'trainingLog']);
         const newsMessage = delta.length
-          ? `Smart sync complete. ${delta.length} new company news entr${delta.length === 1 ? 'y' : 'ies'} synced.`
-          : 'Smart sync complete. No newer company news was found.';
+          ? `Daily sync complete. ${delta.length} new company news entr${delta.length === 1 ? 'y' : 'ies'} synced.`
+          : 'Daily sync complete. No newer company news was found.';
         const message = `${newsMessage}${restockResult ? ` ${restockResult.message}` : ''}`;
         UI.saveRender(message);
         UI.finishSync(syncId, message);
@@ -15737,6 +16065,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (!UI.logImportMatchesTrigger(item, text, trigger)) return { skipped: 'trigger' };
       const sourceEventId = UI.logImportEventId(item, rowId);
       const sourceLogKey = UI.logImportKey(item, rowId);
+      if (Store.isTrainingOrderDismissed(UI.state, sourceEventId)) return { skipped: 'dismissed', sourceEventId, sourceLogKey };
       const exists = UI.state.ledger.some((entry) => (sourceEventId && Store.ledgerSourceEventId(entry) === sourceEventId) || Store.ledgerSourceKey(entry) === sourceLogKey);
       const timestamp = Utils.int(item && (item.timestamp || item.time || item.date), 0);
       const who = UI.logImportPerson(item, text);
@@ -15782,7 +16111,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const rowKeys = new Set();
       const seenCursors = new Set();
       let nextUrl = '';
-      let cursorTo = Number.MAX_SAFE_INTEGER;
+      let cursor = { to: Number.MAX_SAFE_INTEGER, nanostamp: '' };
       let pages = 0;
       do {
         UI.syncStep(syncId, `Reading training-order history page ${pages + 1}.`, Math.min(80, 15 + pages * 3));
@@ -15805,9 +16134,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           if (url.protocol !== 'https:' || url.pathname.replace(/\/$/, '') !== '/v2/user/log' || url.searchParams.has('target') || logs !== '4810,6263') {
             throw new Error('Unexpected training-history pagination endpoint. Existing history was kept.');
           }
-          const olderTo = Utils.num(url.searchParams.get('to'), null);
-          if (olderTo === null || olderTo < 0 || olderTo >= cursorTo) throw new Error('Training-history pagination did not advance to older records. Existing history was kept.');
-          cursorTo = olderTo;
+          const nextCursor = ApiClient.userLogCursor(url);
+          if (!ApiClient.userLogCursorAdvances(cursor, nextCursor)) throw new Error('Training-history pagination did not advance to older records. Existing history was kept.');
+          cursor = nextCursor;
           nextUrl = url.toString();
           if (seenCursors.has(nextUrl)) throw new Error('Torn repeated a training-history cursor. Existing history was kept.');
           seenCursors.add(nextUrl);
@@ -15851,7 +16180,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const reconciledTrains = Math.max(0, usedAfter - usedBefore);
         if (!orderRepair.added && !orderRepair.removed && !orderRepair.tagged && !reconciledTrains && !exactRows.length) {
           const duplicateText = stats.duplicate ? ` ${stats.duplicate} matching row${stats.duplicate === 1 ? ' was' : 's were'} already imported.` : '';
-          const message = `No new "${trigger}" training orders found across ${history.pages} history page${history.pages === 1 ? '' : 's'}.${duplicateText}`;
+          const dismissedText = stats.dismissed ? ` ${stats.dismissed} previously deleted/refunded order${stats.dismissed === 1 ? ' was' : 's were'} kept dismissed.` : '';
+          const message = `No new "${trigger}" training orders found across ${history.pages} history page${history.pages === 1 ? '' : 's'}.${duplicateText}${dismissedText}`;
           Store.save(UI.state);
           UI.finishSync(syncId, message);
           UI.toast(message);
@@ -15871,9 +16201,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           ? ` Reconciled ${reconciledTrains} given train${reconciledTrains === 1 ? '' : 's'} from stored training history.`
           : '';
         const duplicateText = stats.duplicate ? ` ${stats.duplicate} duplicate${stats.duplicate === 1 ? '' : 's'} skipped.` : '';
+        const dismissedText = stats.dismissed ? ` ${stats.dismissed} previously deleted/refunded order${stats.dismissed === 1 ? ' was' : 's were'} kept dismissed.` : '';
         const exactCount = exactRows.reduce((sum, row) => sum + Math.max(0, Utils.int(row.count, 0)), 0);
         const exactText = exactRows.length ? ` Stored ${exactCount} exact train action${exactCount === 1 ? '' : 's'} for reconciliation.` : '';
-        const message = `${importText}${repairText}${reconcileText}${exactText}${duplicateText} Read ${history.pages} history page${history.pages === 1 ? '' : 's'}.`;
+        const message = `${importText}${repairText}${reconcileText}${exactText}${duplicateText}${dismissedText} Read ${history.pages} history page${history.pages === 1 ? '' : 's'}.`;
         UI.saveRender(message);
         UI.finishSync(syncId, message);
       } catch (error) {
