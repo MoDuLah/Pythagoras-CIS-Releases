@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.2.9
+// @version      3.3.0
 // @downloadURL  https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.user.js
 // @updateURL    https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.meta.js
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
@@ -54,7 +54,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.2.9',
+    version: '3.3.0',
     greasyForkScriptId: 580933,
     greasyForkApiUrl: 'https://api.greasyfork.org/en/scripts/580933.json',
     greasyForkPageUrl: 'https://greasyfork.org/en/scripts/580933-pythagoras-project-cis',
@@ -387,7 +387,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     .pp-timeline-grid{align-items:stretch}.pp-timeline-panel,.pp-analytics-panel{display:flex;flex-direction:column;height:min(74vh,760px);align-self:stretch}.pp-timeline-panel.is-collapsed,.pp-analytics-panel.is-collapsed{height:auto}.pp-timeline-panel .pp-content,.pp-analytics-panel .pp-content{display:flex;flex:1 1 auto;flex-direction:column;min-height:0;overflow:hidden}.pp-timeline{display:grid;flex:1 1 auto;gap:8px;min-height:0;overflow:auto;padding-right:4px}.pp-analytics-panel .pp-analytics-scroll{flex:1 1 auto;max-height:none;min-height:0}.pp-event{display:grid;gap:4px;padding:9px 10px;border-left:3px solid var(--event-color,var(--muted));background:#121615;border-radius:0 6px 6px 0}.pp-event time{color:var(--muted);font-size:12px}.pp-event strong{color:#fff}
     .pp-kv{display:grid;grid-template-columns:minmax(110px,.8fr) minmax(0,1.2fr);gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)}.pp-kv>span:first-child{color:var(--muted)}
     .pp-toast{position:fixed;right:20px;bottom:20px;max-width:min(420px,calc(100vw - 36px));border:1px solid rgba(70,197,143,.55);border-radius:8px;background:#102019;color:#effff8;padding:10px 12px;box-shadow:0 12px 28px rgba(0,0,0,.35);z-index:1000001}.pp-toast-confirm{display:grid;gap:8px;border-color:rgba(216,165,69,.75);background:#20180d}.pp-toast-confirm strong{color:#fff}.pp-toast-actions{display:flex;gap:6px;flex-wrap:wrap}.pp-empty{color:var(--muted);padding:12px;border:1px dashed var(--line);border-radius:8px;background:#111313}
-    .pp-activity-toast{position:fixed;right:20px;bottom:72px;z-index:1000002;width:min(410px,calc(100vw - 28px));max-height:calc(100vh - 92px);box-sizing:border-box;overflow:hidden;border:1px solid rgba(70,197,143,.62);border-radius:12px;background:linear-gradient(145deg,rgba(24,31,28,.98),rgba(10,14,12,.98));color:#eff2ef;box-shadow:0 18px 48px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.035) inset;font:12px/1.4 Arial,Helvetica,sans-serif;animation:pp-activity-in .18s ease-out}.pp-activity-toast.is-error{border-color:rgba(217,93,93,.78)}.pp-activity-head{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:9px;align-items:center;padding:11px 12px 9px;border-bottom:1px solid rgba(255,255,255,.08)}.pp-activity-badge{display:grid;place-items:center;width:34px;height:34px;border:1px solid rgba(70,197,143,.55);border-radius:10px;background:rgba(70,197,143,.11);color:#46c58f;font-size:17px;font-weight:800}.pp-activity-toast.is-error .pp-activity-badge{border-color:rgba(217,93,93,.6);background:rgba(217,93,93,.12);color:#f17c7c}.pp-activity-title{min-width:0}.pp-activity-title strong,.pp-activity-title span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pp-activity-title strong{color:#fff;font-size:13px}.pp-activity-title span{color:#a8b0aa;font-size:10px}.pp-activity-percent{color:#46c58f;font-weight:800;font-variant-numeric:tabular-nums}.pp-activity-track{height:4px;background:rgba(255,255,255,.07)}.pp-activity-track span{display:block;width:var(--activity-progress,0%);height:100%;background:linear-gradient(90deg,#2e9f73,#55e69f);box-shadow:0 0 12px rgba(70,197,143,.5);transition:width .2s ease}.pp-activity-toast.is-error .pp-activity-track span{background:linear-gradient(90deg,#a93e46,#ef6d70)}.pp-activity-body{display:grid;gap:8px;min-height:0;overflow:hidden;padding:9px 12px 11px}.pp-activity-steps{display:grid;gap:5px;overflow:visible}.pp-activity-step{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:7px;align-items:start;color:#a8b0aa}.pp-activity-step.is-done{color:#dff9ec}.pp-activity-step.is-running{color:#fff}.pp-activity-step.is-error{color:#ff9a9f}.pp-activity-step.is-skipped{opacity:.7}.pp-activity-elapsed,.pp-sync-elapsed{color:#7faaa0;font-size:10px;font-variant-numeric:tabular-nums;white-space:nowrap}.pp-activity-step.is-running .pp-activity-elapsed{color:#d8a545}.pp-activity-mark{display:grid;place-items:center;width:16px;height:16px;margin-top:1px;border:1px solid rgba(168,176,170,.45);border-radius:50%;font-size:10px;font-weight:800;line-height:1}.pp-activity-step.is-done .pp-activity-mark{border-color:#46c58f;background:#46c58f;color:#07100d}.pp-activity-step.is-error .pp-activity-mark{border-color:#d95d5d;background:#d95d5d;color:#fff}.pp-activity-step.is-running .pp-activity-mark{border-color:#d8a545;border-top-color:transparent;animation:pp-activity-spin .75s linear infinite}.pp-activity-console{display:grid;gap:3px;max-height:min(150px,22vh);min-height:0;overflow:auto;padding-top:7px;border-top:1px solid rgba(255,255,255,.07);scrollbar-color:#46c58f #111513;scrollbar-width:thin}.pp-activity-console strong{position:sticky;top:0;z-index:1;padding-bottom:3px;background:#111513;color:#fff;font-size:10px;text-transform:uppercase;letter-spacing:.07em}.pp-activity-console p{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px;margin:0;color:#a8b0aa;overflow-wrap:anywhere}.pp-activity-console time{color:#46c58f;font-size:10px;font-variant-numeric:tabular-nums}@keyframes pp-activity-spin{to{transform:rotate(360deg)}}@keyframes pp-activity-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .pp-activity-toast{position:fixed;right:20px;bottom:72px;z-index:1000002;width:min(410px,calc(100vw - 28px));max-height:calc(100vh - 92px);box-sizing:border-box;overflow:hidden;border:1px solid rgba(70,197,143,.62);border-radius:12px;background:linear-gradient(145deg,rgba(24,31,28,.98),rgba(10,14,12,.98));color:#eff2ef;box-shadow:0 18px 48px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.035) inset;font:12px/1.4 Arial,Helvetica,sans-serif;animation:pp-activity-in .18s ease-out}.pp-activity-toast.is-error{border-color:rgba(217,93,93,.78)}.pp-activity-head{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:9px;align-items:center;padding:11px 12px 9px;border-bottom:1px solid rgba(255,255,255,.08)}.pp-activity-badge{display:grid;place-items:center;width:34px;height:34px;border:1px solid rgba(70,197,143,.55);border-radius:10px;background:rgba(70,197,143,.11);color:#46c58f;font-size:17px;font-weight:800}.pp-activity-toast.is-error .pp-activity-badge{border-color:rgba(217,93,93,.6);background:rgba(217,93,93,.12);color:#f17c7c}.pp-activity-title{min-width:0}.pp-activity-title strong,.pp-activity-title span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pp-activity-title strong{color:#fff;font-size:13px}.pp-activity-title span{color:#a8b0aa;font-size:10px}.pp-activity-percent{color:#46c58f;font-weight:800;font-variant-numeric:tabular-nums}.pp-activity-track{height:4px;background:rgba(255,255,255,.07)}.pp-activity-track span{display:block;width:var(--activity-progress,0%);height:100%;background:linear-gradient(90deg,#2e9f73,#55e69f);box-shadow:0 0 12px rgba(70,197,143,.5);transition:width .2s ease}.pp-activity-toast.is-error .pp-activity-track span{background:linear-gradient(90deg,#a93e46,#ef6d70)}.pp-activity-body{display:grid;gap:8px;min-height:0;overflow:hidden;padding:9px 12px 11px}.pp-activity-body.has-steps-and-console{gap:0}.pp-activity-steps{display:grid;gap:5px;overflow:visible}.pp-activity-step{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:7px;align-items:start;color:#a8b0aa}.pp-activity-step.is-done{color:#dff9ec}.pp-activity-step.is-running{color:#fff}.pp-activity-step.is-error{color:#ff9a9f}.pp-activity-step.is-skipped{opacity:.7}.pp-activity-elapsed,.pp-sync-elapsed{color:#7faaa0;font-size:10px;font-variant-numeric:tabular-nums;white-space:nowrap}.pp-activity-step.is-running .pp-activity-elapsed{color:#d8a545}.pp-activity-mark{display:grid;place-items:center;width:16px;height:16px;margin-top:1px;border:1px solid rgba(168,176,170,.45);border-radius:50%;font-size:10px;font-weight:800;line-height:1}.pp-activity-step.is-done .pp-activity-mark{border-color:#46c58f;background:#46c58f;color:#07100d}.pp-activity-step.is-error .pp-activity-mark{border-color:#d95d5d;background:#d95d5d;color:#fff}.pp-activity-step.is-running .pp-activity-mark{border-color:#d8a545;border-top-color:transparent;animation:pp-activity-spin .75s linear infinite}.pp-activity-console{display:grid;gap:3px;max-height:min(150px,22vh);min-height:0;overflow:auto;padding-top:7px;border-top:1px solid rgba(255,255,255,.07);scrollbar-color:#46c58f #111513;scrollbar-width:thin}.pp-activity-body.has-steps-and-console .pp-activity-console{padding-top:3px}.pp-activity-console strong{position:sticky;top:0;z-index:1;padding-bottom:3px;background:#111513;color:#fff;font-size:10px;text-transform:uppercase;letter-spacing:.07em}.pp-activity-console p{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px;margin:0;color:#a8b0aa;overflow-wrap:anywhere}.pp-activity-console time{color:#46c58f;font-size:10px;font-variant-numeric:tabular-nums}@keyframes pp-activity-spin{to{transform:rotate(360deg)}}@keyframes pp-activity-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
     .good{color:var(--accent)}.bad{color:var(--bad)}.warn{color:var(--warn)}
     .pp-effectiveness-tip{display:inline-flex;align-items:center;justify-content:center;min-width:2ch;color:inherit;cursor:help;text-decoration:underline dotted transparent;text-underline-offset:2px}.pp-effectiveness-tip.is-left{justify-content:flex-start;text-align:left;min-width:0}.pp-effectiveness-tip:hover,.pp-effectiveness-tip:focus-visible{text-decoration-color:var(--accent);outline:none}
     .pp-hover-tooltip{position:fixed;left:0;top:0;z-index:1000001;min-width:220px;max-width:min(320px,calc(100vw - 16px));padding:10px 11px;border:1px solid var(--tip-accent,#46c58f);border-radius:8px;background:var(--tip-panel,#171a1a);color:var(--tip-text,#eff2ef);box-shadow:0 14px 30px rgba(0,0,0,.38),0 0 0 1px rgba(255,255,255,.04) inset;pointer-events:none}
@@ -3309,6 +3309,14 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       } catch (error) {
         return '';
       }
+    },
+    userLogNextLink(data) {
+      const link = ApiClient.safeNextLink(data);
+      if (!link) return '';
+      const url = new URL(link);
+      const metadataNanostamp = String(data && data._metadata && data._metadata.nanostamp || '').trim();
+      if (!url.searchParams.get('nanostamp') && /^\d+$/.test(metadataNanostamp)) url.searchParams.set('nanostamp', metadataNanostamp);
+      return url.toString();
     },
     userLogCursor(url) {
       const toRaw = String(url && url.searchParams && url.searchParams.get('to') || '').trim();
@@ -7143,7 +7151,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const consoleHtml = consoleRows.length
         ? `<div class="pp-activity-console" data-activity-scroll><strong>Sync console</strong>${consoleRows.map((row) => UI.syncLogRowHtml(row)).join('')}</div>`
         : '';
-      return `<div class="pp-activity-head"><span class="pp-activity-badge" aria-hidden="true">${badge}</span><span class="pp-activity-title"><strong>${Utils.esc(item.title || 'Pythagoras CIS')}</strong><span>${Utils.esc(item.subtitle || '')}</span></span><span class="pp-activity-percent">${progress}%</span></div><div class="pp-activity-track" aria-hidden="true"><span></span></div><div class="pp-activity-body">${stepRows ? `<div class="pp-activity-steps">${stepRows}</div>` : ''}${consoleHtml}</div>`;
+      return `<div class="pp-activity-head"><span class="pp-activity-badge" aria-hidden="true">${badge}</span><span class="pp-activity-title"><strong>${Utils.esc(item.title || 'Pythagoras CIS')}</strong><span>${Utils.esc(item.subtitle || '')}</span></span><span class="pp-activity-percent">${progress}%</span></div><div class="pp-activity-track" aria-hidden="true"><span></span></div><div class="pp-activity-body${stepRows && consoleHtml ? ' has-steps-and-console' : ''}">${stepRows ? `<div class="pp-activity-steps">${stepRows}</div>` : ''}${consoleHtml}</div>`;
     },
 
     renderActivityToast() {
@@ -13847,6 +13855,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.3.0 - Reliable staff-history pagination</summary>
+              <ul><li>Hire and wage-history pagination now carries Torn&apos;s response-metadata nanostamp into the next request when needed.</li><li>Endpoint, account, log-selection, cursor, and repeated-link safeguards continue to protect stored history.</li><li>The Sync all card removes the gap before its console and labels the real Torn logs: 6242 hire, 6263 training, 6265 wage change, and 6267 role change.</li></ul>
+            </details>
+            <details>
               <summary>v3.2.9 - Clear EE details and readable employee graphs</summary>
               <ul><li>Staff efficiency totals recover their matching stored breakdown and always provide a hover or keyboard-focus explanation.</li><li>Single-employee Efficiency history shows the exact raw contribution above every graph point, with spacing for close values.</li><li>Each coloured legend tag can hide or restore its line, and the choice persists so crowded graphs can be simplified.</li><li>The selected-employee view replaces irrelevant disabled controls with clearer component guidance explaining positive and negative contributions.</li></ul>
             </details>
@@ -15921,7 +15933,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       let cursor = { to: through, nanostamp: '' };
       let pages = 0;
       do {
-        UI.syncStep('staff-history', `Reading hire/wage history page ${pages + 1}${from ? ' (new changes)' : ' (back to joining dates)'}.`, Math.min(85, 25 + pages));
+        UI.syncStep('staff-history', `Reading Torn logs 6242 (hire) and 6265 (wage change), history page ${pages + 1}${from ? ' (new changes)' : ' (back to joining dates)'}.`, Math.min(85, 25 + pages));
         const data = nextUrl ? await ApiClient.requestV2Url(nextUrl, state.settings.apiKey)
           : await ApiClient.companyLog('6242,6265', state.settings.apiKey, Object.assign({sort:'DESC', limit:100, to:through}, from ? {from} : {}));
         if (UI.state !== state || String(state.settings.companyId || state.company.profile.id || '') !== companyId || String(state.settings.userId || '') !== userId) throw new Error('Company or account changed during wage sync. Please sync again.');
@@ -15937,7 +15949,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         });
         pages += 1;
         const rawNext = ApiClient.nextLink(data);
-        nextUrl = ApiClient.safeNextLink(data);
+        nextUrl = ApiClient.userLogNextLink(data);
         if (rawNext && !nextUrl) throw new Error('Unsupported hire/wage pagination link.');
         if (nextUrl) {
           const url = new URL(nextUrl);
@@ -15962,7 +15974,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const scope = `${state.settings.companyId}:${state.settings.userId}`;
       UI.beginSync(syncId, 'Sync staff history');
       try {
-        UI.syncStep(syncId, 'Requesting training, wage, and role history from Torn.', 20);
+        UI.syncStep(syncId, 'Requesting Torn logs: 6263 (training), 6265 (wage change), and 6267 (role change).', 20);
         const data = await ApiClient.companyLog('6263,6265,6267', UI.state.settings.apiKey, { sort: 'DESC', limit: 100 });
         if (UI.state !== state || `${state.settings.companyId}:${state.settings.userId}` !== scope) throw new Error('Company or account changed during staff sync.');
         if (!data || data.error || !data.log || typeof data.log !== 'object') throw new Error('Torn did not return staff logs. Existing history was kept.');

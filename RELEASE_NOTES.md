@@ -1,6 +1,6 @@
-## v3.2.9 - Clear EE details and readable employee graphs
+## v3.3.0 - Reliable staff-history pagination
 
-- Makes every Staff efficiency total a working hover and keyboard-focus target, recovering the matching stored EE breakdown when the current employee record only contains the total.
-- Shows exact raw contribution values above every point in the selected-employee Efficiency graph, with staggered labels for close lines.
-- Makes each coloured component legend tag a persistent show/hide control so overlapping lines can be simplified.
-- Replaces the irrelevant disabled Total EE and component controls in selected-employee view with clearer guidance explaining positive and negative contributions.
+- Continues valid Torn hire and wage-history pagination when `/v2/user/log` supplies its same-second continuation `nanostamp` in response metadata instead of embedding it in the next link.
+- Keeps strict company/account, endpoint, log-selection, malformed-cursor, and repeated-link safeguards so incomplete history is never marked complete.
+- Removes the unnecessary gap between completed Sync all steps and the live Sync console.
+- Names the actual Torn log IDs in the console: `6242` hire, `6263` training, `6265` wage change, and `6267` role change.

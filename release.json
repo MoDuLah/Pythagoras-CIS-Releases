@@ -1,6 +1,6 @@
 {
-  "version": "3.2.9",
-  "sha256": "3d1c25e490f8e28fe692d2374ff1d91835f6104d278ef259506d8c2119720691",
+  "version": "3.3.0",
+  "sha256": "2a484e0937e8fb2c73034fd8b37a827e25e40a2c4698a487b7c04280e37dfa67",
   "scriptId": 580933,
   "installUrl": "https://greasyfork.org/en/scripts/580933-pythagoras-project-cis"
 }
