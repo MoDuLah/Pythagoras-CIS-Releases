@@ -1,7 +1,9 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.2.7
+// @version      3.2.8
+// @downloadURL  https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.user.js
+// @updateURL    https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.meta.js
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
 // @author       MoDuL [4022159]
 // @match        https://www.torn.com/companies.php*
@@ -23,6 +25,7 @@
 // @grant        unsafeWindow
 // @connect      api.torn.com
 // @connect      pp-api.sokin.xyz
+// @connect      api.greasyfork.org
 // @run-at       document-start
 // ==/UserScript==
 
@@ -51,7 +54,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.2.7',
+    version: '3.2.8',
+    greasyForkScriptId: 580933,
+    greasyForkApiUrl: 'https://api.greasyfork.org/en/scripts/580933.json',
+    greasyForkPageUrl: 'https://greasyfork.org/en/scripts/580933-pythagoras-project-cis',
     popupName: 'pythagoras-cis-popup'
   };
 
@@ -307,7 +313,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       },
       wageRoleRequirements: {}
     },
-    ui: { tab: 'timeline', staffTab: 'current', directorTab: 'current', ledgerTab: 'orders', settingsSection: 'core', timelineFilter: 'all', timelineGrouped: true, timelineEnabled: true, analyticsYear: 'all', analyticsExpanded: {}, dailyBalanceMode: 'week', dailyBalanceStart: '', dailyBalanceIncludeWages: true, graphIndex: 0, graphScale: 'daily', graphSeries: { income: true, customers: true, wages: true, adBudget: true, profit: true }, staffEeMode: 'total', staffEeMetric: 'workingStats', staffEeRange: '30', staffEeEmployee: 'all', trainingLogStart: '', trainingLogYear: 'all', profileSort: 'name', profileSortDir: 'asc', tableSorts: {}, showApiKey: false, privacyMode: false, tourActive: false, tourStep: 0, startMinimized: false, minimized: false, mode: 'embedded', editMode: false, editPersonKey: '', editDirectorKey: '', personSaveExit: false, plannerQueueHidden: false, collapsedPanels: {}, detailOpenState: {}, panelSizes: {}, reportSections: { summary: true, ledger: true, trainingLog: true, planner: true, analytics: true, balance: true, stock: true, staff: true, pastStaff: false, directors: false, timeline: true, profile: true, details: true, settings: true }, left: '', top: '', restoreWidth: '', restoreHeight: '' }
+    ui: { tab: 'timeline', staffTab: 'current', directorTab: 'current', ledgerTab: 'orders', settingsSection: 'core', timelineFilter: 'all', timelineGrouped: true, timelineEnabled: true, analyticsYear: 'all', analyticsExpanded: {}, dailyBalanceMode: 'week', dailyBalanceStart: '', dailyBalanceIncludeWages: true, graphIndex: 0, graphScale: 'daily', graphSeries: { income: true, customers: true, wages: true, adBudget: true, profit: true }, staffEeMode: 'total', staffEeMetric: 'workingStats', staffEeRange: '30', staffEeEmployee: 'all', trainingLogStart: '', trainingLogYear: 'all', profileSort: 'name', profileSortDir: 'asc', tableSorts: {}, showApiKey: false, privacyMode: false, tourActive: false, tourStep: 0, startMinimized: false, minimized: false, mode: 'embedded', editPersonKey: '', editDirectorKey: '', personSaveExit: false, plannerQueueHidden: false, collapsedPanels: {}, detailOpenState: {}, reportSections: { summary: true, ledger: true, trainingLog: true, planner: true, analytics: true, balance: true, stock: true, staff: true, pastStaff: false, directors: false, timeline: true, profile: true, details: true, settings: true }, left: '', top: '', restoreWidth: '', restoreHeight: '' }
   };
 
   const CSS = `
@@ -349,11 +355,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     .pp-tab,.pp-subtab,.pp-btn{min-height:32px;border:1px solid var(--line);border-radius:6px;background:#191d1c;color:var(--text);padding:6px 10px;cursor:pointer;transition:background .14s ease,border-color .14s ease,transform .14s ease;white-space:nowrap}
     .pp-tab{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:max-content}.pp-tab-icon{display:inline-flex;align-items:center;justify-content:center;min-width:1.2em;line-height:1}.pp-tab-label{display:inline-block}.pp-tabs-glyph-only .pp-tabs{flex-wrap:wrap;overflow:hidden}.pp-tabs-glyph-only .pp-tab{width:34px;min-width:34px;padding-left:6px;padding-right:6px}.pp-tabs-glyph-only .pp-tab-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
     .pp-tab:hover,.pp-subtab:hover,.pp-btn:hover{background:#202624;border-color:#4b534f}.pp-tab:active,.pp-subtab:active,.pp-btn:active{transform:translateY(1px)}
-    .pp-tab.is-active,.pp-subtab.is-active,.pp-btn.is-primary{border-color:rgba(70,197,143,.72);background:#173329;color:#effff8}.pp-btn.is-warn{border-color:rgba(216,165,69,.85);background:#2a220f;color:#ffe6a3}.pp-btn.is-danger{border-color:rgba(217,93,93,.75);background:#311d1d}.pp-btn.is-quiet{color:var(--muted);background:transparent}.pp-btn.is-dirty{border-color:var(--warn);box-shadow:0 0 0 1px rgba(216,165,69,.18)}.pp-btn:disabled{opacity:.48;cursor:not-allowed;transform:none}
+    .pp-tab.is-active,.pp-subtab.is-active,.pp-btn.is-primary{border-color:rgba(70,197,143,.72);background:#173329;color:#effff8}.pp-btn.is-warn{border-color:rgba(216,165,69,.85);background:#2a220f;color:#ffe6a3}.pp-btn.is-danger{border-color:rgba(217,93,93,.75);background:#311d1d}.pp-btn.is-quiet{color:var(--muted);background:transparent}.pp-btn.is-dirty{border-color:var(--warn);box-shadow:0 0 0 1px rgba(216,165,69,.18)}.pp-btn:disabled{opacity:.48;cursor:not-allowed;transform:none}.pp-update-status{display:inline-flex;align-items:center;gap:6px;font-weight:700}.pp-update-status.is-current{border-color:rgba(70,197,143,.62);background:#10271f;color:#bdf5d9;cursor:default}.pp-update-status.is-outdated{border-color:rgba(217,93,93,.82);background:#311d1d;color:#ffb0b4;box-shadow:0 0 0 1px rgba(217,93,93,.18),0 0 13px rgba(217,93,93,.24);animation:pp-update-pulse 2.4s ease-in-out infinite}.pp-update-status.is-checking{cursor:wait}.pp-update-status.is-error{border-color:rgba(216,165,69,.85);background:#2a220f;color:#ffe6a3}.pp-update-dot{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:var(--muted);box-shadow:0 0 7px currentColor}.pp-update-status.is-current .pp-update-dot{background:var(--accent)}.pp-update-status.is-outdated .pp-update-dot{background:var(--bad)}.pp-update-status.is-error .pp-update-dot{background:var(--warn)}@keyframes pp-update-pulse{0%,100%{box-shadow:0 0 0 1px rgba(217,93,93,.18),0 0 7px rgba(217,93,93,.14)}50%{box-shadow:0 0 0 1px rgba(217,93,93,.46),0 0 17px rgba(217,93,93,.36)}}@media (prefers-reduced-motion:reduce){.pp-update-status.is-outdated{animation:none}}
     #pythagoras-cis.pp-privacy .pp-privacy-input{filter:blur(5px);caret-color:transparent}#pythagoras-cis.pp-privacy .pp-privacy-value{color:transparent!important;text-shadow:0 0 0 var(--muted)!important;user-select:none}#pythagoras-cis.pp-privacy .pp-privacy-note{color:var(--warn)!important}#pythagoras-cis.pp-privacy .pp-privacy-button{border-color:var(--warn);color:var(--warn);box-shadow:0 0 0 1px rgba(216,165,69,.18)}
     .pp-api-key-missing .pp-input,.pp-tour-target{outline:2px solid var(--warn)!important;outline-offset:2px;box-shadow:0 0 0 4px rgba(216,165,69,.18),0 0 24px rgba(216,165,69,.32)!important}.pp-key-status{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.pp-status-mark{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;border:1px solid currentColor;margin-left:4px;font-size:12px}.pp-sync-center{display:grid;grid-template-columns:minmax(0,1fr) minmax(230px,330px);gap:10px;align-items:start}.pp-sync-groups{display:grid;gap:8px;min-width:0}.pp-sync-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.pp-sync-group-title{flex:0 0 100%;color:var(--muted);font-size:12px;font-weight:700}.pp-sync-center .pp-btn{margin-bottom:4px}.pp-sync-progress{background:linear-gradient(90deg,rgba(70,197,143,.34) var(--sync-progress,0%),#191d1c var(--sync-progress,0%));border-color:rgba(70,197,143,.55);color:#fff!important;text-shadow:-1px -1px 0 #000,0 -1px 0 #000,1px -1px 0 #000,-1px 0 0 #000,1px 0 0 #000,-1px 1px 0 #000,0 1px 0 #000,1px 1px 0 #000}.pp-sync-progress.is-warn{background:linear-gradient(90deg,rgba(216,165,69,.36) var(--sync-progress,0%),#2a220f var(--sync-progress,0%))}.pp-sync-progress.is-danger{background:linear-gradient(90deg,rgba(217,93,93,.34) var(--sync-progress,0%),#311d1d var(--sync-progress,0%))}.pp-sync-console{min-height:132px;max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:8px;background:#101312;padding:8px;font-size:12px;color:var(--muted)}.pp-sync-console strong{display:block;color:#fff;margin-bottom:4px}.pp-sync-console p{margin:0 0 4px;overflow-wrap:anywhere}.pp-sync-console time{color:var(--accent);font-size:11px;margin-right:5px}.pp-tour-card{position:fixed;left:var(--tour-left,18px);top:var(--tour-top,76px);right:auto;bottom:auto;z-index:28;width:min(460px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;border:1px solid var(--warn);border-radius:8px;background:#171309;color:var(--text);padding:11px 12px;box-shadow:0 14px 36px rgba(0,0,0,.42)}.pp-tour-card strong{display:block;color:#fff;margin-bottom:3px}.pp-tour-card p{margin:0;color:var(--muted)}.pp-tour-card ul{margin:8px 0 0 18px;padding:0;color:var(--muted)}.pp-tour-card li{margin:4px 0}.pp-tour-card .pp-row-actions{margin-top:8px}.pp-tour-step{color:var(--warn);font-weight:700}
     .pp-body{overflow:auto;padding:14px;background:var(--bg)}#pythagoras-cis.pp-cis-launcher-only{display:none!important}#pythagoras-cis.pp-cis-minimized{width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important;max-width:40px!important;max-height:40px!important;resize:none!important;border:0!important;background:transparent!important;box-shadow:none!important;overflow:visible!important}#pythagoras-cis.pp-cis-minimized.pp-minimized-docked{position:fixed!important}#pythagoras-cis.pp-cis-minimized.pp-footer-button-mounted{display:none!important}#ppcis-footer-wrap{transition:transform linear;display:inline-block!important;visibility:visible!important;opacity:1!important}#ppcis-footer-wrap:empty{display:none!important}#ppcis-footer-btn[data-ppcis-alerts]{position:relative;overflow:hidden}#ppcis-footer-btn[data-ppcis-alerts]::after{content:"";position:absolute;inset:2px;border-radius:inherit;pointer-events:none;opacity:0;box-shadow:inset 0 0 0 1px rgba(217,93,93,.72),inset 0 0 10px rgba(217,93,93,.9),inset 0 0 18px rgba(217,93,93,.48);animation:pp-footer-alert-glow 5s ease-in-out infinite}@keyframes pp-footer-alert-glow{0%,82%,100%{opacity:0}88%,94%{opacity:1}}#ppcis-footer-btn .pp-footer-button-icon{display:block!important;width:24px!important;height:24px!important;max-width:24px!important;max-height:24px!important;pointer-events:none!important}#ppcis-footer-btn .pp-footer-button-icon *{pointer-events:none!important}.pp-cis-minimized .pp-shell{display:block;width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important;max-height:none;background:transparent}.pp-cis-minimized .pp-tabs,.pp-cis-minimized .pp-body,.pp-cis-minimized .pp-alerts{display:none}.pp-cis-minimized .pp-titlebar{display:grid;place-items:center;width:40px;height:40px;max-width:40px;gap:0;padding:0;border:1px solid var(--accent);cursor:pointer;background:var(--accent);border-radius:8px;box-shadow:0 2px 0 rgba(255,255,255,.1) inset,0 1px 5px rgba(0,0,0,.36);transition:filter .14s ease,transform .14s ease}.pp-cis-minimized .pp-titlebar:hover{filter:brightness(1.08)}.pp-cis-minimized .pp-titlebar:active{transform:translateY(1px)}.pp-cis-minimized .pp-brand{display:grid;place-items:center;width:100%;height:100%;min-width:0}.pp-cis-minimized .pp-logo-mark{flex-basis:auto;width:30px;height:30px;border:0;border-radius:0;background:transparent;box-shadow:none;filter:drop-shadow(0 0 3px rgba(0,0,0,.5))}.pp-cis-minimized .pp-brand strong,.pp-cis-minimized .pp-brand span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}.pp-cis-minimized .pp-brand:before{display:none}.pp-cis-minimized .pp-actions{display:none}.pp-popup-badge{width:auto;max-width:300px}.pp-popup-badge .pp-shell{display:block;min-height:0;background:transparent}.pp-popup-badge .pp-titlebar{display:flex;cursor:pointer;border:0;padding:8px 10px}.pp-popup-badge .pp-actions{display:flex}.pp-popup-badge .pp-tabs,.pp-popup-badge .pp-body,.pp-popup-badge .pp-alerts{display:none}
-    .pp-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;align-items:start;min-width:0}.pp-panel{position:relative;grid-column:span 12;align-self:start;border:1px solid var(--line);border-radius:8px;background:var(--panel);overflow:hidden;min-width:0;max-width:100%}.pp-edit-mode .pp-panel{resize:both;overflow:auto;min-width:260px;min-height:120px;box-shadow:inset -1px -1px 0 rgba(70,197,143,.4)}.pp-edit-mode .pp-panel:after{content:'';position:absolute;right:5px;bottom:5px;width:13px;height:13px;border-right:2px solid var(--accent);border-bottom:2px solid var(--accent);opacity:.85;pointer-events:none}.pp-panel.is-collapsed .pp-content{display:none}.pp-panel.is-half{grid-column:span 6}.pp-panel.is-third{grid-column:span 4}.pp-collapse-toggle,.pp-hint-toggle{position:absolute;top:8px;z-index:3;display:grid;place-items:center;width:26px;min-width:26px;height:26px;min-height:26px;padding:0;margin:0;border-color:var(--accent);color:var(--accent);line-height:1}.pp-collapse-toggle{right:8px}.pp-hint-toggle{right:40px}
+    .pp-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;align-items:start;min-width:0}.pp-panel{position:relative;grid-column:span 12;align-self:start;border:1px solid var(--line);border-radius:8px;background:var(--panel);overflow:hidden;min-width:0;max-width:100%}.pp-panel.is-collapsed .pp-content{display:none}.pp-panel.is-half{grid-column:span 6}.pp-panel.is-third{grid-column:span 4}.pp-collapse-toggle,.pp-hint-toggle{position:absolute;top:8px;z-index:3;display:grid;place-items:center;width:26px;min-width:26px;height:26px;min-height:26px;padding:0;margin:0;border-color:var(--accent);color:var(--accent);line-height:1}.pp-collapse-toggle{right:8px}.pp-hint-toggle{right:40px}
     .pp-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px 82px 14px 14px;border-bottom:1px solid var(--line);background:var(--panel2);min-width:0}.pp-head.is-stack{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}.pp-head.is-stack .pp-row-actions{justify-content:flex-start}.pp-head>*,.pp-field>*,.pp-kv span{min-width:0}.pp-head>div:first-child{flex:1 1 auto}.pp-head>.pp-row-actions{flex:0 1 auto;justify-content:flex-end;align-items:flex-start}.pp-head h2,.pp-head h3{margin:0;font-size:14px;line-height:1.25;color:#fff}.pp-head p,.pp-note{margin:4px 0 0;color:var(--muted);font-size:12px}.pp-content{padding:12px;min-width:0}
     .pp-form{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;align-items:end;min-width:0}.pp-field{display:grid;gap:5px;min-width:0;overflow:hidden}.pp-field.span-2{grid-column:span 2}.pp-field.span-3{grid-column:span 3}.pp-field.span-4{grid-column:span 4}.pp-field.span-6{grid-column:span 6}.pp-field label,.pp-field>span{color:var(--muted);font-size:12px}.pp-priority-grid{display:grid;grid-column:1/-1;grid-template-columns:minmax(190px,1fr) minmax(190px,1fr);gap:9px}.pp-priority-grid .pp-field{border:1px solid var(--line);border-radius:8px;background:#121615;padding:9px 10px}.pp-priority-grid .pp-input,.pp-priority-grid .pp-select{width:min(100%,240px)}.pp-title-switch{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;color:var(--muted);font-size:12px}.pp-discount-row{display:grid;grid-column:1/-1;grid-template-columns:repeat(5,minmax(125px,1fr));gap:9px}.pp-discount-row .pp-field{border:1px solid var(--line);border-radius:8px;background:#121615;padding:9px}.pp-notification-grid{display:grid;grid-column:1/-1;grid-template-columns:repeat(2,minmax(260px,1fr));gap:9px}.pp-notification-rule{display:grid;grid-template-columns:minmax(120px,220px) auto;align-items:end;gap:10px;border:1px solid var(--line);border-radius:8px;background:#121615;padding:10px}.pp-notification-rule .pp-input{width:min(100%,180px)}.pp-notification-rule .pp-row-actions{flex-wrap:nowrap}.pp-notification-rule .pp-row-actions .pp-input{width:7ch;max-width:7ch}.pp-notification-switch{display:grid;gap:5px;align-self:end;color:var(--muted);font-size:12px}.pp-ledger-scroll{max-height:430px;overflow:auto}.pp-ledger-scroll .pp-table thead th{position:sticky;top:0;z-index:2}
     .pp-form-title{grid-column:1/-1;color:#fff;font-weight:700;border-top:1px solid var(--line);padding-top:10px;margin-top:4px}.pp-form-title:first-child{border-top:0;padding-top:0;margin-top:0}
@@ -374,7 +380,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     .pp-disabled-overlay{position:absolute;inset:0;z-index:30;display:grid;place-items:center;padding:18px;background:rgba(0,0,0,.42);backdrop-filter:blur(5px)}.pp-disabled-overlay .pp-empty{max-width:520px;border-color:rgba(217,93,93,.75);background:#1b1111;color:#fff}.pp-disabled-context .pp-body,.pp-disabled-context .pp-tabs,.pp-disabled-context .pp-alerts{filter:blur(2px);pointer-events:none;user-select:none}
     .pp-theme-section{grid-column:1/-1;display:grid;gap:10px;min-width:0;border:1px solid var(--line);border-radius:8px;background:#121615;padding:10px}.pp-theme-section-head{display:grid;gap:3px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.07)}.pp-theme-section h4{margin:0;color:#fff;font-size:13px;line-height:1.25}.pp-theme-section p{margin:0;color:var(--muted);font-size:12px}.pp-theme-section-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;align-items:end}.pp-theme-section-grid .pp-field,.pp-theme-section-grid .pp-field.span-2{grid-column:auto}.pp-theme-editor{display:grid;grid-template-columns:repeat(3,minmax(150px,1fr));gap:10px}.pp-theme-swatch{display:grid;gap:5px}.pp-theme-dirty{border-color:var(--warn)!important}.pp-role-table .pp-inline{max-width:220px}.pp-compact-field .pp-input,.pp-compact-field .pp-select{width:auto;min-width:12ch;max-width:min(260px,calc(100% - 8px))}.pp-api-key{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.pp-api-key .pp-input{flex:0 1 260px;max-width:min(260px,calc(100% - 84px))}.pp-align-top{align-self:start}.pp-identity-settings{align-items:start}.pp-identity-settings>.pp-field{align-self:start}.pp-identity-settings>.pp-field:not(.span-6){border-right:1px solid var(--line);padding-right:10px}.pp-date-format-control{display:grid;gap:6px;align-items:start}.pp-date-format-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.pp-date-format-row .pp-note{margin:0}
     .pp-graph-panel{display:grid;gap:10px}.pp-graph-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap}.pp-graph-stage{display:grid;grid-template-columns:repeat(var(--graph-cols,12),minmax(28px,1fr));gap:8px;align-items:end;min-height:190px;padding:12px;border:1px solid var(--line);border-radius:8px;background:#121615}.pp-bar{display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:6px;align-items:end;min-width:0}.pp-bar b{display:block;color:var(--text);font-size:11px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:-1px -1px 0 var(--pp-text-outline),0 -1px 0 var(--pp-text-outline),1px -1px 0 var(--pp-text-outline),-1px 0 0 var(--pp-text-outline),1px 0 0 var(--pp-text-outline),-1px 1px 0 var(--pp-text-outline),0 1px 0 var(--pp-text-outline),1px 1px 0 var(--pp-text-outline)}.pp-bar span{display:block;height:max(4px,var(--bar));border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,var(--bar-color,var(--accent)),rgba(255,255,255,.12));box-shadow:0 0 0 1px rgba(255,255,255,.08) inset}.pp-bar small{display:block;color:var(--muted);font-size:10px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:-1px -1px 0 var(--pp-muted-outline),0 -1px 0 var(--pp-muted-outline),1px -1px 0 var(--pp-muted-outline),-1px 0 0 var(--pp-muted-outline),1px 0 0 var(--pp-muted-outline),-1px 1px 0 var(--pp-muted-outline),0 1px 0 var(--pp-muted-outline),1px 1px 0 var(--pp-muted-outline)}.pp-series-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.pp-series-toggle{display:inline-flex;align-items:center;gap:5px;min-height:28px;padding:3px 7px;border:1px solid var(--line);border-radius:6px;background:#111313;color:var(--muted);white-space:nowrap}.pp-series-toggle i{width:10px;height:10px;border-radius:50%;background:var(--series-color)}.pp-line-chart{border:1px solid var(--line);border-radius:8px;background:#121615;padding:10px;overflow-x:auto}.pp-line-svg{display:block;width:100%;min-width:760px;height:auto}.pp-line-grid{stroke:rgba(255,255,255,.08);stroke-width:1}.pp-line-axis{stroke:rgba(255,255,255,.24);stroke-width:1.2}.pp-line-axis-label{fill:var(--muted);font-size:15px;font-weight:700}.pp-line-y{fill:var(--muted);font-size:15px}.pp-line-axis-label,.pp-line-y,.pp-line-x{paint-order:stroke fill;stroke:var(--pp-muted-outline);stroke-width:2px;stroke-linejoin:round}.pp-line-y.left{text-anchor:end}.pp-line-y.right{text-anchor:start}.pp-line-zero{stroke:rgba(255,221,0,.32);stroke-width:1;stroke-dasharray:5 5}.pp-line-path{fill:none;stroke:var(--series-color);stroke-width:3;stroke-linejoin:round;stroke-linecap:round}.pp-line-path.is-count{stroke-dasharray:8 7;opacity:.72}.pp-line-point{fill:#121615;stroke:var(--series-color);stroke-width:3}.pp-line-point.is-count{stroke-width:2.4;opacity:.86}.pp-line-label{fill:var(--text);font-size:16px;text-anchor:middle;paint-order:stroke fill;stroke:var(--label-outline,var(--pp-text-outline));stroke-width:4px;stroke-linejoin:round}.pp-line-label.is-count{font-size:14px;opacity:.82}.pp-line-x{fill:var(--muted);font-size:15px;text-anchor:middle}.pp-balance-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.pp-balance-table th,.pp-balance-table td{text-align:center;white-space:nowrap}.pp-balance-table td:nth-child(2){text-align:left}
-    .pp-ee-history{display:grid;gap:10px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--line)}.pp-ee-controls{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.pp-ee-wrap{overflow:auto;max-width:100%;border:1px solid var(--line);border-radius:8px;background:#121615}.pp-ee-grid{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0}.pp-ee-grid th,.pp-ee-grid td{min-width:72px;height:48px;padding:5px 7px;border-right:1px solid rgba(255,255,255,.07);border-bottom:1px solid rgba(255,255,255,.07);text-align:center;white-space:nowrap}.pp-ee-grid thead th{position:sticky;top:0;z-index:2;height:34px;background:var(--panel2);color:var(--muted);font-size:10px}.pp-ee-grid .pp-ee-name{position:sticky;left:0;z-index:1;min-width:140px;max-width:180px;background:var(--panel);color:var(--text);text-align:left;overflow:hidden;text-overflow:ellipsis}.pp-ee-grid thead .pp-ee-name{z-index:3;background:var(--panel2)}.pp-ee-cell{background:rgba(255,255,255,.025);color:var(--text)}.pp-ee-cell.is-up{background:rgba(70,197,143,.18)}.pp-ee-cell.is-down{background:rgba(217,93,93,.2)}.pp-ee-cell.is-flat{background:rgba(255,255,255,.045)}.pp-ee-cell b{display:block;font-size:12px}.pp-ee-cell small{display:block;color:var(--muted);font-size:9px}.pp-ee-cell.is-up small{color:var(--accent)}.pp-ee-cell.is-down small{color:var(--bad)}.pp-ee-legend,.pp-ee-series-legend{display:flex;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:10px}.pp-ee-legend span:before,.pp-ee-series-legend span:before{content:'';display:inline-block;width:9px;height:9px;margin-right:4px;border-radius:2px;vertical-align:-1px;background:var(--series-color,rgba(255,255,255,.06))}.pp-ee-legend .is-up:before{background:rgba(70,197,143,.5)}.pp-ee-legend .is-down:before{background:rgba(217,93,93,.55)}.pp-ee-line-chart{overflow:auto}.pp-ee-line-chart .pp-line-svg{width:auto;max-width:none}.pp-ee-series-legend{padding:1px 2px}.pp-ee-series-legend span{white-space:nowrap}
+    .pp-ee-history{display:grid;gap:10px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--line)}.pp-ee-controls{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.pp-ee-wrap{overflow:auto;max-width:100%;border:1px solid var(--line);border-radius:8px;background:#121615}.pp-ee-grid{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0}.pp-ee-grid th,.pp-ee-grid td{min-width:72px;height:48px;padding:5px 7px;border-right:1px solid rgba(255,255,255,.07);border-bottom:1px solid rgba(255,255,255,.07);text-align:center;white-space:nowrap}.pp-ee-grid thead th{position:sticky;top:0;z-index:2;height:34px;background:var(--panel2);color:var(--muted);font-size:10px}.pp-ee-grid .pp-ee-name{position:sticky;left:0;z-index:1;min-width:210px;max-width:260px;background:var(--panel);color:var(--text);text-align:left;overflow:hidden;text-overflow:ellipsis}.pp-ee-grid thead .pp-ee-name{z-index:3;background:var(--panel2)}.pp-ee-person{display:flex;align-items:center;gap:7px;min-width:0}.pp-ee-person-name{overflow:hidden;text-overflow:ellipsis}.pp-ee-person-role{flex:0 1 auto;max-width:125px;overflow:hidden;text-overflow:ellipsis;padding:2px 6px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.035);color:var(--muted);font-size:9px;font-weight:400}.pp-ee-cell{background:rgba(255,255,255,.025);color:var(--text)}.pp-ee-cell.is-up{background:rgba(70,197,143,.18)}.pp-ee-cell.is-down{background:rgba(217,93,93,.2)}.pp-ee-cell.is-flat{background:rgba(255,255,255,.045)}.pp-ee-cell b{display:block;font-size:12px}.pp-ee-cell small{display:block;color:var(--muted);font-size:9px}.pp-ee-cell.is-up small{color:var(--accent)}.pp-ee-cell.is-down small{color:var(--bad)}.pp-ee-legend,.pp-ee-series-legend{display:flex;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:10px}.pp-ee-legend span:before,.pp-ee-series-legend span:before{content:'';display:inline-block;width:9px;height:9px;margin-right:4px;border-radius:2px;vertical-align:-1px;background:var(--series-color,rgba(255,255,255,.06))}.pp-ee-legend .is-up:before{background:rgba(70,197,143,.5)}.pp-ee-legend .is-down:before{background:rgba(217,93,93,.55)}.pp-ee-line-chart{overflow:auto}.pp-ee-line-chart .pp-line-svg{width:auto;max-width:none}.pp-ee-series-legend{padding:1px 2px}.pp-ee-series-legend span{white-space:nowrap}
     .pp-statline{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.pp-stat{min-height:58px;border:1px solid var(--line);border-radius:8px;background:#121615;padding:10px}.pp-stat small{display:block;color:var(--muted);margin-bottom:3px}.pp-stat strong{display:block;font-size:18px;color:#fff;overflow-wrap:anywhere}
 .pp-calendar{display:grid;grid-template-columns:repeat(7,minmax(140px,1fr));gap:8px;overflow-x:auto}.pp-day{display:grid;align-content:start;gap:8px;min-width:0;min-height:132px;border:1px solid var(--line);border-radius:8px;background:#121615;padding:9px}.pp-day-head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px}.pp-day-head h4{margin:0;font:700 12px/1.25 Arial,Helvetica,sans-serif;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pp-day-reset{display:grid;place-items:center;width:26px;min-width:26px;height:24px;min-height:24px;padding:0;margin:0;color:var(--accent);border-color:var(--accent)}.pp-day-table{width:100%;border-collapse:collapse;table-layout:fixed}.pp-day-table td{padding:4px 3px;border-top:1px solid rgba(255,255,255,.06);vertical-align:middle;color:var(--muted)}.pp-day-table td:first-child{width:36px;text-align:right;padding-right:6px}.pp-day-table td:last-child{width:34px;text-align:right}.pp-day-row.is-active td{color:#fff;background:rgba(70,197,143,.13);box-shadow:0 1px 0 rgba(70,197,143,.42) inset,0 -1px 0 rgba(70,197,143,.42) inset}.pp-day-row.is-active td:first-child{border-radius:6px 0 0 6px}.pp-day-row.is-active td:last-child{border-radius:0 6px 6px 0}.pp-day-name{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pp-day-table .pp-name{width:100%;max-width:100%;margin:0}.pp-contract-badge{display:inline-grid;place-items:center;width:24px;height:22px;border:1px solid var(--badge-color,var(--line));border-radius:6px;background:rgba(255,255,255,.04);color:var(--badge-color,var(--text));font-weight:800;font-size:11px;line-height:1}.pp-train-controls{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;align-items:center;margin-top:2px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08)}.pp-train-controls .pp-btn{min-width:34px;padding-left:9px;padding-right:9px}.pp-torn-train-glow{box-shadow:0 0 0 2px #FFDD00,0 0 20px rgba(255,221,0,.72)!important;border-radius:7px!important;position:relative!important;z-index:5!important;outline:1px solid rgba(255,221,0,.8)!important}
     #pythagoras-cis .pp-head h2,#pythagoras-cis .pp-head h3{font:700 14px/1.25 Arial,Helvetica,sans-serif!important;margin:0!important;color:#fff!important}#pythagoras-cis .pp-day-head h4{font:700 12px/1.25 Arial,Helvetica,sans-serif!important;margin:0!important;color:#fff!important;letter-spacing:0!important;text-transform:none!important}#pythagoras-cis .pp-tab,#pythagoras-cis .pp-subtab,#pythagoras-cis .pp-btn{font:13px/1.45 Arial,Helvetica,sans-serif!important;text-transform:none!important;letter-spacing:0!important}
@@ -1637,6 +1643,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           date,
           userId,
           username: String(raw.username || raw.name || raw.playerName || userId).trim() || userId,
+          position: String(raw.position || raw.currentRole || raw.current_role || raw.role || '').trim(),
           observedAt: rawObservedAt || `${date}T18:10:00.000Z`,
           efficiency: numberFrom(raw, 'efficiency', 'employee_efficiency'),
           workingStats: numberFrom(raw, 'workingStats', 'working_stats'),
@@ -2857,7 +2864,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       state.ui = Object.assign({}, DEFAULTS.ui, state.ui || {});
       state.ui.collapsedPanels = state.ui.collapsedPanels || {};
       state.ui.detailOpenState = state.ui.detailOpenState || {};
-      state.ui.panelSizes = state.ui.panelSizes || {};
+      delete state.ui.editMode;
+      delete state.ui.panelSizes;
       state.ui.tableSorts = state.ui.tableSorts || {};
       state.ui.analyticsExpanded = state.ui.analyticsExpanded || {};
       state.ui.reportSections = Object.assign({}, DEFAULTS.ui.reportSections, state.ui.reportSections || {});
@@ -3854,14 +3862,16 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       Company.applyTimelineDepartures(state);
     },
     effectiveness(employee) {
-      const raw = employee && employee.effectiveness && typeof employee.effectiveness === 'object' ? employee.effectiveness : {};
+      const source = employee && typeof employee === 'object' ? employee : {};
+      const raw = source.effectiveness && typeof source.effectiveness === 'object' ? source.effectiveness : {};
       const details = {};
-      Object.entries(raw).forEach(([key, value]) => {
-        if (key === 'total') return;
+      const nested = raw.details && typeof raw.details === 'object' && !Array.isArray(raw.details) ? raw.details : {};
+      Object.entries(Object.assign({}, raw, nested)).forEach(([key, value]) => {
+        if (key === 'total' || key === 'details') return;
         const number = Utils.num(value, null);
         if (Number.isFinite(number)) details[key] = number;
       });
-      const total = Utils.num(raw.total || employee.effectiveness_total || employee.efficiency || employee.employee_efficiency, 0);
+      const total = Utils.num(raw.total ?? source.effectiveness_total ?? source.efficiency ?? source.employee_efficiency, 0);
       return { total, details };
     },
     employeeRows(rawEmployees) {
@@ -6966,6 +6976,66 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     }
   };
 
+  const UpdateChecker = {
+    versionParts(value) {
+      const match = String(value || '').trim().match(/^(\d+)(?:\.(\d+))?(?:\.(\d+))?/);
+      return match ? match.slice(1, 4).map((part) => Utils.int(part, 0)) : [0, 0, 0];
+    },
+    compare(left, right) {
+      const a = UpdateChecker.versionParts(left);
+      const b = UpdateChecker.versionParts(right);
+      for (let index = 0; index < Math.max(a.length, b.length); index += 1) {
+        if ((a[index] || 0) !== (b[index] || 0)) return (a[index] || 0) > (b[index] || 0) ? 1 : -1;
+      }
+      return 0;
+    },
+    safeUrl(value, fallback) {
+      try {
+        const url = new URL(String(value || ''), APP.greasyForkPageUrl);
+        const allowedHost = url.hostname === 'greasyfork.org' || url.hostname === 'www.greasyfork.org' || url.hostname === 'update.greasyfork.org';
+        const matchesScript = new RegExp(`/scripts/${APP.greasyForkScriptId}(?:/|-|$)`).test(url.pathname);
+        return url.protocol === 'https:' && allowedHost && matchesScript ? url.href : fallback;
+      } catch (error) {
+        return fallback;
+      }
+    },
+    candidate(payload, currentVersion) {
+      if (!payload || Utils.int(payload.id, 0) !== APP.greasyForkScriptId) return null;
+      const version = String(payload.version || '').trim();
+      if (!version || UpdateChecker.compare(version, currentVersion || APP.version) <= 0) return null;
+      const pageUrl = UpdateChecker.safeUrl(payload.url, APP.greasyForkPageUrl);
+      const installUrl = UpdateChecker.safeUrl(payload.code_url || payload.codeUrl, pageUrl);
+      return { version, pageUrl, installUrl, updatedAt: String(payload.code_updated_at || payload.codeUpdatedAt || '') };
+    },
+    requestLatest() {
+      return new Promise((resolve, reject) => {
+        const details = {
+          method: 'GET',
+          url: APP.greasyForkApiUrl,
+          timeout: 12000,
+          headers: { Accept: 'application/json' },
+          onload(response) {
+            if (Utils.int(response && response.status, 200) >= 400) {
+              reject(new Error(`GreasyFork update check returned HTTP ${response.status}.`));
+              return;
+            }
+            try { resolve(JSON.parse(response.responseText || '{}')); }
+            catch (error) { reject(new Error('GreasyFork update check returned invalid JSON.')); }
+          },
+          onerror() { reject(new Error('GreasyFork update check failed.')); },
+          ontimeout() { reject(new Error('GreasyFork update check timed out.')); }
+        };
+        if (ApiClient.gmRequest(details)) return;
+        fetch(APP.greasyForkApiUrl, { headers: details.headers })
+          .then((response) => {
+            if (!response.ok) throw new Error(`GreasyFork update check returned HTTP ${response.status}.`);
+            return response.json();
+          })
+          .then(resolve, reject);
+      });
+    }
+  };
+
   const UI = {
     state: null,
     root: null,
@@ -7001,6 +7071,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     activityTimer: null,
     activityDismiss: null,
     activityHovered: false,
+    availableUpdate: null,
+    updateCheckStarted: false,
+    updateCheckStatus: 'checking',
 
     activityDocument() {
       return UI.root && UI.root.ownerDocument || (typeof document !== 'undefined' ? document : null);
@@ -7272,6 +7345,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       window.addEventListener('hashchange', UI.scheduleTrainingHighlight);
       window.addEventListener('resize', UI.ensureBounds);
       if (UI.isStandalonePopup()) UI.watchPopupContext();
+      UI.checkForUpdates();
     },
 
     installCss(doc) {
@@ -7324,7 +7398,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (UI.apiKeyMissing() && UI.state.ui.tab !== 'settings') UI.state.ui.tab = 'settings';
       const isPopupBadge = !isPopup && UI.state.ui.mode === 'popup';
       const disabledContext = isPopup && !UI.companyContextOk();
-      root.className = `${UI.themeClass()} ${UI.state.ui.editMode ? 'pp-edit-mode ' : ''}${UI.state.ui.privacyMode ? 'pp-privacy ' : ''}${UI.state.ui.minimized ? 'pp-cis-minimized ' : ''}${isPopup ? 'pp-cis-popup-root ' : ''}${isPopupBadge ? 'pp-popup-badge ' : ''}${disabledContext ? 'pp-disabled-context' : ''}`;
+      root.className = `${UI.themeClass()} ${UI.state.ui.privacyMode ? 'pp-privacy ' : ''}${UI.state.ui.minimized ? 'pp-cis-minimized ' : ''}${isPopup ? 'pp-cis-popup-root ' : ''}${isPopupBadge ? 'pp-popup-badge ' : ''}${disabledContext ? 'pp-disabled-context' : ''}`;
       UI.applyThemeVars(root);
       if (!isPopup) {
         root.style.left = UI.state.ui.left || '';
@@ -7339,9 +7413,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       UI.syncFooterButton(root);
       UI.observeResponsiveTabs(root);
       UI.bind(root, doc);
+      UI.bindEffectivenessTooltips(root);
       UI.bindTimelinePaging(root);
       UI.bindRowBatches(root);
-      UI.observePanelSizes(root);
       if (!isPopup && !isPopupBadge) {
         UI.observeRootBounds();
         setTimeout(UI.ensureBounds, 0);
@@ -7358,11 +7432,6 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const title = head.querySelector('h2,h3');
         const panelId = panel.dataset.panelId || String(title ? title.textContent : `panel-${index}`).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `panel-${index}`;
         panel.dataset.panelId = panelId;
-        const savedSize = UI.state.ui.panelSizes && UI.state.ui.panelSizes[panelId];
-        if (savedSize) {
-          panel.style.width = savedSize.width || '';
-          panel.style.height = savedSize.height || '';
-        }
         if (UI.state.ui.collapsedPanels && UI.state.ui.collapsedPanels[panelId]) panel.classList.add('is-collapsed');
         if (!panel.querySelector('[data-action="collapse-panel"]')) {
           const button = root.ownerDocument.createElement('button');
@@ -7407,7 +7476,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         'theme-editor': 'Theme editor stores visual presets, custom colors, graph colors, and contract colors.'
       };
       const key = String(panelId || '').toLowerCase();
-      return hints[key] || hints[key.replace(/-\d+$/, '')] || 'This panel stores one part of the company workflow. Collapse it or resize it in panel edit mode when you need more room.';
+      return hints[key] || hints[key.replace(/-\d+$/, '')] || 'This panel stores one part of the company workflow. Collapse it when you need more room.';
     },
 
     showPanelHint(panelId) {
@@ -7562,34 +7631,6 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         Array.from(node.childNodes).forEach(walk);
       };
       walk(root);
-    },
-
-    observePanelSizes(root) {
-      if (UI.panelResizeObserver) {
-        UI.panelResizeObserver.disconnect();
-        UI.panelResizeObserver = null;
-      }
-      if (!UI.state.ui.editMode || typeof ResizeObserver !== 'function') return;
-      UI.panelResizeObserver = new ResizeObserver((entries) => {
-        clearTimeout(UI.panelResizeTimer);
-        UI.panelResizeTimer = setTimeout(() => {
-          UI.state.ui.panelSizes = UI.state.ui.panelSizes || {};
-          entries.forEach((entry) => {
-            const panel = entry.target;
-            const panelId = panel.dataset.panelId;
-            const rect = panel.getBoundingClientRect();
-            if (!panelId || rect.width <= 0 || rect.height <= 0) return;
-            UI.state.ui.panelSizes[panelId] = {
-              width: `${Math.round(rect.width)}px`,
-              height: `${Math.round(rect.height)}px`
-            };
-          });
-          Store.save(UI.state);
-          UI.scheduleWorkspaceMirrorSave('panel-resize', 1500);
-          if (root === UI.root) UI.ensureBounds();
-        }, 250);
-      });
-      Array.from(root.querySelectorAll('.pp-panel')).forEach((panel) => UI.panelResizeObserver.observe(panel));
     },
 
     observeRootBounds() {
@@ -8065,6 +8106,66 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       </div>`;
     },
 
+    updateButton() {
+      const update = UI.availableUpdate;
+      if (update && update.version) {
+        const title = `Pythagoras CIS ${update.version} is available. Click here to update now.`;
+        return `<button class="pp-btn pp-update-status is-outdated" type="button" data-action="install-update" title="${Utils.esc(title)}" aria-label="${Utils.esc(title)}"><i class="pp-update-dot" aria-hidden="true"></i>Out of date</button>`;
+      }
+      if (UI.updateCheckStatus === 'error') {
+        const title = 'GreasyFork could not be reached. Click here to check again.';
+        return `<button class="pp-btn pp-update-status is-error" type="button" data-action="retry-update-check" title="${Utils.esc(title)}" aria-label="${Utils.esc(title)}"><i class="pp-update-dot" aria-hidden="true"></i>Check failed</button>`;
+      }
+      if (UI.updateCheckStatus === 'current') {
+        const title = `Pythagoras CIS ${APP.version} is the latest GreasyFork version.`;
+        return `<span class="pp-btn pp-update-status is-current" role="status" title="${Utils.esc(title)}"><i class="pp-update-dot" aria-hidden="true"></i>Up to date</span>`;
+      }
+      return '<span class="pp-btn pp-update-status is-checking" role="status" title="Checking GreasyFork for a newer Pythagoras CIS release"><i class="pp-update-dot" aria-hidden="true"></i>Checking...</span>';
+    },
+
+    syncUpdateButton(root) {
+      const targetRoot = root || UI.currentRoot();
+      if (!targetRoot) return;
+      const actions = targetRoot.querySelector('.pp-actions');
+      const privacy = actions && actions.querySelector('[data-action="toggle-privacy"]');
+      const current = actions && actions.querySelector('.pp-update-status');
+      const holder = targetRoot.ownerDocument.createElement('div');
+      holder.innerHTML = UI.updateButton();
+      const button = holder.firstElementChild;
+      if (!button || !actions || !privacy) return;
+      if (current) current.replaceWith(button);
+      else privacy.insertAdjacentElement('afterend', button);
+    },
+
+    async checkForUpdates(force) {
+      if (UI.updateCheckStarted && !force) return UI.availableUpdate;
+      UI.updateCheckStarted = true;
+      UI.updateCheckStatus = 'checking';
+      UI.syncUpdateButton();
+      try {
+        UI.availableUpdate = UpdateChecker.candidate(await UpdateChecker.requestLatest(), APP.version);
+        UI.updateCheckStatus = UI.availableUpdate ? 'outdated' : 'current';
+        UI.syncUpdateButton();
+        return UI.availableUpdate;
+      } catch (error) {
+        UI.availableUpdate = null;
+        UI.updateCheckStatus = 'error';
+        UI.updateCheckStarted = false;
+        UI.syncUpdateButton();
+        console.warn('[Pythagoras Project - CIS] GreasyFork update check failed.', error);
+        return null;
+      }
+    },
+
+    openAvailableUpdate() {
+      const update = UI.availableUpdate;
+      if (!update) return;
+      const root = UI.currentRoot();
+      const sourceWindow = root && root.ownerDocument && root.ownerDocument.defaultView || window;
+      const opened = sourceWindow.open(update.installUrl || update.pageUrl || APP.greasyForkPageUrl, '_blank');
+      if (!opened) UI.toast('The update page was blocked. Allow pop-ups for Torn, then press Update again.');
+    },
+
     layout(isPopup) {
       const state = UI.state;
       if (!isPopup && state.ui.mode === 'popup') return UI.popupBadge();
@@ -8083,8 +8184,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             </div>
             <div class="pp-actions">
               <button class="pp-btn ${state.ui.privacyMode ? 'is-warn pp-privacy-button' : ''}" type="button" data-action="toggle-privacy" title="${state.ui.privacyMode ? 'Turn privacy mode off' : 'Privacy mode for screenshots'}">PRV</button>
+              ${UI.updateButton()}
               <button class="pp-btn is-quiet" type="button" data-action="toggle-min" title="${state.ui.minimized ? 'Restore' : 'Minimize'}">${state.ui.minimized ? '&#9635;' : '&#8722;'}</button>
-              <button class="pp-btn" type="button" data-action="toggle-edit-mode" title="${state.ui.editMode ? 'Lock Panels' : 'Edit Panels'}">${state.ui.editMode ? '&#128274;' : '&#9998;&#65039;'}</button>
               <button class="pp-btn" type="button" data-action="reset-ui" title="Reset UI">&#9851;&#65039;</button>
               <button class="pp-btn" type="button" data-action="${isPopup ? 'embed-mode' : 'popup-mode'}" title="Embedded/Popup">${isPopup ? '&#128204;' : '&#128470;&#65039;'}</button>
             </div>
@@ -8495,10 +8596,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           tab: 'settings',
           selector: '.pp-actions',
           title: 'Window controls',
-          text: 'The top controls manage the shell: privacy mode, minimize, edit panel layout, reset UI, and popup or embedded mode.',
+          text: 'The top controls manage privacy mode, script updates, minimize, reset UI, and popup or embedded mode.',
           notes: [
             'PRV masks sensitive values for screenshots without deleting data.',
-            'Edit Panels lets you resize panels; Reset UI restores saved panel sizes and layout.',
+            'When GreasyFork has a newer release, an Update button appears beside PRV and opens its installer.',
+            'Reset UI restores the default window position and collapsed panels.',
             'Popup mode is script-only and should reconnect through Torn page changes.'
           ]
         },
@@ -10871,7 +10973,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const grid = `<div class="pp-wrap pp-ee-wrap"><table class="pp-ee-grid"><thead><tr><th class="pp-ee-name">Employee ↓ / newest day → oldest day</th>${dates.map((date) => `<th title="${Utils.esc(Utils.dateShort(date))}">${Utils.esc(Utils.dateMonthDay(date))}</th>`).join('')}</tr></thead>${UI.pagedTableBody('employeeEfficiency', orderedPeople, (person) => {
         const userId = String(person && (person.id || person.userId || person.playerId) || '').trim();
         const fallback = (rowsByUser.get(userId) || []).slice(-1)[0] || {};
-        return `<tr><th class="pp-ee-name" title="${Utils.esc(`${person.name || fallback.username || userId} [${userId}]`)}">${Utils.esc(person.name || fallback.username || userId)}</th>${dates.map((date) => cellFor(byKey.get(`${userId}:${date}`))).join('')}</tr>`;
+        const name = person.name || fallback.username || userId;
+        const role = UI.roleLabel(person.role || person.position || person.currentRole || 'Employee');
+        return `<tr><th class="pp-ee-name" title="${Utils.esc(`${name} [${userId}] · ${role}`)}"><span class="pp-ee-person"><span class="pp-ee-person-name">${Utils.esc(name)}</span><span class="pp-ee-person-role">${Utils.esc(role)}</span></span></th>${dates.map((date) => cellFor(byKey.get(`${userId}:${date}`))).join('')}</tr>`;
       }, dates.length + 1, `${mode}:${metric.key}:${range}:${employeeChoice}`)}</table></div><div class="pp-ee-legend"><span class="is-up">Increase</span><span class="is-down">Decrease</span><span>Unchanged or first stored day</span><span>Hover a cell for the complete EE breakdown and wage</span></div>`;
       return `<div class="pp-ee-history">
         <div class="pp-graph-head">
@@ -11364,6 +11468,20 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       }
       return sum;
     },
+    staffTrainingCredit(person) {
+      const identityMaps = Company.identityMaps(UI.state);
+      const identity = Company.resolveIdentity(person, UI.state, identityMaps);
+      return Math.max(0, Math.round((UI.state.ledger || []).reduce((credit, entry) => {
+        if (!entry || entry.contractType !== 'paid') return credit;
+        const entryIdentity = Company.resolveIdentity({ id: entry.playerId, name: entry.playerName }, UI.state, identityMaps);
+        if (!identity || entryIdentity !== identity) return credit;
+        return credit + Math.max(0, Ledger.totals(entry, UI.state.settings).balance);
+      }, 0)));
+    },
+    personTrainingCreditView(person) {
+      const credit = UI.staffTrainingCredit(person);
+      return UI.personReadonlyValue(Utils.money(credit), 'Unspent money left after this player\'s paid training orders were converted into whole trains.');
+    },
     personMerits(person) {
       const candidates = [person];
       const id = String(person && person.id || '').trim();
@@ -11412,16 +11530,16 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       return UI.personReadonlyValue(Utils.esc(Utils.formatNumber(value || 0)));
     },
     personEfficiencyView(person, align) {
-      const effectiveness = person && person.effectiveness ? person.effectiveness : null;
-      const total = Utils.num(effectiveness && effectiveness.total, Utils.num(person && (person.efficiency || person.employeeEfficiency), 0));
+      const effectiveness = Company.effectiveness(person || {});
+      const total = Utils.num(effectiveness.total, Utils.num(person && (person.efficiency || person.employeeEfficiency), 0));
       if (!total) return '<span class="pp-note">Not detected</span>';
-      const tooltip = effectiveness ? UI.effectivenessTooltip(effectiveness) : '';
+      const tooltip = Object.keys(effectiveness.details || {}).length ? UI.effectivenessTooltip(effectiveness) : '';
       const details = effectiveness && effectiveness.details && typeof effectiveness.details === 'object'
         ? Object.entries(effectiveness.details).map(([key, value]) => `${UI.effectivenessLabel(key)} ${UI.effectivenessValue(value)}`).join(', ')
         : '';
       const fallbackTitle = details ? `Effectiveness ${UI.effectivenessValue(total)}: ${details}` : `Effectiveness ${UI.effectivenessValue(total)}`;
       const attrs = tooltip
-        ? ` tabindex="0" aria-label="${Utils.esc(fallbackTitle)}" data-tooltip-html="${Utils.esc(tooltip)}"`
+        ? ` tabindex="0" title="${Utils.esc(fallbackTitle)}" aria-label="${Utils.esc(fallbackTitle)}" data-tooltip-html="${Utils.esc(tooltip)}"`
         : ` aria-label="${Utils.esc(fallbackTitle)}"`;
       const classes = `pp-effectiveness-tip${align === 'left' ? ' is-left' : ''}`;
       return `<span class="${classes}"${attrs}>${Utils.esc(total)}</span>`;
@@ -11569,6 +11687,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             <div class="pp-form">
               ${UI.field('Contract type', `<select class="pp-select" name="contractType"><option value="" ${!person.contractType ? 'selected' : ''}>Select Contract</option><option value="paid" ${person.contractType === 'paid' ? 'selected' : ''}>Paid Trains</option><option value="sponsored" ${person.contractType === 'sponsored' ? 'selected' : ''}>Sponsored Trains</option></select>`, 'span-2')}
               ${UI.field('Strikes', UI.strikeCounterBadges(person), 'span-2')}
+              ${UI.field('Training credit', UI.personTrainingCreditView(person), 'span-2')}
             </div>
             ${UI.cardSection('current-card:working-stats', 'Working stats', workingStats)}
             ${UI.cardSection('current-card:employment-information', 'Employment information', employmentInfo)}
@@ -11600,7 +11719,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             ${UI.field('Source', `<input class="pp-input" value="${Utils.esc(person.source || 'Not detected')}" disabled>`, 'span-2')}
             ${UI.field('Known aliases', `<input class="pp-input" value="${Utils.esc(aliases || 'None')}" disabled>`, 'span-3')}
             <div class="pp-form-title">Training snapshot</div>
-            ${UI.field('Training totals', `<div class="pp-statline">${(() => { const counters = UI.staffTrainCounters(person); return UI.stat('STR', counters.str) + UI.stat('PTR', counters.ptr) + UI.stat('PT', counters.pt); })()}</div>`, 'span-6')}
+            ${UI.field('Training totals', `<div class="pp-statline">${(() => { const counters = UI.staffTrainCounters(person); return UI.stat('STR', counters.str) + UI.stat('PTR', counters.ptr) + UI.stat('PT', counters.pt) + UI.stat('Credit', Utils.money(UI.staffTrainingCredit(person))); })()}</div>`, 'span-6')}
             <div class="pp-form-title">History</div>
             ${UI.field('Role history', UI.roleHistoryView(person), 'span-6')}
             ${UI.field('Company rank history', UI.rankHistoryView(person), 'span-3')}
@@ -12896,14 +13015,15 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const date = Utils.tctWorkingDayKey(at);
       return Company.dedupePeople(people || []).map((person) => {
         const userId = String(person && (person.id || person.userId || person.playerId) || '').trim();
-        const effectiveness = person && person.effectiveness && typeof person.effectiveness === 'object' ? person.effectiveness : {};
-        const details = effectiveness.details && typeof effectiveness.details === 'object' ? effectiveness.details : {};
+        const effectiveness = Company.effectiveness(person || {});
+        const details = effectiveness.details || {};
         if (!/^\d+$/.test(userId) || !Object.keys(details).length) return null;
         return {
           date,
           historyDate: date,
           userId,
           username: person.name || person.playerName || userId,
+          position: String(person.role || person.position || person.currentRole || '').trim(),
           observedAt: at,
           efficiency: Utils.num(effectiveness.total, null),
           workingStats: Utils.num(details.working_stats, null),
@@ -13668,6 +13788,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.2.8 - Clearer staff insights and update status</summary>
+              <ul><li>Staff efficiency values once again show the complete effectiveness breakdown on hover or keyboard focus.</li><li>Employee Efficiency history uses previous-day comparisons again and shows each employee&apos;s role beside their name.</li><li>A persistent status beside PRV reports whether CIS is up to date and offers one-click updating when GreasyFork has a newer release.</li><li>Player cards show unused paid-training credit, panel editing is removed, and receipts open correctly from the pop-out dashboard.</li></ul>
+            </details>
+            <details>
               <summary>v3.2.7 - Ready-to-send training receipts</summary>
               <ul><li>Receipt opens Torn Mail with the recipient, subject, and full HTML body filled automatically.</li><li>The receipt stays copied to the clipboard as a fallback if browser mail filling is unavailable.</li></ul>
             </details>
@@ -14033,6 +14157,22 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (titlebar && doc === document) titlebar.addEventListener('pointerdown', UI.startDrag);
     },
 
+    bindEffectivenessTooltips(root) {
+      if (!root || !root.querySelectorAll) return;
+      Array.from(root.querySelectorAll('.pp-effectiveness-tip[data-tooltip-html]')).forEach((anchor) => {
+        if (anchor.dataset.ppTooltipBound) return;
+        anchor.addEventListener('mouseenter', () => UI.showTooltip(anchor));
+        anchor.addEventListener('mouseleave', () => {
+          if (UI.activeTooltipAnchor === anchor) UI.hideTooltip();
+        });
+        anchor.addEventListener('focus', () => UI.showTooltip(anchor));
+        anchor.addEventListener('blur', () => {
+          if (UI.activeTooltipAnchor === anchor) UI.hideTooltip();
+        });
+        anchor.dataset.ppTooltipBound = '1';
+      });
+    },
+
     autosaveTarget(control) {
       if (!control || !control.closest) return '';
       if (control.matches('[data-import-file]')) return '';
@@ -14247,8 +14387,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         return;
       }
       if (action === 'toggle-min') UI.toggleMinimized();
-      if (action === 'toggle-edit-mode') { UI.state.ui.editMode = !UI.state.ui.editMode; UI.saveRender(UI.state.ui.editMode ? 'Panel edit mode enabled.' : 'Panel edit mode disabled.'); }
       if (action === 'toggle-privacy') { UI.state.ui.privacyMode = !UI.state.ui.privacyMode; UI.saveRender(UI.state.ui.privacyMode ? 'Privacy mode enabled for screenshots.' : 'Privacy mode disabled.'); }
+      if (action === 'install-update') { UI.openAvailableUpdate(); return; }
+      if (action === 'retry-update-check') { UI.checkForUpdates(true); return; }
       if (action === 'reset-ui') UI.resetUi();
       if (action === 'focus-api-key') UI.focusApiKey();
       if (action === 'start-tour') UI.startTour();
@@ -14270,7 +14411,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (action === 'popup-mode') UI.openPopup();
       if (action === 'embed-mode') UI.closePopup();
       if (action === 'delete-ledger') UI.deleteLedger(id);
-      if (action === 'copy-ledger-receipt') UI.copyLedgerReceipt(id);
+      if (action === 'copy-ledger-receipt') UI.copyLedgerReceipt(id, button.ownerDocument && button.ownerDocument.defaultView);
       if (action === 'edit-person') {
         UI.state.ui.editPersonKey = button.dataset.personKey || '';
         if (UI.state.ui.tab === 'wage') { UI.state.ui.tab = 'staff'; UI.state.ui.staffTab = 'current'; }
@@ -17213,14 +17354,12 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     resetUi() {
       const current = UI.state.ui;
       UI.state.ui = Object.assign({}, current, {
-        editMode: false,
         startMinimized: false,
         minimized: false,
         editPersonKey: '',
         editDirectorKey: '',
         collapsedPanels: {},
         detailOpenState: {},
-        panelSizes: {},
         tableSorts: {},
         analyticsExpanded: {},
         left: '',
@@ -17605,7 +17744,14 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       }
     },
 
-    async copyLedgerReceipt(id) {
+    actionWindow(candidate) {
+      try {
+        if (candidate && !candidate.closed && typeof candidate.open === 'function') return candidate;
+      } catch (error) {}
+      return window;
+    },
+
+    async copyLedgerReceipt(id, sourceWindow) {
       const entry = (UI.state.ledger || []).find((item) => item.id === id);
       if (!entry) {
         UI.toast('Training order not found.');
@@ -17625,14 +17771,21 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const windowName = `pp-receipt-${staffId}`;
       const windowFeatures = 'width=900,height=760';
       const composeBase = `https://www.torn.com/messages.php#/p=compose&XID=${encodeURIComponent(staffId)}`;
-      const popup = window.open(composeBase, windowName, windowFeatures);
+      // A click inside the detached dashboard carries user activation in that
+      // window, not necessarily in its Torn opener. Open from the clicked
+      // document so browsers do not treat the receipt composer as unsolicited.
+      const hostWindow = UI.actionWindow(sourceWindow);
+      const popup = hostWindow.open(composeBase, windowName, windowFeatures);
       try {
         const subject = `Training receipt - ${orderLabel}`.slice(0, 200);
         const composeUrl = await TornMailBridge.buildComposeUrl(staffId, subject, receipt);
         await copyPromise;
-        if (popup && !popup.closed) popup.location.href = composeUrl;
-        else window.open(composeUrl, windowName, windowFeatures);
-        UI.toast(`Training receipt ${orderLabel} opened with its subject and body prepared.`);
+        let composer = popup;
+        if (composer && !composer.closed) composer.location.href = composeUrl;
+        else composer = hostWindow.open(composeUrl, windowName, windowFeatures);
+        UI.toast(composer
+          ? `Training receipt ${orderLabel} opened with its subject and body prepared.`
+          : `Receipt HTML copied for ${orderLabel}, but the browser blocked the Torn Mail popup.`);
       } catch (error) {
         await copyPromise;
         UI.toast(`Receipt HTML copied for ${orderLabel}, but automatic mail filling was unavailable: ${error.message || error}`);
