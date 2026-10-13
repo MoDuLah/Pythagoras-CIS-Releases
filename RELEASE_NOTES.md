@@ -1,9 +1,6 @@
-## v3.2.8 - Clearer staff insights and update status
+## v3.2.9 - Clear EE details and readable employee graphs
 
-- Restores the complete Staff efficiency breakdown tooltip on pointer hover and keyboard focus, with a native-title fallback.
-- Returns Employee Efficiency history colours and deltas to previous-day comparisons instead of comparing every day with an all-time maximum.
-- Shows each employee's role next to their name in Employee Efficiency history.
-- Adds a persistent GreasyFork release status beside PRV: green when up to date, red and clickable when an update is available, and retryable if the check fails.
-- Shows unused paid-training credit on player cards.
-- Removes panel editing and keeps receipt composition inside the existing Torn Mail flow when CIS is in pop-out mode.
-- Retains the approved explicit GreasyFork download and update metadata in every published build.
+- Makes every Staff efficiency total a working hover and keyboard-focus target, recovering the matching stored EE breakdown when the current employee record only contains the total.
+- Shows exact raw contribution values above every point in the selected-employee Efficiency graph, with staggered labels for close lines.
+- Makes each coloured component legend tag a persistent show/hide control so overlapping lines can be simplified.
+- Replaces the irrelevant disabled Total EE and component controls in selected-employee view with clearer guidance explaining positive and negative contributions.

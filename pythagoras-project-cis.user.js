@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.2.8
+// @version      3.2.9
 // @downloadURL  https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.user.js
 // @updateURL    https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.meta.js
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
@@ -54,7 +54,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.2.8',
+    version: '3.2.9',
     greasyForkScriptId: 580933,
     greasyForkApiUrl: 'https://api.greasyfork.org/en/scripts/580933.json',
     greasyForkPageUrl: 'https://greasyfork.org/en/scripts/580933-pythagoras-project-cis',
@@ -313,7 +313,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       },
       wageRoleRequirements: {}
     },
-    ui: { tab: 'timeline', staffTab: 'current', directorTab: 'current', ledgerTab: 'orders', settingsSection: 'core', timelineFilter: 'all', timelineGrouped: true, timelineEnabled: true, analyticsYear: 'all', analyticsExpanded: {}, dailyBalanceMode: 'week', dailyBalanceStart: '', dailyBalanceIncludeWages: true, graphIndex: 0, graphScale: 'daily', graphSeries: { income: true, customers: true, wages: true, adBudget: true, profit: true }, staffEeMode: 'total', staffEeMetric: 'workingStats', staffEeRange: '30', staffEeEmployee: 'all', trainingLogStart: '', trainingLogYear: 'all', profileSort: 'name', profileSortDir: 'asc', tableSorts: {}, showApiKey: false, privacyMode: false, tourActive: false, tourStep: 0, startMinimized: false, minimized: false, mode: 'embedded', editPersonKey: '', editDirectorKey: '', personSaveExit: false, plannerQueueHidden: false, collapsedPanels: {}, detailOpenState: {}, reportSections: { summary: true, ledger: true, trainingLog: true, planner: true, analytics: true, balance: true, stock: true, staff: true, pastStaff: false, directors: false, timeline: true, profile: true, details: true, settings: true }, left: '', top: '', restoreWidth: '', restoreHeight: '' }
+    ui: { tab: 'timeline', staffTab: 'current', directorTab: 'current', ledgerTab: 'orders', settingsSection: 'core', timelineFilter: 'all', timelineGrouped: true, timelineEnabled: true, analyticsYear: 'all', analyticsExpanded: {}, dailyBalanceMode: 'week', dailyBalanceStart: '', dailyBalanceIncludeWages: true, graphIndex: 0, graphScale: 'daily', graphSeries: { income: true, customers: true, wages: true, adBudget: true, profit: true }, staffEeMode: 'total', staffEeMetric: 'workingStats', staffEeRange: '30', staffEeEmployee: 'all', staffEeSeries: { workingStats: true, settledIn: true, book: true, merits: true, directorEducation: true, management: true, wrongGender: true, addiction: true, inactivity: true }, trainingLogStart: '', trainingLogYear: 'all', profileSort: 'name', profileSortDir: 'asc', tableSorts: {}, showApiKey: false, privacyMode: false, tourActive: false, tourStep: 0, startMinimized: false, minimized: false, mode: 'embedded', editPersonKey: '', editDirectorKey: '', personSaveExit: false, plannerQueueHidden: false, collapsedPanels: {}, detailOpenState: {}, reportSections: { summary: true, ledger: true, trainingLog: true, planner: true, analytics: true, balance: true, stock: true, staff: true, pastStaff: false, directors: false, timeline: true, profile: true, details: true, settings: true }, left: '', top: '', restoreWidth: '', restoreHeight: '' }
   };
 
   const CSS = `
@@ -380,7 +380,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     .pp-disabled-overlay{position:absolute;inset:0;z-index:30;display:grid;place-items:center;padding:18px;background:rgba(0,0,0,.42);backdrop-filter:blur(5px)}.pp-disabled-overlay .pp-empty{max-width:520px;border-color:rgba(217,93,93,.75);background:#1b1111;color:#fff}.pp-disabled-context .pp-body,.pp-disabled-context .pp-tabs,.pp-disabled-context .pp-alerts{filter:blur(2px);pointer-events:none;user-select:none}
     .pp-theme-section{grid-column:1/-1;display:grid;gap:10px;min-width:0;border:1px solid var(--line);border-radius:8px;background:#121615;padding:10px}.pp-theme-section-head{display:grid;gap:3px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.07)}.pp-theme-section h4{margin:0;color:#fff;font-size:13px;line-height:1.25}.pp-theme-section p{margin:0;color:var(--muted);font-size:12px}.pp-theme-section-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;align-items:end}.pp-theme-section-grid .pp-field,.pp-theme-section-grid .pp-field.span-2{grid-column:auto}.pp-theme-editor{display:grid;grid-template-columns:repeat(3,minmax(150px,1fr));gap:10px}.pp-theme-swatch{display:grid;gap:5px}.pp-theme-dirty{border-color:var(--warn)!important}.pp-role-table .pp-inline{max-width:220px}.pp-compact-field .pp-input,.pp-compact-field .pp-select{width:auto;min-width:12ch;max-width:min(260px,calc(100% - 8px))}.pp-api-key{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.pp-api-key .pp-input{flex:0 1 260px;max-width:min(260px,calc(100% - 84px))}.pp-align-top{align-self:start}.pp-identity-settings{align-items:start}.pp-identity-settings>.pp-field{align-self:start}.pp-identity-settings>.pp-field:not(.span-6){border-right:1px solid var(--line);padding-right:10px}.pp-date-format-control{display:grid;gap:6px;align-items:start}.pp-date-format-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.pp-date-format-row .pp-note{margin:0}
     .pp-graph-panel{display:grid;gap:10px}.pp-graph-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap}.pp-graph-stage{display:grid;grid-template-columns:repeat(var(--graph-cols,12),minmax(28px,1fr));gap:8px;align-items:end;min-height:190px;padding:12px;border:1px solid var(--line);border-radius:8px;background:#121615}.pp-bar{display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:6px;align-items:end;min-width:0}.pp-bar b{display:block;color:var(--text);font-size:11px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:-1px -1px 0 var(--pp-text-outline),0 -1px 0 var(--pp-text-outline),1px -1px 0 var(--pp-text-outline),-1px 0 0 var(--pp-text-outline),1px 0 0 var(--pp-text-outline),-1px 1px 0 var(--pp-text-outline),0 1px 0 var(--pp-text-outline),1px 1px 0 var(--pp-text-outline)}.pp-bar span{display:block;height:max(4px,var(--bar));border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,var(--bar-color,var(--accent)),rgba(255,255,255,.12));box-shadow:0 0 0 1px rgba(255,255,255,.08) inset}.pp-bar small{display:block;color:var(--muted);font-size:10px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:-1px -1px 0 var(--pp-muted-outline),0 -1px 0 var(--pp-muted-outline),1px -1px 0 var(--pp-muted-outline),-1px 0 0 var(--pp-muted-outline),1px 0 0 var(--pp-muted-outline),-1px 1px 0 var(--pp-muted-outline),0 1px 0 var(--pp-muted-outline),1px 1px 0 var(--pp-muted-outline)}.pp-series-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.pp-series-toggle{display:inline-flex;align-items:center;gap:5px;min-height:28px;padding:3px 7px;border:1px solid var(--line);border-radius:6px;background:#111313;color:var(--muted);white-space:nowrap}.pp-series-toggle i{width:10px;height:10px;border-radius:50%;background:var(--series-color)}.pp-line-chart{border:1px solid var(--line);border-radius:8px;background:#121615;padding:10px;overflow-x:auto}.pp-line-svg{display:block;width:100%;min-width:760px;height:auto}.pp-line-grid{stroke:rgba(255,255,255,.08);stroke-width:1}.pp-line-axis{stroke:rgba(255,255,255,.24);stroke-width:1.2}.pp-line-axis-label{fill:var(--muted);font-size:15px;font-weight:700}.pp-line-y{fill:var(--muted);font-size:15px}.pp-line-axis-label,.pp-line-y,.pp-line-x{paint-order:stroke fill;stroke:var(--pp-muted-outline);stroke-width:2px;stroke-linejoin:round}.pp-line-y.left{text-anchor:end}.pp-line-y.right{text-anchor:start}.pp-line-zero{stroke:rgba(255,221,0,.32);stroke-width:1;stroke-dasharray:5 5}.pp-line-path{fill:none;stroke:var(--series-color);stroke-width:3;stroke-linejoin:round;stroke-linecap:round}.pp-line-path.is-count{stroke-dasharray:8 7;opacity:.72}.pp-line-point{fill:#121615;stroke:var(--series-color);stroke-width:3}.pp-line-point.is-count{stroke-width:2.4;opacity:.86}.pp-line-label{fill:var(--text);font-size:16px;text-anchor:middle;paint-order:stroke fill;stroke:var(--label-outline,var(--pp-text-outline));stroke-width:4px;stroke-linejoin:round}.pp-line-label.is-count{font-size:14px;opacity:.82}.pp-line-x{fill:var(--muted);font-size:15px;text-anchor:middle}.pp-balance-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.pp-balance-table th,.pp-balance-table td{text-align:center;white-space:nowrap}.pp-balance-table td:nth-child(2){text-align:left}
-    .pp-ee-history{display:grid;gap:10px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--line)}.pp-ee-controls{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.pp-ee-wrap{overflow:auto;max-width:100%;border:1px solid var(--line);border-radius:8px;background:#121615}.pp-ee-grid{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0}.pp-ee-grid th,.pp-ee-grid td{min-width:72px;height:48px;padding:5px 7px;border-right:1px solid rgba(255,255,255,.07);border-bottom:1px solid rgba(255,255,255,.07);text-align:center;white-space:nowrap}.pp-ee-grid thead th{position:sticky;top:0;z-index:2;height:34px;background:var(--panel2);color:var(--muted);font-size:10px}.pp-ee-grid .pp-ee-name{position:sticky;left:0;z-index:1;min-width:210px;max-width:260px;background:var(--panel);color:var(--text);text-align:left;overflow:hidden;text-overflow:ellipsis}.pp-ee-grid thead .pp-ee-name{z-index:3;background:var(--panel2)}.pp-ee-person{display:flex;align-items:center;gap:7px;min-width:0}.pp-ee-person-name{overflow:hidden;text-overflow:ellipsis}.pp-ee-person-role{flex:0 1 auto;max-width:125px;overflow:hidden;text-overflow:ellipsis;padding:2px 6px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.035);color:var(--muted);font-size:9px;font-weight:400}.pp-ee-cell{background:rgba(255,255,255,.025);color:var(--text)}.pp-ee-cell.is-up{background:rgba(70,197,143,.18)}.pp-ee-cell.is-down{background:rgba(217,93,93,.2)}.pp-ee-cell.is-flat{background:rgba(255,255,255,.045)}.pp-ee-cell b{display:block;font-size:12px}.pp-ee-cell small{display:block;color:var(--muted);font-size:9px}.pp-ee-cell.is-up small{color:var(--accent)}.pp-ee-cell.is-down small{color:var(--bad)}.pp-ee-legend,.pp-ee-series-legend{display:flex;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:10px}.pp-ee-legend span:before,.pp-ee-series-legend span:before{content:'';display:inline-block;width:9px;height:9px;margin-right:4px;border-radius:2px;vertical-align:-1px;background:var(--series-color,rgba(255,255,255,.06))}.pp-ee-legend .is-up:before{background:rgba(70,197,143,.5)}.pp-ee-legend .is-down:before{background:rgba(217,93,93,.55)}.pp-ee-line-chart{overflow:auto}.pp-ee-line-chart .pp-line-svg{width:auto;max-width:none}.pp-ee-series-legend{padding:1px 2px}.pp-ee-series-legend span{white-space:nowrap}
+    .pp-ee-history{display:grid;gap:10px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--line)}.pp-ee-controls{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.pp-ee-wrap{overflow:auto;max-width:100%;border:1px solid var(--line);border-radius:8px;background:#121615}.pp-ee-grid{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0}.pp-ee-grid th,.pp-ee-grid td{min-width:72px;height:48px;padding:5px 7px;border-right:1px solid rgba(255,255,255,.07);border-bottom:1px solid rgba(255,255,255,.07);text-align:center;white-space:nowrap}.pp-ee-grid thead th{position:sticky;top:0;z-index:2;height:34px;background:var(--panel2);color:var(--muted);font-size:10px}.pp-ee-grid .pp-ee-name{position:sticky;left:0;z-index:1;min-width:210px;max-width:260px;background:var(--panel);color:var(--text);text-align:left;overflow:hidden;text-overflow:ellipsis}.pp-ee-grid thead .pp-ee-name{z-index:3;background:var(--panel2)}.pp-ee-person{display:flex;align-items:center;gap:7px;min-width:0}.pp-ee-person-name{overflow:hidden;text-overflow:ellipsis}.pp-ee-person-role{flex:0 1 auto;max-width:125px;overflow:hidden;text-overflow:ellipsis;padding:2px 6px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.035);color:var(--muted);font-size:9px;font-weight:400}.pp-ee-cell{background:rgba(255,255,255,.025);color:var(--text)}.pp-ee-cell.is-up{background:rgba(70,197,143,.18)}.pp-ee-cell.is-down{background:rgba(217,93,93,.2)}.pp-ee-cell.is-flat{background:rgba(255,255,255,.045)}.pp-ee-cell b{display:block;font-size:12px}.pp-ee-cell small{display:block;color:var(--muted);font-size:9px}.pp-ee-cell.is-up small{color:var(--accent)}.pp-ee-cell.is-down small{color:var(--bad)}.pp-ee-legend,.pp-ee-series-legend{display:flex;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:10px}.pp-ee-legend span:before{content:'';display:inline-block;width:9px;height:9px;margin-right:4px;border-radius:2px;vertical-align:-1px;background:var(--series-color,rgba(255,255,255,.06))}.pp-ee-legend .is-up:before{background:rgba(70,197,143,.5)}.pp-ee-legend .is-down:before{background:rgba(217,93,93,.55)}.pp-ee-line-chart{overflow:auto}.pp-ee-line-chart .pp-line-svg{width:auto;max-width:none}.pp-ee-series-legend{padding:2px}.pp-ee-series-tag{display:inline-flex;align-items:center;gap:5px;min-height:26px;padding:3px 7px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted);cursor:pointer}.pp-ee-series-tag i{width:9px;height:9px;border-radius:50%;background:var(--series-color)}.pp-ee-series-tag.is-active{border-color:var(--series-color);background:rgba(255,255,255,.055);color:var(--text)}.pp-ee-series-tag:not(.is-active){opacity:.48}.pp-ee-series-tag:not(.is-active) i{background:transparent;border:1px solid var(--series-color)}.pp-ee-series-tag:focus-visible{outline:2px solid var(--series-color);outline-offset:2px}.pp-ee-point-value{font-size:12px;font-weight:700}
     .pp-statline{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.pp-stat{min-height:58px;border:1px solid var(--line);border-radius:8px;background:#121615;padding:10px}.pp-stat small{display:block;color:var(--muted);margin-bottom:3px}.pp-stat strong{display:block;font-size:18px;color:#fff;overflow-wrap:anywhere}
 .pp-calendar{display:grid;grid-template-columns:repeat(7,minmax(140px,1fr));gap:8px;overflow-x:auto}.pp-day{display:grid;align-content:start;gap:8px;min-width:0;min-height:132px;border:1px solid var(--line);border-radius:8px;background:#121615;padding:9px}.pp-day-head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px}.pp-day-head h4{margin:0;font:700 12px/1.25 Arial,Helvetica,sans-serif;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pp-day-reset{display:grid;place-items:center;width:26px;min-width:26px;height:24px;min-height:24px;padding:0;margin:0;color:var(--accent);border-color:var(--accent)}.pp-day-table{width:100%;border-collapse:collapse;table-layout:fixed}.pp-day-table td{padding:4px 3px;border-top:1px solid rgba(255,255,255,.06);vertical-align:middle;color:var(--muted)}.pp-day-table td:first-child{width:36px;text-align:right;padding-right:6px}.pp-day-table td:last-child{width:34px;text-align:right}.pp-day-row.is-active td{color:#fff;background:rgba(70,197,143,.13);box-shadow:0 1px 0 rgba(70,197,143,.42) inset,0 -1px 0 rgba(70,197,143,.42) inset}.pp-day-row.is-active td:first-child{border-radius:6px 0 0 6px}.pp-day-row.is-active td:last-child{border-radius:0 6px 6px 0}.pp-day-name{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pp-day-table .pp-name{width:100%;max-width:100%;margin:0}.pp-contract-badge{display:inline-grid;place-items:center;width:24px;height:22px;border:1px solid var(--badge-color,var(--line));border-radius:6px;background:rgba(255,255,255,.04);color:var(--badge-color,var(--text));font-weight:800;font-size:11px;line-height:1}.pp-train-controls{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;align-items:center;margin-top:2px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08)}.pp-train-controls .pp-btn{min-width:34px;padding-left:9px;padding-right:9px}.pp-torn-train-glow{box-shadow:0 0 0 2px #FFDD00,0 0 20px rgba(255,221,0,.72)!important;border-radius:7px!important;position:relative!important;z-index:5!important;outline:1px solid rgba(255,221,0,.8)!important}
     #pythagoras-cis .pp-head h2,#pythagoras-cis .pp-head h3{font:700 14px/1.25 Arial,Helvetica,sans-serif!important;margin:0!important;color:#fff!important}#pythagoras-cis .pp-day-head h4{font:700 12px/1.25 Arial,Helvetica,sans-serif!important;margin:0!important;color:#fff!important;letter-spacing:0!important;text-transform:none!important}#pythagoras-cis .pp-tab,#pythagoras-cis .pp-subtab,#pythagoras-cis .pp-btn{font:13px/1.45 Arial,Helvetica,sans-serif!important;text-transform:none!important;letter-spacing:0!important}
@@ -939,6 +939,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           staffEeMode: ['total', 'component', 'both'].includes(source.staffEeMode) ? source.staffEeMode : 'total',
           staffEeMetric: String(source.staffEeMetric || 'workingStats'),
           staffEeRange: ['7', '14', '30', '90', 'all'].includes(String(source.staffEeRange)) ? String(source.staffEeRange) : '30',
+          staffEeSeries: Object.keys(DEFAULTS.ui.staffEeSeries).reduce((next, key) => {
+            next[key] = !source.staffEeSeries || source.staffEeSeries[key] !== false;
+            return next;
+          }, {}),
           startMinimized: source.startMinimized === true,
           timelineEnabled: source.timelineEnabled !== false
         };
@@ -970,6 +974,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (source.staffEeMode) state.ui.staffEeMode = source.staffEeMode;
       if (source.staffEeMetric) state.ui.staffEeMetric = source.staffEeMetric;
       if (source.staffEeRange) state.ui.staffEeRange = source.staffEeRange;
+      if (source.staffEeSeries) state.ui.staffEeSeries = Object.assign({}, DEFAULTS.ui.staffEeSeries, source.staffEeSeries);
       if (Object.prototype.hasOwnProperty.call(source, 'startMinimized')) state.ui.startMinimized = source.startMinimized === true;
       if (Object.prototype.hasOwnProperty.call(source, 'timelineEnabled')) state.ui.timelineEnabled = source.timelineEnabled !== false;
       if (source.reportSections) state.ui.reportSections = Object.assign({}, DEFAULTS.ui.reportSections, source.reportSections);
@@ -985,6 +990,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           staffEeMode: ['total', 'component', 'both'].includes(ui.staffEeMode) ? ui.staffEeMode : 'total',
           staffEeMetric: String(ui.staffEeMetric || 'workingStats'),
           staffEeRange: ['7', '14', '30', '90', 'all'].includes(String(ui.staffEeRange)) ? String(ui.staffEeRange) : '30',
+          staffEeSeries: Object.keys(DEFAULTS.ui.staffEeSeries).reduce((next, key) => {
+            next[key] = !ui.staffEeSeries || ui.staffEeSeries[key] !== false;
+            return next;
+          }, {}),
           startMinimized: ui.startMinimized === true,
           timelineEnabled: ui.timelineEnabled !== false,
           reportSections: Object.keys(DEFAULTS.ui.reportSections).reduce((next, key) => {
@@ -2870,6 +2879,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       state.ui.analyticsExpanded = state.ui.analyticsExpanded || {};
       state.ui.reportSections = Object.assign({}, DEFAULTS.ui.reportSections, state.ui.reportSections || {});
       state.ui.graphSeries = Object.assign({}, DEFAULTS.ui.graphSeries, state.ui.graphSeries || {});
+      state.ui.staffEeSeries = Object.assign({}, DEFAULTS.ui.staffEeSeries, state.ui.staffEeSeries || {});
       if (state.ui.tab === 'detailed') state.ui.tab = 'profile';
       if (state.ui.tab === 'lic' + 'ense') state.ui.tab = 'settings';
       delete state['lic' + 'ense'];
@@ -10853,19 +10863,27 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       ];
     },
 
+    employeeEfficiencySeriesState() {
+      UI.state.ui.staffEeSeries = Object.assign({}, DEFAULTS.ui.staffEeSeries, UI.state.ui.staffEeSeries || {});
+      return UI.state.ui.staffEeSeries;
+    },
+
     employeeEfficiencyLineGraph(person, dates, byKey, metrics) {
       const userId = String(person && (person.id || person.userId || person.playerId) || '').trim();
       const rows = (dates || []).map((date) => byKey.get(`${userId}:${date}`)).filter(Boolean);
       if (!rows.length) return `<div class="pp-empty">No completed Torn-day history is stored for ${Utils.esc(person.name || userId)} in this range.</div>`;
+      const selected = UI.employeeEfficiencySeriesState();
+      const requestedMetrics = metrics.filter((metric) => selected[metric.key] !== false);
+      const activeMetrics = requestedMetrics.length ? requestedMetrics : metrics.slice(0, 1);
       const left = 66;
       const right = 28;
-      const top = 30;
+      const top = 60;
       const bottom = 62;
-      const width = Math.max(900, left + right + Math.max(1, rows.length - 1) * 76);
-      const height = 380;
+      const width = Math.max(900, left + right + Math.max(1, rows.length - 1) * 92);
+      const height = 410;
       const plotWidth = width - left - right;
       const plotHeight = height - top - bottom;
-      const values = rows.flatMap((row) => metrics.map((metric) => Utils.num(row[metric.key], null))).filter((value) => Number.isFinite(value));
+      const values = rows.flatMap((row) => activeMetrics.map((metric) => Utils.num(row[metric.key], null))).filter((value) => Number.isFinite(value));
       const min = Math.min(0, values.length ? Math.min.apply(null, values) : 0);
       let max = Math.max(0, values.length ? Math.max.apply(null, values) : 0);
       if (min === max) max = min + 1;
@@ -10877,11 +10895,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const y = yFor(value);
         return `<line class="pp-line-grid" x1="${left}" y1="${y.toFixed(1)}" x2="${width - right}" y2="${y.toFixed(1)}"></line><text class="pp-line-y left" x="${left - 10}" y="${(y + 5).toFixed(1)}">${Utils.esc(Utils.compactNumber(value))}</text>`;
       }).join('');
-      const axis = `<line class="pp-line-axis" x1="${left}" y1="${top}" x2="${left}" y2="${top + plotHeight}"></line><text class="pp-line-axis-label" x="${left}" y="18" text-anchor="middle">EE components</text>`;
+      const axis = `<line class="pp-line-axis" x1="${left}" y1="${top}" x2="${left}" y2="${top + plotHeight}"></line><text class="pp-line-axis-label" x="${left}" y="24" text-anchor="start">EE points contributed</text>`;
       const zeroLine = bounds.min < 0 && bounds.max > 0
         ? `<line class="pp-line-zero" x1="${left}" y1="${yFor(0).toFixed(1)}" x2="${width - right}" y2="${yFor(0).toFixed(1)}"></line>`
         : '';
-      const seriesMarkup = metrics.map((metric) => {
+      const seriesMarkup = activeMetrics.map((metric, metricIndex) => {
         let drawing = false;
         const commands = [];
         const points = [];
@@ -10891,16 +10909,27 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             drawing = false;
             return;
           }
-          const point = { x: xFor(index), y: yFor(value), value, row };
+          const point = { x: xFor(index), y: yFor(value), value, row, index };
           commands.push(`${drawing ? 'L' : 'M'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`);
           drawing = true;
           points.push(point);
         });
         if (!points.length) return '';
-        return `<g style="--series-color:${Utils.esc(metric.color)}"><path class="pp-line-path" d="${commands.join(' ')}"></path>${points.map((point) => `<circle class="pp-line-point" cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="4"><title>${Utils.esc(`${person.name || userId} · ${metric.label} · ${point.row.date}: ${Math.round(point.value)}`)}</title></circle>`).join('')}</g>`;
+        return `<g style="--series-color:${Utils.esc(metric.color)}"><path class="pp-line-path" d="${commands.join(' ')}"></path>${points.map((point) => {
+          const matchingEarlier = activeMetrics.slice(0, metricIndex).filter((other) => {
+            const otherValue = Utils.num(point.row[other.key], null);
+            return Number.isFinite(otherValue) && Math.abs(yFor(otherValue) - point.y) < 15;
+          }).length;
+          const labelY = Math.max(15, point.y - 11 - matchingEarlier * 14);
+          return `<circle class="pp-line-point" cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="4"><title>${Utils.esc(`${person.name || userId} · ${metric.label} · ${point.row.date}: ${Math.round(point.value)}`)}</title></circle><text class="pp-line-label pp-ee-point-value" style="--label-outline:${UI.textOutlineColor(metric.color)};fill:var(--series-color)" x="${point.x.toFixed(1)}" y="${labelY.toFixed(1)}">${Utils.esc(Math.round(point.value))}</text>`;
+        }).join('')}</g>`;
       }).join('');
       const labels = rows.map((row, index) => `<text class="pp-line-x" x="${xFor(index).toFixed(1)}" y="${height - 22}">${Utils.esc(Utils.dateMonthDay(row.date))}</text>`).join('');
-      return `<div class="pp-line-chart pp-ee-line-chart"><svg class="pp-line-svg" style="width:${width}px;min-width:${width}px" viewBox="0 0 ${width} ${height}" role="img" aria-label="EE component history for ${Utils.esc(person.name || userId)}">${grid}${zeroLine}${axis}${seriesMarkup}${labels}</svg></div><div class="pp-ee-series-legend">${metrics.map((metric) => `<span style="--series-color:${Utils.esc(metric.color)}">${Utils.esc(metric.label)}</span>`).join('')}</div><p class="pp-note">Newest completed Torn day is on the left. Hover a point for its date and raw value.</p>`;
+      const legend = metrics.map((metric) => {
+        const active = selected[metric.key] !== false;
+        return `<button type="button" class="pp-ee-series-tag${active ? ' is-active' : ''}" data-ee-series="${Utils.esc(metric.key)}" aria-pressed="${active ? 'true' : 'false'}" style="--series-color:${Utils.esc(metric.color)}" title="${active ? 'Hide' : 'Show'} ${Utils.esc(metric.label)} line"><i></i>${Utils.esc(metric.label)}</button>`;
+      }).join('');
+      return `<div class="pp-line-chart pp-ee-line-chart"><svg class="pp-line-svg" style="width:${width}px;min-width:${width}px" viewBox="0 0 ${width} ${height}" role="img" aria-label="EE component history for ${Utils.esc(person.name || userId)}">${grid}${zeroLine}${axis}${seriesMarkup}${labels}</svg></div><div class="pp-ee-series-legend" aria-label="Toggle EE component lines">${legend}</div><p class="pp-note">Each number is that component's raw contribution to Total EE. Positive values add to EE; negative values reduce it. Newest day is on the left. Click a coloured label to show or hide its line.</p>`;
     },
 
     employeeEfficiencyHistoryGraph(people) {
@@ -10979,15 +11008,15 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       }, dates.length + 1, `${mode}:${metric.key}:${range}:${employeeChoice}`)}</table></div><div class="pp-ee-legend"><span class="is-up">Increase</span><span class="is-down">Decrease</span><span>Unchanged or first stored day</span><span>Hover a cell for the complete EE breakdown and wage</span></div>`;
       return `<div class="pp-ee-history">
         <div class="pp-graph-head">
-          <div><h3>Employee Efficiency history</h3><p>${selectedPerson ? `${Utils.esc(selectedPerson.name || employeeChoice)} raw EE components; newest completed Torn day is on the left.` : 'Current employees run down the Y axis; newest completed Torn days start on the left. Cells compare against the prior stored day.'}</p></div>
+          <div><h3>Employee Efficiency history</h3><p>${selectedPerson ? `${Utils.esc(selectedPerson.name || employeeChoice)}: each coloured line is one raw contribution to Total EE. Values above the points show the exact contribution.` : 'Current employees run down the Y axis; newest completed Torn days start on the left. Cells compare against the prior stored day.'}</p></div>
           <div class="pp-ee-controls">
             ${employeeSelect}
-            <select class="pp-select pp-select-fit" style="--select-width:13ch" data-ui-field="staffEeMode" title="Choose total EE, one raw component, or both" ${selectedPerson ? 'disabled' : ''}>
+            ${selectedPerson ? '<span class="pp-pill">Component lines</span>' : `<select class="pp-select pp-select-fit" style="--select-width:13ch" data-ui-field="staffEeMode" title="Choose total EE, one raw component, or both">
               <option value="total" ${mode === 'total' ? 'selected' : ''}>Total EE</option>
               <option value="component" ${mode === 'component' ? 'selected' : ''}>Component</option>
               <option value="both" ${mode === 'both' ? 'selected' : ''}>Both</option>
             </select>
-            <select class="pp-select pp-select-fit" style="--select-width:20ch" data-ui-field="staffEeMetric" title="Choose the raw Torn EE component" ${mode === 'total' || selectedPerson ? 'disabled' : ''}>${metrics.map((item) => `<option value="${Utils.esc(item.key)}" ${item.key === metric.key ? 'selected' : ''}>${Utils.esc(item.label)}</option>`).join('')}</select>
+            <select class="pp-select pp-select-fit" style="--select-width:20ch" data-ui-field="staffEeMetric" title="Choose the raw Torn EE component" ${mode === 'total' ? 'disabled' : ''}>${metrics.map((item) => `<option value="${Utils.esc(item.key)}" ${item.key === metric.key ? 'selected' : ''}>${Utils.esc(item.label)}</option>`).join('')}</select>`}
             <select class="pp-select pp-select-fit" style="--select-width:10ch" data-ui-field="staffEeRange" title="Choose visible history range">
               <option value="7" ${range === '7' ? 'selected' : ''}>7 days</option><option value="14" ${range === '14' ? 'selected' : ''}>14 days</option><option value="30" ${range === '30' ? 'selected' : ''}>30 days</option><option value="90" ${range === '90' ? 'selected' : ''}>90 days</option><option value="all" ${range === 'all' ? 'selected' : ''}>All</option>
             </select>
@@ -11529,18 +11558,48 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     personStatValue(value) {
       return UI.personReadonlyValue(Utils.esc(Utils.formatNumber(value || 0)));
     },
+    personEffectiveness(person) {
+      const current = Company.effectiveness(person || {});
+      const total = Utils.num(current.total, Utils.num(person && (person.efficiency || person.employeeEfficiency), 0));
+      const details = Object.assign({}, current.details || {});
+      const userId = String(person && (person.id || person.userId || person.playerId) || '').trim();
+      const nameKey = Company.nameKey(person && (person.name || person.playerName || person.username));
+      const matching = Store.normaliseEmployeeDailyHistory(UI.state.staff.efficiencyHistory || [])
+        .filter((row) => {
+          const samePerson = userId
+            ? String(row.userId || '').trim() === userId
+            : nameKey && Company.nameKey(row.username) === nameKey;
+          return samePerson && Utils.num(row.efficiency, null) === total;
+        })
+        .sort((a, b) => Utils.dateTimestamp(b.observedAt) - Utils.dateTimestamp(a.observedAt))[0];
+      if (matching) {
+        [
+          ['working_stats', 'workingStats'],
+          ['settled_in', 'settledIn'],
+          ['book', 'book'],
+          ['merits', 'merits'],
+          ['director_education', 'directorEducation'],
+          ['management', 'management'],
+          ['wrong_gender', 'wrongGender'],
+          ['addiction', 'addiction'],
+          ['inactivity', 'inactivity']
+        ].forEach(([key, field]) => {
+          const value = Utils.num(matching[field], null);
+          if (!Object.prototype.hasOwnProperty.call(details, key) && Number.isFinite(value)) details[key] = value;
+        });
+      }
+      return { total, details };
+    },
     personEfficiencyView(person, align) {
-      const effectiveness = Company.effectiveness(person || {});
-      const total = Utils.num(effectiveness.total, Utils.num(person && (person.efficiency || person.employeeEfficiency), 0));
+      const effectiveness = UI.personEffectiveness(person || {});
+      const total = effectiveness.total;
       if (!total) return '<span class="pp-note">Not detected</span>';
-      const tooltip = Object.keys(effectiveness.details || {}).length ? UI.effectivenessTooltip(effectiveness) : '';
+      const tooltip = UI.effectivenessTooltip(effectiveness);
       const details = effectiveness && effectiveness.details && typeof effectiveness.details === 'object'
         ? Object.entries(effectiveness.details).map(([key, value]) => `${UI.effectivenessLabel(key)} ${UI.effectivenessValue(value)}`).join(', ')
         : '';
       const fallbackTitle = details ? `Effectiveness ${UI.effectivenessValue(total)}: ${details}` : `Effectiveness ${UI.effectivenessValue(total)}`;
-      const attrs = tooltip
-        ? ` tabindex="0" title="${Utils.esc(fallbackTitle)}" aria-label="${Utils.esc(fallbackTitle)}" data-tooltip-html="${Utils.esc(tooltip)}"`
-        : ` aria-label="${Utils.esc(fallbackTitle)}"`;
+      const attrs = ` tabindex="0" title="${Utils.esc(fallbackTitle)}" aria-label="${Utils.esc(fallbackTitle)}" data-tooltip-html="${Utils.esc(tooltip)}"`;
       const classes = `pp-effectiveness-tip${align === 'left' ? ' is-left' : ''}`;
       return `<span class="${classes}"${attrs}>${Utils.esc(total)}</span>`;
     },
@@ -13788,6 +13847,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.2.9 - Clear EE details and readable employee graphs</summary>
+              <ul><li>Staff efficiency totals recover their matching stored breakdown and always provide a hover or keyboard-focus explanation.</li><li>Single-employee Efficiency history shows the exact raw contribution above every graph point, with spacing for close values.</li><li>Each coloured legend tag can hide or restore its line, and the choice persists so crowded graphs can be simplified.</li><li>The selected-employee view replaces irrelevant disabled controls with clearer component guidance explaining positive and negative contributions.</li></ul>
+            </details>
+            <details>
               <summary>v3.2.8 - Clearer staff insights and update status</summary>
               <ul><li>Staff efficiency values once again show the complete effectiveness breakdown on hover or keyboard focus.</li><li>Employee Efficiency history uses previous-day comparisons again and shows each employee&apos;s role beside their name.</li><li>A persistent status beside PRV reports whether CIS is up to date and offers one-click updating when GreasyFork has a newer release.</li><li>Player cards show unused paid-training credit, panel editing is removed, and receipts open correctly from the pop-out dashboard.</li></ul>
             </details>
@@ -14373,6 +14436,20 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           key,
           dir: current.key === key && current.dir !== 'desc' ? 'desc' : 'asc'
         };
+        UI.saveRender();
+        return;
+      }
+
+      const eeSeries = event.target.closest('[data-ee-series]');
+      if (eeSeries) {
+        const key = String(eeSeries.dataset.eeSeries || '');
+        const selected = UI.employeeEfficiencySeriesState();
+        selected[key] = selected[key] === false;
+        if (!Object.values(selected).some(Boolean)) {
+          selected[key] = true;
+          UI.toast('Keep at least one EE component line visible.');
+          return;
+        }
         UI.saveRender();
         return;
       }
