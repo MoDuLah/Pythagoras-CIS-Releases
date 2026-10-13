@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.3.0
+// @version      3.3.1
 // @downloadURL  https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.user.js
 // @updateURL    https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.meta.js
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
@@ -54,7 +54,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.3.0',
+    version: '3.3.1',
     greasyForkScriptId: 580933,
     greasyForkApiUrl: 'https://api.greasyfork.org/en/scripts/580933.json',
     greasyForkPageUrl: 'https://greasyfork.org/en/scripts/580933-pythagoras-project-cis',
@@ -8119,7 +8119,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     topBarSyncButtons() {
       const disabled = UI.apiKeyMissing() || UI.isSyncBusy() ? ' disabled' : '';
       return `<div class="pp-title-sync" aria-label="Sync controls">
-        <button class="pp-btn is-primary ${UI.syncProgressClass('smart-sync')}" style="${UI.syncProgressStyle('smart-sync')}" type="button" data-action="smart-sync" data-sync-action="smart-sync" title="Quick daily check for new company activity and stale business data"${disabled}>Daily sync</button>
+        <button class="pp-btn is-primary ${UI.syncProgressClass('smart-sync')}" style="${UI.syncProgressStyle('smart-sync')}" type="button" data-action="smart-sync" data-sync-action="smart-sync" title="Daily company activity plus exact training, wage, role, hire, advertising, and restocking history"${disabled}>Daily sync</button>
         <button class="pp-btn ${UI.syncProgressClass('sync-all')}" style="${UI.syncProgressStyle('sync-all')}" type="button" data-action="sync-all" data-sync-action="sync-all" title="Full business, staff, history, wage, role, and stock rebuild"${disabled}>Sync all</button>
       </div>`;
     },
@@ -13384,7 +13384,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-sync-groups">
         <div class="pp-sync-group">
           <span class="pp-sync-group-title">Daily sync</span>
-          <span class="pp-note mh-muted">Checks only new company activity and refreshes business, employees, stock, advertising, or restocking data when stale.</span>
+          <span class="pp-note mh-muted">Checks new company activity, exact training, wage, role, hire, advertising, and restocking logs, then uploads the completed daily state.</span>
           <button class="pp-btn is-primary ${UI.syncProgressClass('smart-sync')}" style="${UI.syncProgressStyle('smart-sync')}" type="button" data-action="smart-sync" data-sync-action="smart-sync"${disabled}>Daily sync</button>
         </div>
         <div class="pp-sync-group" data-tour="sync-all">
@@ -13855,6 +13855,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.3.1 - Complete daily history before upload</summary>
+              <ul><li>Daily sync now checks exact training, wage-change, role-change, and hire history alongside news, advertising, and restocking activity.</li><li>All Torn data is collected before one consolidated Pythagoras API upload, preventing new restock or staff-history data from waiting for a later sync.</li><li>Manual Business, Employees, Stock, and Staff history actions continue to sync independently without nested activity panels during Daily sync.</li></ul>
+            </details>
+            <details>
               <summary>v3.3.0 - Reliable staff-history pagination</summary>
               <ul><li>Hire and wage-history pagination now carries Torn&apos;s response-metadata nanostamp into the next request when needed.</li><li>Endpoint, account, log-selection, cursor, and repeated-link safeguards continue to protect stored history.</li><li>The Sync all card removes the gap before its console and labels the real Torn logs: 6242 hire, 6263 training, 6265 wage change, and 6267 role change.</li></ul>
             </details>
@@ -15916,7 +15920,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       }
     },
 
-    async fetchCompanyWageHistory() {
+    async fetchCompanyWageHistory(options) {
+      const syncId = options && options.syncId || 'staff-history';
       const state = UI.state;
       const companyId = String(state.settings.companyId || state.company.profile.id || '');
       const userId = String(state.settings.userId || '');
@@ -15935,7 +15940,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       let pages = 0;
       const maxPages = 1000;
       do {
-        UI.syncStep('staff-history', `Reading Torn logs Hire and Wage change, history page ${pages + 1}${from ? ' (new changes)' : ' (back to joining dates)'}.`, Math.min(85, 25 + pages));
+        UI.syncStep(syncId, `Reading Torn logs Hire and Wage change, history page ${pages + 1}${from ? ' (new changes)' : ' (back to joining dates)'}.`, Math.min(85, 25 + pages));
         const data = nextUrl ? await ApiClient.requestV2Url(nextUrl, state.settings.apiKey)
           : await ApiClient.companyLog('6242,6265', state.settings.apiKey, Object.assign({sort:'DESC', limit:100, to:through}, from ? {from} : {}));
         if (UI.state !== state || String(state.settings.companyId || state.company.profile.id || '') !== companyId || String(state.settings.userId || '') !== userId) throw new Error('Company or account changed during wage sync. Please sync again.');
@@ -15977,18 +15982,20 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       return { actions: events, coverage: {complete:true, companyId, userId, through, pages, events} };
     },
 
-    async syncCompanyStaffLogs() {
-      const syncId = 'staff-history';
+    async syncCompanyStaffLogs(options) {
+      const opts = options || {};
+      const embedded = opts.embedded === true;
+      const syncId = opts.syncId || 'staff-history';
       if (UI.apiKeyMissing()) return { ok: false, message: 'Add an API key first.' };
       const state = UI.state;
       const scope = `${state.settings.companyId}:${state.settings.userId}`;
-      UI.beginSync(syncId, 'Sync staff history');
+      if (!embedded) UI.beginSync(syncId, 'Sync staff history');
       try {
         UI.syncStep(syncId, 'Requesting Torn logs: Training, Wage change, and Role change.', 20);
         const data = await ApiClient.companyLog('6263,6265,6267', UI.state.settings.apiKey, { sort: 'DESC', limit: 100 });
         if (UI.state !== state || `${state.settings.companyId}:${state.settings.userId}` !== scope) throw new Error('Company or account changed during staff sync.');
         if (!data || data.error || !data.log || typeof data.log !== 'object') throw new Error('Torn did not return staff logs. Existing history was kept.');
-        const wageHistory = await UI.fetchCompanyWageHistory();
+        const wageHistory = await UI.fetchCompanyWageHistory({ syncId });
         const actions = Timeline.staffActionsFromUserLog(data, {}, UI.state).filter((action) => action.type !== 'wage_change')
           .concat(wageHistory.actions).sort((a, b) => a.timestamp - b.timestamp);
         const people = [].concat(UI.state.staff.current || [], UI.state.staff.past || []);
@@ -16048,15 +16055,19 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         UI.captureOperatingCostHistory('hire-wage-history-sync');
         Store.save(UI.state);
         Store.updateSyncCache(UI.state, ['business', 'employees', 'trainingLog', 'planner']);
-        await UI.uploadSyncState(syncId, { business: true, staff: true, events: exactTrainingEvents, reports: UI.reportDailyRows().filter((row) => row.hasReport) });
+        if (!opts.deferUpload) await UI.uploadSyncState(syncId, { business: true, staff: true, events: exactTrainingEvents, reports: UI.reportDailyRows().filter((row) => row.hasReport) });
         const message = `Staff history synced: ${joins} joins, ${wageChanges} wage changes across ${wageHistory.coverage.pages} hire/wage pages; ${trainingRows} training actions and ${roleChanges} role changes from the latest staff page. All available hire/wage pages retrieved; existing history merged. Logs unavailable to this account can still leave gaps.`;
-        UI.saveRender(message);
-        UI.finishSync(syncId, message);
-        return { ok: true, message, fetched: actions.length, trainingRows, wageChanges, roleChanges };
+        if (!embedded) {
+          UI.saveRender(message);
+          UI.finishSync(syncId, message);
+        }
+        return { ok: true, message, fetched: actions.length, trainingRows, wageChanges, roleChanges, events: exactTrainingEvents };
       } catch (error) {
         if (UI.state === state && `${state.settings.companyId}:${state.settings.userId}` === scope) state.company.staffLogSync = Object.assign({}, state.company.staffLogSync || {}, { lastError: error.message || String(error) });
-        UI.failSync(syncId, error);
-        UI.toast(error.message);
+        if (!embedded) {
+          UI.failSync(syncId, error);
+          UI.toast(error.message);
+        }
         return { ok: false, message: error && error.message ? error.message : String(error) };
       }
     },
@@ -16130,11 +16141,6 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           UI.applyNewsIncoming(delta);
           Store.save(UI.state);
           Store.updateSyncCache(UI.state, ['news', 'trainingLog']);
-          await UI.uploadSyncState(syncId, {
-            events: delta,
-            reports: UI.reportsFromEventsForApi(delta),
-            staff: true
-          });
         } else {
           UI.syncStep(syncId, 'No newer company news found.', 44);
           UI.state.company.newsSync.lastSynced = Utils.nowIso();
@@ -16146,56 +16152,69 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const stockStale = UI.syncStatus('stock') !== 'fresh';
         const employeesStale = UI.syncStatus('employees') !== 'fresh';
         let restockResult = null;
-        if (!businessStale) {
+        const warnings = [];
+        if (businessStale) {
+          UI.syncStep(syncId, 'Business data is stale; refreshing business, employees, stock, and operating costs.', 52);
+          const businessResult = await UI.syncBusiness({ embedded: true, syncId, deferUpload: true });
+          if (!businessResult || !businessResult.ok) throw new Error(businessResult && businessResult.message || 'Business sync did not complete.');
+          restockResult = businessResult.restocks || null;
+          if (businessResult.partial) warnings.push('Some optional operating-cost history was unavailable.');
+        } else {
           try {
             UI.syncStep(syncId, 'Checking advertisement-budget change log.', 52);
             const budgetLog = await UI.syncAdBudgetChangeHistory();
             if (budgetLog.added) {
               Store.save(UI.state);
               Store.updateSyncCache(UI.state, 'business');
-              await UI.uploadSyncState(syncId, { business: true });
             }
           } catch (error) {
             UI.state.company.adBudgetLogSync = Object.assign({}, UI.state.company.adBudgetLogSync || {}, { lastError: error.message || String(error) });
             console.warn('[Pythagoras Project - CIS] Advertisement-budget log sync skipped.', error);
           }
-        }
-        if (businessStale) {
-          UI.syncStep(syncId, 'Business data is stale; running business sync.', 58);
-          const businessResult = await UI.syncBusiness();
-          if (!businessResult || !businessResult.ok) throw new Error(businessResult && businessResult.message || 'Business sync did not complete.');
-          restockResult = businessResult.restocks || null;
-        } else {
           if (employeesStale) {
             UI.syncStep(syncId, 'Employee data is stale; running employee sync.', 66);
-            const employeeResult = await UI.syncEmployees();
+            const employeeResult = await UI.syncEmployees({ embedded: true, syncId, deferUpload: true });
             if (!employeeResult || !employeeResult.ok) throw new Error(employeeResult && employeeResult.message || 'Employee sync did not complete.');
           }
           if (stockStale) {
             UI.syncStep(syncId, 'Stock data is stale; running stock sync.', 78);
-            const stockResult = await UI.syncStock();
+            const stockResult = await UI.syncStock({ embedded: true, syncId, deferUpload: true });
             if (!stockResult || !stockResult.ok) throw new Error(stockResult && stockResult.message || 'Stock sync did not complete.');
             restockResult = stockResult.restocks || null;
+            if (stockResult.partial) warnings.push('Some exact restocking history was unavailable.');
           } else {
             UI.syncStep(syncId, 'Checking exact restocking orders.', 78);
             restockResult = await UI.syncStockCosts({ automatic: true });
             UI.syncStep(syncId, restockResult.message, 88);
+            if (!restockResult.ok) warnings.push(restockResult.message);
           }
         }
 
-        // The sync handlers already updated local state and uploaded their changes.
-        // A second bootstrap adds latency and can replace those fresh results.
+        UI.syncStep(syncId, 'Refreshing exact training, wage, role, and hire history.', 90);
+        const staffHistoryResult = await UI.syncCompanyStaffLogs({ embedded: true, syncId, deferUpload: true });
+        if (!staffHistoryResult || !staffHistoryResult.ok) warnings.push(staffHistoryResult && staffHistoryResult.message || 'Staff history was unavailable for this key.');
+
+        // Collect every Torn source before publishing one coherent workspace
+        // snapshot. This keeps new staff-history and restock data in the same
+        // API update as the news and reports that depend on them.
         Store.save(UI.state);
         Store.updateSyncCache(UI.state, ['business', 'employees', 'stock', 'news', 'trainingLog']);
+        await UI.uploadSyncState(syncId, {
+          business: true,
+          staff: true,
+          stock: true,
+          events: delta.concat(staffHistoryResult && staffHistoryResult.ok ? staffHistoryResult.events || [] : []),
+          reports: UI.reportDailyRows().filter((row) => row.hasReport)
+        });
         const newsMessage = delta.length
           ? `Daily sync complete. ${delta.length} new company news entr${delta.length === 1 ? 'y' : 'ies'} synced.`
           : 'Daily sync complete. No newer company news was found.';
-        // The restock result already has its own timed console line. Keep the
-        // final summary concise instead of repeating it a second time.
-        const message = newsMessage;
+        const message = warnings.length
+          ? `${newsMessage} Completed with warnings. ${warnings.join(' ')}`
+          : `${newsMessage} Staff history refreshed.`;
         UI.saveRender(message);
-        UI.finishSync(syncId, message);
-        return { ok: true, message, restocks: restockResult };
+        UI.finishSync(syncId, message, { warning: warnings.length > 0 });
+        return { ok: true, partial: warnings.length > 0, message, restocks: restockResult, staffHistory: staffHistoryResult };
       } catch (error) {
         UI.failSync(syncId, error);
         UI.toast(error.message);
@@ -16932,11 +16951,13 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       return { riskStrikes, dailyHistory, observedAt, retiredEmployees: roster.retired.length };
     },
 
-    async syncBusiness() {
-      const syncId = 'business';
+    async syncBusiness(options) {
+      const opts = options || {};
+      const embedded = opts.embedded === true;
+      const syncId = opts.syncId || 'business';
       UI.captureSettingsInputs(UI.currentRoot());
       UI.readStockSettings(UI.currentRoot());
-      UI.beginSync(syncId, 'Sync business');
+      if (!embedded) UI.beginSync(syncId, 'Sync business');
       try {
         UI.syncStep(syncId, 'Requesting company profile, stock, and employees from Torn API V2.', 12);
         const [profileData, stockData, employeeData] = await Promise.all([
@@ -16966,7 +16987,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const warnings = Company.stockWarnings(UI.state);
         Store.save(UI.state);
         Store.updateSyncCache(UI.state, ['business', 'employees', 'stock', 'planner']);
-        await UI.uploadSyncState(syncId, { business: true, staff: UI.staffPayloadForApi({ dailyHistory: result.dailyHistory || [] }), stock: true });
+        if (!opts.deferUpload) await UI.uploadSyncState(syncId, { business: true, staff: UI.staffPayloadForApi({ dailyHistory: result.dailyHistory || [] }), stock: true });
         const strikeText = result.riskStrikes ? ` ${result.riskStrikes} staff risk strike${result.riskStrikes === 1 ? '' : 's'} recorded.` : '';
         const budgetText = budgetLog
           ? ` ${budgetLog.stored} exact advertisement-budget change${budgetLog.stored === 1 ? '' : 's'} stored${budgetLog.added ? ` (${budgetLog.added} new)` : ''}.`
@@ -16974,12 +16995,16 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             ? ' Advertisement-budget history was skipped because this key cannot read log 6283.'
             : '';
         const message = (warnings.length ? `Business synced. ${warnings.length} stock row${warnings.length === 1 ? '' : 's'} need attention.${strikeText}${budgetText}` : `Business Profile synced.${strikeText}${budgetText}`) + ` ${restocks.message}`;
-        UI.saveRender(message);
-        UI.finishSync(syncId, message);
-        return { ok: true, message, restocks, partial: !restocks.ok };
+        if (!embedded) {
+          UI.saveRender(message);
+          UI.finishSync(syncId, message);
+        }
+        return { ok: true, message, restocks, partial: !restocks.ok, dailyHistory: result.dailyHistory || [] };
       } catch (error) {
-        UI.failSync(syncId, error);
-        UI.toast(error.message);
+        if (!embedded) {
+          UI.failSync(syncId, error);
+          UI.toast(error.message);
+        }
         return { ok: false, message: error && error.message ? error.message : String(error) };
       }
     },
@@ -17024,11 +17049,13 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       }
     },
 
-    async syncStock() {
-      const syncId = 'stock';
+    async syncStock(options) {
+      const opts = options || {};
+      const embedded = opts.embedded === true;
+      const syncId = opts.syncId || 'stock';
       UI.captureSettingsInputs(UI.currentRoot());
       UI.readStockSettings(UI.currentRoot());
-      UI.beginSync(syncId, 'Sync stock snapshot and services sold');
+      if (!embedded) UI.beginSync(syncId, 'Sync stock snapshot and services sold');
       try {
         UI.syncStep(syncId, 'Requesting stock data from Torn API V2.', 18);
         const data = await ApiClient.companyStock(UI.state.settings.apiKey);
@@ -17053,14 +17080,18 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const warnings = Company.stockWarnings(UI.state);
         Store.save(UI.state);
         Store.updateSyncCache(UI.state, 'stock');
-        await UI.uploadSyncState(syncId, { stock: true });
+        if (!opts.deferUpload) await UI.uploadSyncState(syncId, { stock: true });
         const message = (warnings.length ? `Services sold synced. ${warnings.length} stock row${warnings.length === 1 ? '' : 's'} need attention.` : 'Services sold synced.') + ` ${restocks.message}`;
-        UI.saveRender(message);
-        UI.finishSync(syncId, message);
+        if (!embedded) {
+          UI.saveRender(message);
+          UI.finishSync(syncId, message);
+        }
         return { ok: true, message, restocks, partial: !restocks.ok };
       } catch (error) {
-        UI.failSync(syncId, error);
-        UI.toast(error.message);
+        if (!embedded) {
+          UI.failSync(syncId, error);
+          UI.toast(error.message);
+        }
         return { ok: false, message: error && error.message ? error.message : String(error) };
       }
     },
@@ -17155,10 +17186,12 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       }
     },
 
-    async syncEmployees() {
-      const syncId = 'employees';
+    async syncEmployees(options) {
+      const opts = options || {};
+      const embedded = opts.embedded === true;
+      const syncId = opts.syncId || 'employees';
       UI.captureSettingsInputs(UI.currentRoot());
-      UI.beginSync(syncId, 'Sync employees');
+      if (!embedded) UI.beginSync(syncId, 'Sync employees');
       try {
         UI.syncStep(syncId, 'Requesting employees from Torn API V2.', 18);
         const data = await ApiClient.companyEmployees(UI.state.settings.apiKey);
@@ -17176,14 +17209,18 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         Ledger.syncTrainingLog(UI.state);
         Store.save(UI.state);
         Store.updateSyncCache(UI.state, ['employees', 'business', 'trainingLog']);
-        await UI.uploadSyncState(syncId, { business: true, staff: UI.staffPayloadForApi({ dailyHistory }) });
+        if (!opts.deferUpload) await UI.uploadSyncState(syncId, { business: true, staff: UI.staffPayloadForApi({ dailyHistory }) });
         const message = `Synced ${UI.state.staff.current.length} employees.${roster.retired.length ? ` Moved ${roster.retired.length} departed employee${roster.retired.length === 1 ? '' : 's'} to Past staff.` : ''}${riskStrikes ? ` ${riskStrikes} staff risk strike${riskStrikes === 1 ? '' : 's'} recorded.` : ''}`;
-        UI.saveRender(message);
-        UI.finishSync(syncId, message);
-        return { ok: true, message };
+        if (!embedded) {
+          UI.saveRender(message);
+          UI.finishSync(syncId, message);
+        }
+        return { ok: true, message, dailyHistory };
       } catch (error) {
-        UI.failSync(syncId, error);
-        UI.toast(error.message);
+        if (!embedded) {
+          UI.failSync(syncId, error);
+          UI.toast(error.message);
+        }
         return { ok: false, message: error && error.message ? error.message : String(error) };
       }
     },

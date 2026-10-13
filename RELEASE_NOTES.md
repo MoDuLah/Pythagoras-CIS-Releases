@@ -1,6 +1,6 @@
-## v3.3.0 - Reliable staff-history pagination
+## v3.3.1 - Complete daily history before upload
 
-- Follows Torn's validated hire and wage-history continuation link even when the service uses an opaque cursor instead of exposing the expected timestamp fields.
-- Keeps strict company/account, endpoint, log-selection, repeated-page, repeated-link, and maximum-page safeguards so incomplete history is never marked complete.
-- Places the Sync console label above its scrolling output and removes the remaining blank strip below completed Sync all steps.
-- Uses clear log names in the console: Training, Wage change, Role change, and Hire.
+- Adds exact training, wage-change, role-change, and hire-history retrieval to Daily sync because each can change during normal daily company activity.
+- Collects company news, stale business/employee/stock data, advertisement changes, restocking orders, and staff history before sending anything to the Pythagoras API.
+- Uploads one coherent completed daily state so newly discovered restocks and staff-history changes are not left locally until a later sync.
+- Keeps manual Business, Employees, Stock, and Staff history sync actions working independently while suppressing nested activity panels and intermediate uploads inside Daily sync.
