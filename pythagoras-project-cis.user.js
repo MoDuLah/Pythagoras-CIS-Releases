@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.2.6
+// @version      3.2.7
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
 // @author       MoDuL [4022159]
 // @match        https://www.torn.com/companies.php*
@@ -51,7 +51,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.2.6',
+    version: '3.2.7',
     popupName: 'pythagoras-cis-popup'
   };
 
@@ -13668,6 +13668,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.2.7 - Ready-to-send training receipts</summary>
+              <ul><li>Receipt opens Torn Mail with the recipient, subject, and full HTML body filled automatically.</li><li>The receipt stays copied to the clipboard as a fallback if browser mail filling is unavailable.</li></ul>
+            </details>
+            <details>
               <summary>v3.2.6 - Explicit training instructions</summary>
               <ul><li>Automatic payment imports honor an explicit train count after any accepted singular or plural trigger, so <strong>!train 10</strong> stays 10 even when the discounted payment alone would estimate 9.</li><li>Payment comments are retained and shown with Primary and Secondary stat columns.</li><li>Instructions such as <strong>!train 10 Int &amp; End</strong> set both stats, while <strong>!train 10 Trainer</strong> records the requested position and derives its role stats.</li><li>Manual Add order entries can store the same comment, stat, and position details, and cloud reloads preserve them.</li></ul>
             </details>
@@ -17601,7 +17605,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       }
     },
 
-    copyLedgerReceipt(id) {
+    async copyLedgerReceipt(id) {
       const entry = (UI.state.ledger || []).find((item) => item.id === id);
       if (!entry) {
         UI.toast('Training order not found.');
@@ -17610,14 +17614,29 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       Ledger.prepare(UI.state);
       Store.save(UI.state);
       const staffId = String(entry.playerId || '').replace(/[^\d]/g, '');
-      if (staffId) {
-        window.open(`https://www.torn.com/messages.php#/p=compose&XID=${encodeURIComponent(staffId)}`, `pp-receipt-${staffId}`, 'width=900,height=760,noopener,noreferrer');
+      const orderLabel = entry.orderId || entry.playerName || 'training order';
+      const receipt = Reports.trainingReceipt(UI.state, entry);
+      const copyPromise = Utils.copy(receipt);
+      if (!staffId) {
+        await copyPromise;
+        UI.toast(`Receipt HTML copied for ${orderLabel}, but no staff ID is linked.`);
+        return;
       }
-      Utils.copy(Reports.trainingReceipt(UI.state, entry)).then(() => {
-        UI.toast(staffId
-          ? `Receipt HTML copied for ${entry.orderId || entry.playerName || 'training order'}. Message composer opened.`
-          : `Receipt HTML copied for ${entry.orderId || entry.playerName || 'training order'}, but no staff ID is linked.`);
-      });
+      const windowName = `pp-receipt-${staffId}`;
+      const windowFeatures = 'width=900,height=760';
+      const composeBase = `https://www.torn.com/messages.php#/p=compose&XID=${encodeURIComponent(staffId)}`;
+      const popup = window.open(composeBase, windowName, windowFeatures);
+      try {
+        const subject = `Training receipt - ${orderLabel}`.slice(0, 200);
+        const composeUrl = await TornMailBridge.buildComposeUrl(staffId, subject, receipt);
+        await copyPromise;
+        if (popup && !popup.closed) popup.location.href = composeUrl;
+        else window.open(composeUrl, windowName, windowFeatures);
+        UI.toast(`Training receipt ${orderLabel} opened with its subject and body prepared.`);
+      } catch (error) {
+        await copyPromise;
+        UI.toast(`Receipt HTML copied for ${orderLabel}, but automatic mail filling was unavailable: ${error.message || error}`);
+      }
     },
 
     copyBug() {
@@ -17838,13 +17857,14 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
   };
 
   /*
-    Recruitment mail hand-off
+    Torn mail hand-off
 
-    The desktop app places a UTF-8 JSON payload in the compose-page fragment. It
-    is compressed only to keep the URL manageable; this userscript is the trusted
-    receiver that decodes it and writes through Torn's own editor APIs. Capturing
-    the fragment at document-start matters because Torn is a single-page app and
-    may rewrite its route before the composer is ready.
+    The desktop app and CIS receipt action place a UTF-8 JSON payload in the
+    compose-page fragment. It is compressed only to keep the URL manageable;
+    this userscript is the trusted receiver that decodes it and writes through
+    Torn's own editor APIs. Capturing the fragment at document-start matters
+    because Torn is a single-page app and may rewrite its route before the
+    composer is ready.
   */
   const TornMailBridge = {
     cooldownKey: 'pp_global_mail_last_send_at_v1',
@@ -17896,6 +17916,42 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       return bytes;
     },
 
+    bytesBase64Url(bytes) {
+      let binary = '';
+      for (let index = 0; index < bytes.length; index += 1) binary += String.fromCharCode(bytes[index]);
+      return window.btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+    },
+
+    async deflateUtf8(value) {
+      const bytes = new TextEncoder().encode(String(value || ''));
+      if (typeof CompressionStream === 'function') {
+        const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate'));
+        return new Uint8Array(await new Response(stream).arrayBuffer());
+      }
+      const deflater = this.pageWindow().pako && this.pageWindow().pako.deflate;
+      if (typeof deflater !== 'function') {
+        throw new Error('This browser does not expose a deflate encoder.');
+      }
+      return new Uint8Array(deflater(bytes));
+    },
+
+    async encodePayload(subject, html) {
+      const payload = JSON.stringify({
+        v: 1,
+        subject: String(subject || '').slice(0, 200),
+        html: String(html || '').slice(0, 30000),
+        createdAt: Date.now()
+      });
+      return `z.${this.bytesBase64Url(await this.deflateUtf8(payload))}`;
+    },
+
+    async buildComposeUrl(recipientId, subject, html) {
+      const tornId = String(recipientId || '').replace(/\D/g, '');
+      if (!tornId) throw new Error('A Torn recipient ID is required.');
+      const payload = await this.encodePayload(subject, html);
+      return `https://www.torn.com/messages.php#/p=compose&XID=${encodeURIComponent(tornId)}&ppmail=${payload}`;
+    },
+
     async inflateUtf8(bytes) {
       if (typeof DecompressionStream === 'function') {
         const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate'));
@@ -17911,11 +17967,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
 
     async decodePayload(token) {
       const [encoding, value] = String(token || '').split('.', 2);
-      if (encoding !== 'z' || !value) throw new Error('Unsupported recruitment mail payload.');
+      if (encoding !== 'z' || !value) throw new Error('Unsupported Pythagoras mail payload.');
       const decoded = await this.inflateUtf8(this.base64UrlBytes(value));
       const payload = JSON.parse(decoded);
       if (!payload || payload.v !== 1 || typeof payload.subject !== 'string' || typeof payload.html !== 'string') {
-        throw new Error('Invalid recruitment mail payload.');
+        throw new Error('Invalid Pythagoras mail payload.');
       }
       return { subject: payload.subject, html: payload.html };
     },
@@ -18053,7 +18109,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         this.setNativeValue(subject, payload.subject);
         this.setHtml(body, payload.html);
         this.pendingPayload = null;
-        this.toast('Recruitment subject and HTML body filled. Review them before sending.', 'success');
+        this.toast('Pythagoras subject and HTML body filled. Review them before sending.', 'success');
       } catch (error) {
         if (attempt < 60) {
           window.setTimeout(() => this.tryFill(payload, attempt + 1), 500);
@@ -18074,7 +18130,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         this.pendingPayload = payload;
         window.setTimeout(() => this.tryFill(payload), 700);
       } catch (error) {
-        this.toast(`Could not read the Pythagoras recruitment mail: ${error.message || error}`, 'error');
+        this.toast(`Could not read the Pythagoras mail: ${error.message || error}`, 'error');
       }
     },
 
