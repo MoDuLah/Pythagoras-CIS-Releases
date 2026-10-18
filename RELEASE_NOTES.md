@@ -1,6 +1,5 @@
-## v3.3.1 - Complete daily history before upload
+## v3.3.2 - Fair bought-train allocation
 
-- Adds exact training, wage-change, role-change, and hire-history retrieval to Daily sync because each can change during normal daily company activity.
-- Collects company news, stale business/employee/stock data, advertisement changes, restocking orders, and staff history before sending anything to the Pythagoras API.
-- Uploads one coherent completed daily state so newly discovered restocks and staff-history changes are not left locally until a later sync.
-- Keeps manual Business, Employees, Stock, and Staff history sync actions working independently while suppressing nested activity panels and intermediate uploads inside Daily sync.
+- Adds a Bought-train allocation dropdown in Training setup with FIFO, equal Split, and every oldest/next-buyer combination for the daily paid cap.
+- Splits eight bought trains as four per buyer when two buyers are waiting, treating multiple open orders from the same player as one buyer.
+- Leaves any capacity beyond the paid cap in sponsored/free rotation and safely falls through when a buyer cannot use their full daily quota.

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.3.1
+// @version      3.3.2
 // @downloadURL  https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.user.js
 // @updateURL    https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.meta.js
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
@@ -54,7 +54,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.3.1',
+    version: '3.3.2',
     greasyForkScriptId: 580933,
     greasyForkApiUrl: 'https://api.greasyfork.org/en/scripts/580933.json',
     greasyForkPageUrl: 'https://greasyfork.org/en/scripts/580933-pythagoras-project-cis',
@@ -230,6 +230,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       companyTypeName: '',
       trainingPrice: 600000,
       maxPaidTrainsPerDay: 8,
+      paidTrainAllocation: 'fifo',
       companyStars: 1,
       trainerAutoDetect: true,
       trainerAssigned: false,
@@ -2943,6 +2944,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         vars: UI.themeVars(theme && theme.vars)
       })).filter((theme) => theme.id && theme.name) : [];
       settings.plannerPriority = Store.merge(Utils.clone(DEFAULTS.settings.plannerPriority), settings.plannerPriority || {});
+      settings.paidTrainAllocation = Planner.paidAllocationMode(settings);
       settings.notifications = Store.merge(Utils.clone(DEFAULTS.settings.notifications), settings.notifications || {});
       settings.wageRoleRequirements = settings.wageRoleRequirements || {};
       settings.dateFormat = settings.dateFormat || DEFAULTS.settings.dateFormat;
@@ -4721,6 +4723,30 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const priority = state && state.settings && state.settings.plannerPriority || DEFAULTS.settings.plannerPriority;
       return priority.paidFirst !== false;
     },
+    paidAllocationMode(settings, capOverride) {
+      const source = settings || DEFAULTS.settings;
+      const cap = capOverride === undefined
+        ? Utils.clamp(Utils.int(source.maxPaidTrainsPerDay, Planner.paidCapLimit(source)), 0, Planner.paidCapLimit(source))
+        : Math.max(0, Utils.int(capOverride, 0));
+      const raw = String(source.paidTrainAllocation || 'fifo').trim().toLowerCase();
+      if (raw === 'fifo' || raw === 'split') return raw;
+      const match = raw.match(/^ratio:(\d+)$/);
+      return match ? `ratio:${Utils.clamp(Utils.int(match[1], 0), 0, cap)}` : 'fifo';
+    },
+    paidAllocationOptions(settings) {
+      const cap = Utils.clamp(Utils.int(settings.maxPaidTrainsPerDay, Planner.paidCapLimit(settings)), 0, Planner.paidCapLimit(settings));
+      const splitDetail = cap % 2 === 0 ? `${cap / 2} / ${cap / 2} with 2 buyers` : 'alternate the extra train';
+      const options = [
+        { value: 'fifo', label: 'FIFO (finish the oldest order first)' },
+        { value: 'split', label: `Split equally (${splitDetail})` }
+      ];
+      for (let oldest = Math.max(0, cap - 1); oldest >= 0; oldest -= 1) {
+        const next = cap - oldest;
+        if (oldest === next) continue;
+        options.push({ value: `ratio:${oldest}`, label: `Oldest buyer ${oldest} / next buyer ${next}` });
+      }
+      return options;
+    },
     trainingHoldDays() {
       return 3;
     },
@@ -4808,6 +4834,75 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         return queue.splice(index, 1)[0];
       }
       return null;
+    },
+    paidBuyerKey(slot) {
+      const playerId = String(slot && slot.playerId || '').trim();
+      if (playerId) return `id:${playerId}`;
+      const playerName = Company.nameKey(slot && slot.playerName || '');
+      if (playerName) return `name:${playerName}`;
+      return `entry:${String(slot && slot.entryId || '').trim()}`;
+    },
+    eligiblePaidBuyers(queue, state, referenceDate, context) {
+      const buyers = [];
+      const seen = new Set();
+      (Array.isArray(queue) ? queue : []).forEach((slot) => {
+        if (!Planner.slotEligibility(slot, state, referenceDate, context).eligible) return;
+        const buyer = Planner.paidBuyerKey(slot);
+        if (!buyer || seen.has(buyer)) return;
+        seen.add(buyer);
+        buyers.push(buyer);
+      });
+      return buyers;
+    },
+    nextPaidForBuyer(queue, buyer, state, referenceDate, context) {
+      if (!Array.isArray(queue) || !queue.length) return null;
+      for (let index = 0; index < queue.length; index += 1) {
+        const slot = queue[index];
+        if (Planner.paidBuyerKey(slot) !== buyer) continue;
+        if (!Planner.slotEligibility(slot, state, referenceDate, context).eligible) continue;
+        return queue.splice(index, 1)[0];
+      }
+      return null;
+    },
+    takePaidSlots(queue, count, state, referenceDate, context, dayIndex) {
+      const limit = Math.max(0, Utils.int(count, 0));
+      const mode = Planner.paidAllocationMode(state && state.settings || DEFAULTS.settings, limit);
+      const selected = [];
+      const takeFor = (buyer, amount) => {
+        for (let index = 0; index < Math.max(0, amount); index += 1) {
+          const slot = Planner.nextPaidForBuyer(queue, buyer, state, referenceDate, context);
+          if (!slot) break;
+          selected.push(slot);
+        }
+      };
+      if (mode === 'split') {
+        let buyers = Planner.eligiblePaidBuyers(queue, state, referenceDate, context);
+        if (buyers.length) {
+          const offset = Math.max(0, Utils.int(dayIndex, 0)) % buyers.length;
+          buyers = buyers.slice(offset).concat(buyers.slice(0, offset));
+        }
+        while (selected.length < limit && buyers.length) {
+          let progress = false;
+          buyers.forEach((buyer) => {
+            if (selected.length >= limit) return;
+            const before = selected.length;
+            takeFor(buyer, 1);
+            if (selected.length > before) progress = true;
+          });
+          if (!progress) break;
+        }
+      } else if (mode.startsWith('ratio:')) {
+        const buyers = Planner.eligiblePaidBuyers(queue, state, referenceDate, context);
+        const oldestCount = Utils.clamp(Utils.int(mode.split(':')[1], 0), 0, limit);
+        if (buyers.length) takeFor(buyers[0], oldestCount);
+        if (buyers.length > 1) takeFor(buyers[1], limit - oldestCount);
+      }
+      while (selected.length < limit) {
+        const slot = Planner.nextPaid(queue, state, referenceDate, context);
+        if (!slot) break;
+        selected.push(slot);
+      }
+      return selected;
     },
     holdCount(state, referenceDate) {
       return Planner.currentRosterContext(state).roster.reduce((sum, person) => {
@@ -5034,7 +5129,14 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const identity = Company.resolveIdentity({ id: entry.playerId, name: entry.playerName }, state, identityMaps);
         ledgerUsedByIdentity.set(identity, (ledgerUsedByIdentity.get(identity) || 0) + Ledger.totals(entry, state.settings).usedTrains);
       });
+      const paidIdentities = new Set();
+      (state.ledger || []).forEach((entry) => {
+        const totals = Ledger.totals(entry, state.settings);
+        if (entry.contractType !== 'paid' || !totals.paid || totals.done || totals.remaining <= 0) return;
+        paidIdentities.add(Company.resolveIdentity({ id: entry.playerId, name: entry.playerName }, state, identityMaps));
+      });
       const roster = Planner.sponsoredPeople(state)
+        .filter((person) => !paidIdentities.has(Company.resolveIdentity(person, state, identityMaps)))
         .map((person) => {
           const identity = Company.resolveIdentity(person, state, identityMaps);
           const str = Math.max(Utils.int(loggedByIdentity.get(identity), 0), Utils.int(ledgerUsedByIdentity.get(identity), 0));
@@ -5257,11 +5359,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const slots = [];
         const suggestions = [];
         const fillPaid = () => {
-          while (slots.length < Math.min(paidLimit, supply) && paidQueue.length) {
-            const next = Planner.nextPaid(paidQueue, state, dayDate, rosterContext);
-            if (!next) break;
-            slots.push(next);
-          }
+          const room = Math.max(0, Math.min(paidLimit, supply) - slots.length);
+          Planner.takePaidSlots(paidQueue, room, state, dayDate, rosterContext, dayIndex).forEach((slot) => slots.push(slot));
         };
         const fillSponsored = () => {
           while (slots.length < supply && sponsoredQueue.length) {
@@ -8760,7 +8859,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           title: 'Training ledger summary',
           text: 'The top ledger summary recalculates local training totals as orders change.',
           notes: [
-            'Paid orders are FIFO by order ID and date.',
+            'Bought trains use the FIFO, equal split, or oldest/next-buyer allocation selected in Settings.',
             'Used/given counts feed remaining trains and schedule demand.',
             'Done and Paid switches update the order state without editing the read-only order details.'
           ]
@@ -10393,7 +10492,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             <div class="pp-head">
               <div>
                 <h3>Train Schedule</h3>
-                <p title="FIFO, First In First Out">FIFO paid trains first. Auto mode skips sponsored staff at the addiction or inactivity threshold and reassigns those trains to eligible staff.</p>
+                <p>Bought trains follow the allocation selected in Settings. Auto mode skips sponsored staff at the addiction or inactivity threshold and reassigns those trains to eligible staff.</p>
               </div>
                 <button class="pp-btn is-primary" type="button" data-action="build-planner">Build calendar</button>
             </div>
@@ -11924,7 +12023,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-head">
           <div>
             <h3>Training setup</h3>
-            <p>Detected train supply and paid queue limits.</p>
+            <p>Detected train supply, paid queue limits, and how bought trains are shared.</p>
           </div>
         </div>
         <div class="pp-content">
@@ -11933,7 +12032,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             ${UI.field('Company rating', `<input class="pp-input" name="companyStars" inputmode="numeric" min="1" max="10" value="${Utils.esc(state.settings.companyStars)}" disabled>`)}
             ${UI.field('Trainings / day', `<input class="pp-input" value="${Utils.esc(Planner.dailySupply(state.settings))}" disabled>`)}
             ${UI.field('Paid cap / day', UI.paidCapSelect(state.settings), 'pp-compact-field')}
+            ${UI.field('Bought-train allocation', UI.paidAllocationSelect(state.settings), 'span-2')}
             <label class="pp-field"><span class="pp-note">Trainer role</span><span><input type="checkbox" name="trainerAutoDetect" ${state.settings.trainerAutoDetect !== false ? 'checked' : ''}> Auto-Detect</span></label>
+            <div class="pp-field span-6"><span class="pp-note">Split shares the paid cap equally between active buyers (4 / 4 when the paid cap is 8 and two buyers are waiting). The numbered choices set the oldest/next-buyer share; unused slots safely fall back to the next paid order. Any capacity left after the paid cap remains in sponsored/free rotation.</span></div>
             <div class="pp-field span-6"><span class="pp-note">Detected setup: company rating comes from profile sync and Trainer comes from staff sync when Auto-Detect is enabled. Current trainer bonus: ${state.settings.trainerAssigned ? 'yes' : 'no'}.</span></div>
             <div class="pp-form-title">Auto sponsored/free rules</div>
             <div class="pp-priority-grid">
@@ -13447,6 +13548,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const options = Array.from({ length: maxCap + 1 }, (_, index) => maxCap - index);
       return `<select class="pp-select pp-select-fit" name="maxPaidTrainsPerDay">${options.map((value) => `<option value="${value}" ${current === value ? 'selected' : ''}>${value}</option>`).join('')}</select>`;
     },
+    paidAllocationSelect(settings) {
+      const current = Planner.paidAllocationMode(settings);
+      return `<select class="pp-select" name="paidTrainAllocation">${Planner.paidAllocationOptions(settings).map((option) => `<option value="${Utils.esc(option.value)}" ${current === option.value ? 'selected' : ''}>${Utils.esc(option.label)}</option>`).join('')}</select>`;
+    },
     percentBar(value) {
       const percent = Utils.clamp(Utils.percent(value, 0), 0, 100);
       return `<div class="pp-percent-bar" style="--percent:${percent}%"><span></span><b>${Utils.esc(percent)}%</b></div>`;
@@ -13855,6 +13960,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.3.2 - Fair bought-train allocation</summary>
+              <ul><li>Training setup now offers FIFO, equal Split, and every oldest/next-buyer combination for the daily paid cap.</li><li>Split assigns four bought trains to each of two buyers when eight paid trains are available, treating multiple open orders from the same player as one buyer.</li><li>Any remaining daily capacity stays in sponsored/free rotation, and unused buyer quota safely falls through to the next paid order.</li></ul>
+            </details>
+            <details>
               <summary>v3.3.1 - Complete daily history before upload</summary>
               <ul><li>Daily sync now checks exact training, wage-change, role-change, and hire history alongside news, advertising, and restocking activity.</li><li>All Torn data is collected before one consolidated Pythagoras API upload, preventing new restock or staff-history data from waiting for a later sync.</li><li>Manual Business, Employees, Stock, and Staff history actions continue to sync independently without nested activity panels during Daily sync.</li></ul>
             </details>
@@ -17586,6 +17695,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const previousKeyInfo = Object.assign({}, UI.state.settings.keyInfo || {});
       const previousQueuePolicy = Planner.queuePolicy(UI.state);
       const previousPaidFirst = Planner.paidFirstEnabled(UI.state);
+      const previousPaidAllocation = Planner.paidAllocationMode(UI.state.settings);
       const settingsContext = UI.settingsFormContext(root);
       const rolesForm = root.querySelector('[data-roles-form]');
       const notificationsForm = root.querySelector('[data-notifications-form]');
@@ -17607,6 +17717,12 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         if (data.has('maxPaidTrainsPerDay')) {
           const paidCapLimit = Planner.paidCapLimit(UI.state.settings);
           UI.state.settings.maxPaidTrainsPerDay = Utils.clamp(Utils.int(data.get('maxPaidTrainsPerDay'), paidCapLimit), 0, paidCapLimit);
+        }
+        if (data.has('paidTrainAllocation')) {
+          UI.state.settings.paidTrainAllocation = Planner.paidAllocationMode({
+            ...UI.state.settings,
+            paidTrainAllocation: String(data.get('paidTrainAllocation') || 'fifo')
+          });
         }
         UI.state.settings.trainerAutoDetect = settingsContext.checked('trainerAutoDetect', UI.state.settings.trainerAutoDetect !== false);
         UI.state.settings.plannerPriority = UI.state.settings.plannerPriority || Utils.clone(DEFAULTS.settings.plannerPriority);
@@ -17647,7 +17763,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       UI.readStockSettings(root);
       Store.applyAdminConfig(UI.state);
       Planner.build(UI.state);
-      if ((previousQueuePolicy !== Planner.queuePolicy(UI.state) || previousPaidFirst !== Planner.paidFirstEnabled(UI.state)) && (UI.state.planner.days || []).length) {
+      if ((previousQueuePolicy !== Planner.queuePolicy(UI.state)
+        || previousPaidFirst !== Planner.paidFirstEnabled(UI.state)
+        || previousPaidAllocation !== Planner.paidAllocationMode(UI.state.settings))
+        && (UI.state.planner.days || []).length) {
         const prepared = UI.prepareTrainingQueue({ force: true });
         if (!prepared) UI.state.planner.trainingQueue = null;
         Store.updateSyncCache(UI.state, 'planner');
