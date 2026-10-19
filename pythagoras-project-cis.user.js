@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.3.2
+// @version      3.3.3
 // @downloadURL  https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.user.js
 // @updateURL    https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.meta.js
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
@@ -54,7 +54,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.3.2',
+    version: '3.3.3',
     greasyForkScriptId: 580933,
     greasyForkApiUrl: 'https://api.greasyfork.org/en/scripts/580933.json',
     greasyForkPageUrl: 'https://greasyfork.org/en/scripts/580933-pythagoras-project-cis',
@@ -252,6 +252,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       maxTotalDiscount: 90,
       logTrigger: '!train',
       trainingOrderDismissals: {},
+      trainingOrderInstructionOverrides: {},
       theme: BUILD_CONFIG.enabled && BUILD_CONFIG.defaultTheme ? BUILD_CONFIG.defaultTheme : 'modul',
       supportUrl: BUILD_CONFIG.enabled ? BUILD_CONFIG.faqUrl : '',
       bugReportUrl: BUILD_CONFIG.enabled ? BUILD_CONFIG.bugReportUrl : '',
@@ -314,7 +315,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       },
       wageRoleRequirements: {}
     },
-    ui: { tab: 'timeline', staffTab: 'current', directorTab: 'current', ledgerTab: 'orders', settingsSection: 'core', timelineFilter: 'all', timelineGrouped: true, timelineEnabled: true, analyticsYear: 'all', analyticsExpanded: {}, dailyBalanceMode: 'week', dailyBalanceStart: '', dailyBalanceIncludeWages: true, graphIndex: 0, graphScale: 'daily', graphSeries: { income: true, customers: true, wages: true, adBudget: true, profit: true }, staffEeMode: 'total', staffEeMetric: 'workingStats', staffEeRange: '30', staffEeEmployee: 'all', staffEeSeries: { workingStats: true, settledIn: true, book: true, merits: true, directorEducation: true, management: true, wrongGender: true, addiction: true, inactivity: true }, trainingLogStart: '', trainingLogYear: 'all', profileSort: 'name', profileSortDir: 'asc', tableSorts: {}, showApiKey: false, privacyMode: false, tourActive: false, tourStep: 0, startMinimized: false, minimized: false, mode: 'embedded', editPersonKey: '', editDirectorKey: '', personSaveExit: false, plannerQueueHidden: false, collapsedPanels: {}, detailOpenState: {}, reportSections: { summary: true, ledger: true, trainingLog: true, planner: true, analytics: true, balance: true, stock: true, staff: true, pastStaff: false, directors: false, timeline: true, profile: true, details: true, settings: true }, left: '', top: '', restoreWidth: '', restoreHeight: '' }
+    ui: { tab: 'timeline', staffTab: 'current', directorTab: 'current', ledgerTab: 'orders', ledgerTrainingSession: null, editLedgerId: '', settingsSection: 'core', timelineFilter: 'all', timelineGrouped: true, timelineEnabled: true, analyticsYear: 'all', analyticsExpanded: {}, dailyBalanceMode: 'week', dailyBalanceStart: '', dailyBalanceIncludeWages: true, graphIndex: 0, graphScale: 'daily', graphSeries: { income: true, customers: true, wages: true, adBudget: true, profit: true }, staffEeMode: 'total', staffEeMetric: 'workingStats', staffEeRange: '30', staffEeEmployee: 'all', staffEeSeries: { workingStats: true, settledIn: true, book: true, merits: true, directorEducation: true, management: true, wrongGender: true, addiction: true, inactivity: true }, trainingLogStart: '', trainingLogYear: 'all', profileSort: 'name', profileSortDir: 'asc', tableSorts: {}, showApiKey: false, privacyMode: false, tourActive: false, tourStep: 0, startMinimized: false, minimized: false, mode: 'embedded', editPersonKey: '', editDirectorKey: '', personSaveExit: false, plannerQueueHidden: false, collapsedPanels: {}, detailOpenState: {}, reportSections: { summary: true, ledger: true, trainingLog: true, planner: true, analytics: true, balance: true, stock: true, staff: true, pastStaff: false, directors: false, timeline: true, profile: true, details: true, settings: true }, left: '', top: '', restoreWidth: '', restoreHeight: '' }
   };
 
   const CSS = `
@@ -371,7 +372,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     .pp-table tr.pp-stock-warning td{background:rgba(216,165,69,.08)}.pp-table tr.pp-detail-row td{background:rgba(255,255,255,.035);white-space:normal}.pp-analytics-detail{display:grid;gap:8px;padding:8px}.pp-analytics-detail .pp-wrap{display:inline-block;max-width:100%}.pp-analytics-detail-table{width:max-content;border-collapse:collapse;min-width:0}.pp-analytics-detail-table th,.pp-analytics-detail-table td{padding:6px 9px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}.pp-analytics-detail-table th{color:var(--muted);font-size:12px}.pp-expand-btn{min-width:30px;padding:4px 8px}
     .pp-table.is-compact{min-width:0}.pp-people-table th,.pp-people-table td,.pp-effectiveness-table th,.pp-effectiveness-table td{text-align:center}.pp-people-table .pp-pill{justify-content:center}.pp-report-actions{margin-top:10px}
 .pp-inline{width:auto;max-width:calc(100% - 8px);min-height:30px;border:1px solid var(--line);border-radius:6px;background:#0f1111;color:var(--text);padding:5px 7px;margin-left:4px;margin-right:4px}.pp-fit{width:auto;max-width:180px}.pp-tiny{width:5ch;max-width:5ch;text-align:right}.pp-capacity{width:9ch;max-width:9ch;text-align:right}.pp-stock-qty{width:8ch;max-width:8ch;text-align:right}.pp-name{width:150px}.pp-row-actions{display:flex;gap:6px;flex-wrap:wrap;min-width:0}.pp-row-actions>*{min-width:0}.pp-row-actions .pp-btn{margin-left:0;margin-right:0}.pp-btn{margin-left:4px;margin-right:4px}
-    .pp-ledger-add-form{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;min-width:0}.pp-ledger-add-form .pp-field{flex:0 0 var(--ledger-field-width,10ch);min-width:0;overflow:visible}.pp-ledger-add-form .pp-input,.pp-ledger-add-form .pp-select{width:100%;min-width:0;max-width:100%}.pp-ledger-staff-field{--ledger-field-width:30ch}.pp-ledger-date-field{--ledger-field-width:13ch}.pp-ledger-money-field{--ledger-field-width:15ch}.pp-ledger-price-field{--ledger-field-width:12ch}.pp-ledger-small-field{--ledger-field-width:7ch}.pp-ledger-stat-field{--ledger-field-width:10ch}.pp-ledger-position-field{--ledger-field-width:20ch}.pp-ledger-comment-field{--ledger-field-width:34ch}.pp-ledger-contract-field{--ledger-field-width:20ch}.pp-ledger-check-field{--ledger-field-width:9ch}.pp-checkline{display:flex;gap:6px;align-items:center;min-height:34px;white-space:nowrap}.pp-ledger-preview-field{flex:1 0 100%!important;min-width:0}.pp-ledger-preview-field .pp-btn{width:min(32ch,100%)}.pp-ledger-row.is-done td{opacity:.58}.pp-ledger-id{font-weight:700;color:var(--accent)}.pp-order-trains{display:grid;grid-template-columns:repeat(2,max-content);gap:6px 8px;align-items:end}.pp-order-trains label,.pp-order-discounts label{display:grid;gap:3px;color:var(--muted);font-size:12px}.pp-order-discounts{display:grid;gap:4px}.pp-readonly-value{color:var(--text);white-space:nowrap}.pp-readonly-sub{display:block;color:var(--muted);font-size:12px;margin-top:3px}.pp-order-comment{display:block;min-width:16ch;max-width:34ch;white-space:normal;overflow-wrap:anywhere;line-height:1.35}.pp-order-stat{font-weight:700;letter-spacing:.04em;white-space:nowrap}
+    .pp-ledger-add-form{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;min-width:0}.pp-ledger-add-form .pp-field{flex:0 0 var(--ledger-field-width,10ch);min-width:0;overflow:visible}.pp-ledger-add-form .pp-input,.pp-ledger-add-form .pp-select{width:100%;min-width:0;max-width:100%}.pp-ledger-staff-field{--ledger-field-width:30ch}.pp-ledger-date-field{--ledger-field-width:13ch}.pp-ledger-money-field{--ledger-field-width:15ch}.pp-ledger-price-field{--ledger-field-width:12ch}.pp-ledger-small-field{--ledger-field-width:7ch}.pp-ledger-stat-field{--ledger-field-width:10ch}.pp-ledger-position-field{--ledger-field-width:20ch}.pp-ledger-comment-field{--ledger-field-width:34ch}.pp-ledger-contract-field{--ledger-field-width:20ch}.pp-ledger-check-field{--ledger-field-width:9ch}.pp-checkline{display:flex;gap:6px;align-items:center;min-height:34px;white-space:nowrap}.pp-ledger-preview-field{flex:1 0 100%!important;min-width:0}.pp-ledger-preview-field .pp-btn{width:min(32ch,100%)}.pp-ledger-row.is-done td{opacity:.58}.pp-ledger-id{font-weight:700;color:var(--accent)}.pp-order-trains{display:grid;grid-template-columns:repeat(2,max-content);gap:6px 8px;align-items:end}.pp-order-trains label,.pp-order-discounts label{display:grid;gap:3px;color:var(--muted);font-size:12px}.pp-order-discounts{display:grid;gap:4px}.pp-readonly-value{color:var(--text);white-space:nowrap}.pp-readonly-sub{display:block;color:var(--muted);font-size:12px;margin-top:3px}.pp-order-comment{display:block;min-width:16ch;max-width:34ch;white-space:normal;overflow-wrap:anywhere;line-height:1.35}.pp-order-stat{font-weight:700;letter-spacing:.04em;white-space:nowrap}.pp-ledger-edit-comment{display:block;width:30ch;min-width:18ch;max-width:100%;resize:vertical;margin-bottom:6px}
     .pp-settings-nav,.pp-action-grid,.pp-report-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.pp-settings-nav{grid-column:span 12}.pp-member-card{grid-column:span 12}.pp-hidden{display:none!important}.pp-range-row{display:grid;grid-template-columns:auto minmax(140px,1fr) auto;gap:8px;align-items:center}.pp-analytics-scroll{max-height:min(64vh,620px);overflow:auto}.pp-analytics-scroll .pp-table th,.pp-analytics-scroll .pp-table td{text-align:center;padding-left:14px;padding-right:14px}.pp-past-scroll{max-height:430px;overflow:auto}.pp-stars{letter-spacing:1px;color:#5f6662}.pp-stars span{color:#FFDD00}.pp-table-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0 6px;color:#fff;font-weight:700}.pp-sort{border:0;background:transparent;color:var(--muted);font:inherit;font-weight:700;padding:0;cursor:pointer}.pp-sort.is-active{color:var(--accent)}.pp-card-count{align-self:center;color:var(--muted);font-size:12px}.pp-report-options label{display:flex;align-items:center;gap:6px;color:var(--muted)}.pp-training-pills{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}.pp-training-day{display:grid;gap:7px;align-items:start;border:1px solid var(--line);border-radius:8px;background:#121615;padding:8px}.pp-training-day strong{color:#fff}.pp-pill-list{display:flex;flex-wrap:wrap;gap:6px}.pp-percent-bar{position:relative;min-height:24px;border:1px solid var(--line);border-radius:7px;background-image:linear-gradient(90deg,rgba(255,255,255,.14) 1px,transparent 1px);background-size:10% 100%;background-color:#101312;overflow:hidden}.pp-percent-bar span{position:absolute;inset:0 auto 0 0;width:var(--percent);background:linear-gradient(90deg,var(--bad),var(--accent))}.pp-percent-bar b{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:12px;text-shadow:-1px -1px 0 #000,0 -1px 0 #000,1px -1px 0 #000,-1px 0 0 #000,1px 0 0 #000,-1px 1px 0 #000,0 1px 0 #000,1px 1px 0 #000}.pp-stock-summary{margin-bottom:12px}.pp-stock-summary .pp-stat strong{font-size:16px}.pp-stock-na{color:var(--muted);opacity:.6}.pp-stock-restock{display:grid;gap:2px}.pp-stock-restock b{color:#fff;font-size:12px;font-weight:700}.pp-stock-restock small{color:var(--muted);font-size:11px}.pp-modal-backdrop{position:absolute;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.58)}.pp-modal-card{width:min(720px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;box-shadow:0 18px 54px rgba(0,0,0,.5)}.pp-card-form{display:grid;gap:12px}.pp-card-section{border:1px solid var(--line);border-radius:8px;background:#121615;overflow:hidden}.pp-card-section summary{list-style:none}.pp-card-section summary::-webkit-details-marker{display:none}.pp-card-section-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;cursor:pointer}.pp-card-section[open] .pp-card-section-head{border-bottom:1px solid rgba(255,255,255,.08)}.pp-card-section-head h4{margin:0;color:#fff;font-size:13px;line-height:1.2}.pp-card-section-body{padding:12px}.pp-card-section-body .pp-form{gap:10px}.pp-history-stack{display:grid;gap:8px}.pp-history-item{border:1px solid var(--line);border-radius:8px;background:#101312}.pp-history-item summary{list-style:none;cursor:pointer;padding:10px 12px;color:#fff;font-weight:700}.pp-history-item summary::-webkit-details-marker{display:none}.pp-history-item[open] summary{border-bottom:1px solid rgba(255,255,255,.08)}.pp-history-body{padding:10px 12px}.pp-card-header-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
     .pp-pill{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:3px 8px;border-radius:999px;border:1px solid var(--line);background:#111313;color:var(--muted);white-space:nowrap}.pp-pill:before{content:'';width:7px;height:7px;border-radius:50%;background:var(--pill-color,var(--muted))}.pp-date-pill:before{display:none}
     .pp-changelog{display:grid;gap:8px}.pp-changelog details{border:1px solid var(--line);border-radius:8px;background:#121615;padding:8px}.pp-changelog summary{cursor:pointer;color:#fff;font-weight:700}.pp-changelog ul{margin:8px 0 0 18px;padding:0;color:var(--muted)}.pp-changelog li{margin:4px 0}.pp-role-history{display:grid;gap:8px;border:1px solid var(--line);border-radius:8px;background:#121615;padding:10px}.pp-role-history>div+div{border-top:1px solid rgba(255,255,255,.08);padding-top:8px}.pp-card-userid{font:inherit;color:var(--accent);text-decoration:none}.pp-card-userid:hover{text-decoration:underline}
@@ -1167,6 +1168,48 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       };
       state.settings.trainingOrderDismissals = Store.normaliseTrainingOrderDismissals(dismissals);
       return true;
+    },
+    trainingOrderInstructionOverrideKeys(entry, eventId) {
+      const keys = [];
+      const sourceEventId = String(eventId || Store.ledgerSourceEventId(entry) || '').trim().replace(/^log4810:/i, '');
+      const orderId = String(entry && (entry.orderId || entry.id) || '').trim();
+      if (sourceEventId) keys.push(`event:${sourceEventId}`);
+      if (orderId) keys.push(`order:${orderId}`);
+      return Array.from(new Set(keys));
+    },
+    trainingOrderInstructionOverrides(state) {
+      if (!state || !state.settings) return {};
+      const source = state.settings.trainingOrderInstructionOverrides;
+      state.settings.trainingOrderInstructionOverrides = source && typeof source === 'object' && !Array.isArray(source) ? source : {};
+      return state.settings.trainingOrderInstructionOverrides;
+    },
+    trainingOrderInstructionOverride(state, entry, eventId) {
+      const overrides = Store.trainingOrderInstructionOverrides(state);
+      return Store.trainingOrderInstructionOverrideKeys(entry, eventId)
+        .map((key) => overrides[key])
+        .find((value) => value && typeof value === 'object' && !Array.isArray(value)) || null;
+    },
+    saveTrainingOrderInstructionOverride(state, entry) {
+      const key = Store.trainingOrderInstructionOverrideKeys(entry)[0];
+      if (!key) return false;
+      Store.trainingOrderInstructionOverrides(state)[key] = {
+        primaryStat: String(entry.primaryStat || '').trim().toLowerCase(),
+        secondaryStat: String(entry.secondaryStat || '').trim().toLowerCase(),
+        comment: String(entry.comment || '').trim().slice(0, 500),
+        requestedPosition: String(entry.requestedPosition || '').trim().slice(0, 120),
+        updatedAt: String(entry.updatedAt || Utils.nowIso())
+      };
+      return true;
+    },
+    removeTrainingOrderInstructionOverride(state, entry) {
+      const overrides = Store.trainingOrderInstructionOverrides(state);
+      let removed = false;
+      Store.trainingOrderInstructionOverrideKeys(entry).forEach((key) => {
+        if (!Object.prototype.hasOwnProperty.call(overrides, key)) return;
+        delete overrides[key];
+        removed = true;
+      });
+      return removed;
     },
     ledgerIsManual(entry) {
       return ['manual', 'manual_add', 'manual-entry'].includes(Store.ledgerSourceKind(entry));
@@ -2015,6 +2058,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     cloudState(state) {
       const copy = Store.sanitizedState(state);
       copy.settings.apiKey = '';
+      if (copy.ui) {
+        delete copy.ui.ledgerTrainingSession;
+        delete copy.ui.editLedgerId;
+      }
       // Key verification belongs to this browser session. Never let an older
       // cloud snapshot replace a fresh identity check on another device.
       delete copy.settings.keyInfo;
@@ -4420,6 +4467,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           });
           const oldEventId = Store.ledgerSourceEventId(target);
           const oldKey = Store.ledgerSourceKey(target);
+          const instructionOverride = Store.trainingOrderInstructionOverride(state, target, eventId);
+          const instructionValue = (key, fallback) => instructionOverride && Object.prototype.hasOwnProperty.call(instructionOverride, key)
+            ? instructionOverride[key]
+            : fallback;
           Object.assign(target, merged, {
             source: 'log_import',
             sourceKind: 'log_import',
@@ -4430,10 +4481,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             sourceLogText: candidate.sourceLogText || target.sourceLogText || '',
             totalTrains: candidate.sourceExplicitTrainCount ? candidate.totalTrains : merged.totalTrains,
             sourceExplicitTrainCount: candidate.sourceExplicitTrainCount || target.sourceExplicitTrainCount || false,
-            comment: candidate.comment || target.comment || '',
-            primaryStat: candidate.primaryStat || target.primaryStat || '',
-            secondaryStat: candidate.secondaryStat || target.secondaryStat || '',
-            requestedPosition: candidate.requestedPosition || target.requestedPosition || ''
+            comment: instructionValue('comment', candidate.comment || target.comment || ''),
+            primaryStat: instructionValue('primaryStat', candidate.primaryStat || target.primaryStat || ''),
+            secondaryStat: instructionValue('secondaryStat', candidate.secondaryStat || target.secondaryStat || ''),
+            requestedPosition: instructionValue('requestedPosition', candidate.requestedPosition || target.requestedPosition || '')
           });
           if (oldEventId !== eventId || oldKey !== `log4810:${eventId}`) tagged += 1;
           existingByEvent.set(eventId, target);
@@ -4824,6 +4875,18 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     },
     slotEligibility(slot, state, referenceDate, context) {
       const person = Planner.resolveRosterPerson({ id: slot && slot.playerId, name: slot && slot.playerName }, state, context);
+      if (!person) {
+        return {
+          person: null,
+          eligible: false,
+          holdDays: Planner.trainingHoldDays(),
+          hireDate: '',
+          eligibleOn: '',
+          tenureDays: null,
+          remainingDays: 0,
+          reason: 'The buyer is not linked to the current employee roster.'
+        };
+      }
       return Object.assign({ person }, Planner.trainingEligibility(person, state, referenceDate));
     },
     nextPaid(queue, state, referenceDate, context) {
@@ -6748,6 +6811,31 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       }
       return configured.length ? configured : Wages.statKeys.slice();
     },
+    trainingStatKeys(employee, settings, requirements) {
+      // Wage calculations only need the two participating stats. Training
+      // instructions also need their ordered 50-point / 25-point priority.
+      const req = Wages.roleRequirements(employee, settings, requirements);
+      const configured = Wages.statKeys
+        .filter((key) => Utils.num(req[key], 0) > 0)
+        .sort((a, b) => Utils.num(req[b], 0) - Utils.num(req[a], 0) || Wages.statKeys.indexOf(a) - Wages.statKeys.indexOf(b));
+      if (configured.length >= 2) return configured.slice(0, 2);
+      const roleKey = Planner.roleKey(employee && employee.role);
+      const typeId = String(settings && settings.companyTypeId || '').trim();
+      const typeName = String(settings && settings.companyTypeName || '').toLowerCase();
+      if (typeId === '30' || typeName.includes('mechanic shop')) {
+        const mechanicShopOrder = {
+          technician: ['man', 'end'],
+          'apprentice-technician': ['man', 'end'],
+          cleaner: ['man', 'end'],
+          manager: ['end', 'int'],
+          receptionist: ['end', 'int'],
+          trainer: ['int', 'end']
+        };
+        if (mechanicShopOrder[roleKey]) return mechanicShopOrder[roleKey].slice();
+      }
+      const known = Wages.knownRoleStatKeys(employee, settings);
+      return known.length === 2 ? known.slice() : [];
+    },
     weightedStats(employee, settings, requirements) {
       const wage = settings.wage;
       const effectiveStatKeys = Wages.effectiveStatKeys(employee, settings, requirements);
@@ -7403,6 +7491,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       Company.removeDirectorsFromStaff(state);
       Ledger.prepare(state);
       Company.syncTrainingSetup(state);
+      Planner.build(state);
       return standalonePopup;
     },
 
@@ -10475,6 +10564,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
               </div>
               ${ledgerTab === 'add' ? addOrderForm : `
                 <div class="pp-table-title"><span>${ledgerTab === 'done' ? 'Done orders' : 'Running orders'}</span><span class="pp-note">${ledgerTab === 'done' ? 'Completed orders stay available as a paged history.' : 'Paid and unpaid orders remain here until completed.'}</span></div>
+                ${ledgerTab === 'orders' ? UI.ledgerTrainingPanel() : ''}
                 ${UI.weeklyLimitNotice(state.ledger.length, visibleLedger.length, 'Training orders')}
                 <div data-ledger-table-container="${ledgerTab}">${UI.ledgerTable(ledgerTab)}</div>`}
             </div>
@@ -10550,7 +10640,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             <th>${UI.tableSortHeader(tableId, 'status', 'Status')}</th><th>Actions</th>
           </tr>
         </thead>
-        ${UI.pagedTableBody(tableId, rows, (entry, index) => UI.ledgerRow(entry, index), 12, requestedView)}
+        ${UI.pagedTableBody(tableId, rows, (entry, index) => UI.ledgerRow(entry, index), 15, requestedView)}
       </table></div>`;
     },
 
@@ -10559,8 +10649,21 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const totals = Ledger.totals(entry, state.settings);
       const orderId = entry.orderId || 'Unassigned';
       const done = totals.done || entry.done;
+      const editing = String(state.ui.editLedgerId || '') === String(entry.id || '');
+      const primaryCell = editing
+        ? `<select class="pp-inline" data-ledger-edit-field="primaryStat" aria-label="Primary training stat">${UI.trainingStatOptions(entry.primaryStat)}</select>`
+        : `<span class="pp-order-stat">${Utils.esc(UI.trainingStatLabel(entry.primaryStat))}</span>`;
+      const secondaryCell = editing
+        ? `<select class="pp-inline" data-ledger-edit-field="secondaryStat" aria-label="Secondary training stat">${UI.trainingStatOptions(entry.secondaryStat)}</select>`
+        : `<span class="pp-order-stat">${Utils.esc(UI.trainingStatLabel(entry.secondaryStat))}</span>`;
+      const commentCell = editing
+        ? `<textarea class="pp-inline pp-ledger-edit-comment" data-ledger-edit-field="comment" aria-label="Training order comment" maxlength="500" rows="3" placeholder="Comment">${Utils.esc(entry.comment || '')}</textarea><input class="pp-inline" data-ledger-edit-field="requestedPosition" aria-label="Requested position" maxlength="120" value="${Utils.esc(entry.requestedPosition || '')}" placeholder="Requested position">`
+        : `<span class="pp-order-comment" title="${Utils.esc(entry.comment || '')}">${Utils.esc(entry.comment || '—')}</span>${entry.requestedPosition ? `<span class="pp-readonly-sub">Position: ${Utils.esc(entry.requestedPosition)}</span>` : ''}`;
+      const actions = editing
+        ? `<button class="pp-btn is-primary" type="button" data-action="save-ledger-instructions" data-id="${Utils.esc(entry.id)}">Save</button><button class="pp-btn" type="button" data-action="cancel-ledger-instructions" data-id="${Utils.esc(entry.id)}">Cancel</button>`
+        : `<button class="pp-btn" type="button" data-action="edit-ledger-instructions" data-id="${Utils.esc(entry.id)}">Edit</button><button class="pp-btn" type="button" data-action="copy-ledger-receipt" data-id="${Utils.esc(entry.id)}" title="Copy HTML receipt">Receipt</button><button class="pp-btn is-danger" type="button" data-action="delete-ledger" data-id="${Utils.esc(entry.id)}">Delete</button>`;
       return `
-        <tr class="pp-ledger-row ${done ? 'is-done' : ''}" data-ledger-row="${entry.id}">
+        <tr class="pp-ledger-row ${done ? 'is-done' : ''}" data-ledger-row="${Utils.esc(entry.id)}">
           <td>${index + 1}</td>
           <td><span class="pp-ledger-id">${Utils.esc(orderId)}</span></td>
           <td><span class="pp-readonly-value">${Utils.esc(Utils.dateShort(entry.entryDate || entry.createdAt))}</span></td>
@@ -10568,14 +10671,14 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           <td><span class="pp-readonly-value">${Utils.money(totals.payment)}</span><span class="pp-readonly-sub">Balance: <span data-row-balance>${Utils.money(totals.balance)}</span></span></td>
           <td><span class="pp-readonly-value">${Utils.money(totals.price)}</span><span class="pp-readonly-sub">Per train</span></td>
           <td><span class="pp-order-trains"><label>Total<span>${Utils.esc(totals.totalTrains)}</span></label><label>Given<span>${Utils.esc(totals.usedTrains)}</span></label></span><span class="pp-readonly-sub"><span data-row-remaining>${totals.remaining}</span> remaining</span></td>
-          <td><span class="pp-order-stat">${Utils.esc(UI.trainingStatLabel(entry.primaryStat))}</span></td>
-          <td><span class="pp-order-stat">${Utils.esc(UI.trainingStatLabel(entry.secondaryStat))}</span></td>
-          <td><span class="pp-order-comment" title="${Utils.esc(entry.comment || '')}">${Utils.esc(entry.comment || '—')}</span>${entry.requestedPosition ? `<span class="pp-readonly-sub">Position: ${Utils.esc(entry.requestedPosition)}</span>` : ''}</td>
+          <td>${primaryCell}</td>
+          <td>${secondaryCell}</td>
+          <td>${commentCell}</td>
           <td><span class="pp-readonly-value">${Utils.esc(entry.manualDiscount || 0)}%</span></td>
           <td><span class="pp-readonly-value">${Utils.esc(entry.merits || 0)}</span></td>
           <td><label class="pp-note"><input type="checkbox" disabled ${entry.applyDiscount !== false ? 'checked' : ''}> ${entry.applyDiscount !== false ? 'Enabled' : 'Off'}</label><span class="pp-readonly-sub"><span data-row-discount>${totals.totalDiscount}</span>% total</span></td>
           <td><label><input type="checkbox" data-ledger-field="paid" ${totals.paid ? 'checked' : ''}> Paid</label><br><label><input type="checkbox" data-ledger-field="done" ${totals.done ? 'checked' : ''}> Done</label></td>
-          <td><div class="pp-row-actions"><button class="pp-btn" type="button" data-action="copy-ledger-receipt" data-id="${entry.id}" title="Copy HTML receipt">Receipt</button><button class="pp-btn is-danger" type="button" data-action="delete-ledger" data-id="${entry.id}">Delete</button></div></td>
+          <td><div class="pp-row-actions">${actions}</div></td>
         </tr>`;
     },
 
@@ -14612,8 +14715,16 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (action === 'graph-next') UI.shiftGraph(1);
       if (action === 'popup-mode') UI.openPopup();
       if (action === 'embed-mode') UI.closePopup();
+      if (action === 'edit-ledger-instructions') UI.startLedgerInstructionEdit(id);
+      if (action === 'save-ledger-instructions') UI.saveLedgerInstructionEdit(id);
+      if (action === 'cancel-ledger-instructions') UI.cancelLedgerInstructionEdit(id);
       if (action === 'delete-ledger') UI.deleteLedger(id);
       if (action === 'copy-ledger-receipt') UI.copyLedgerReceipt(id, button.ownerDocument && button.ownerDocument.defaultView);
+      if (action === 'start-ledger-training') UI.startLedgerTraining(id);
+      if (action === 'prepare-ledger-training-position') UI.prepareLedgerTrainingPosition();
+      if (action === 'ledger-train-next') UI.ledgerTrainNext();
+      if (action === 'restore-ledger-training-position') UI.restoreLedgerTrainingPosition();
+      if (action === 'dismiss-ledger-training') UI.dismissLedgerTraining();
       if (action === 'edit-person') {
         UI.state.ui.editPersonKey = button.dataset.personKey || '';
         if (UI.state.ui.tab === 'wage') { UI.state.ui.tab = 'staff'; UI.state.ui.staffTab = 'current'; }
@@ -15289,10 +15400,381 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       return UI.root;
     },
 
+    ledgerTrainingSession() {
+      const session = UI.state && UI.state.ui && UI.state.ui.ledgerTrainingSession;
+      return session && typeof session === 'object' && !Array.isArray(session) ? session : null;
+    },
+
+    ledgerTrainingEntry(session) {
+      const active = session || UI.ledgerTrainingSession();
+      if (!active) return null;
+      return (UI.state.ledger || []).find((entry) => String(entry.id || '') === String(active.entryId || '')) || null;
+    },
+
+    ledgerPositionKey(value) {
+      return String(value || '')
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/gi, ' ')
+        .trim()
+        .toLowerCase();
+    },
+
+    ledgerTrainingPanel() {
+      const session = UI.ledgerTrainingSession();
+      if (!session) return '';
+      const phase = String(session.phase || 'prepare');
+      const total = Math.max(0, Utils.int(session.total, 0));
+      const dispatched = Utils.clamp(Utils.int(session.dispatched, 0), 0, total);
+      const remaining = Math.max(0, total - dispatched);
+      const position = session.requestedPosition || 'the current position';
+      let primary = '';
+      if (phase === 'prepare' || phase === 'error') {
+        primary = `<button class="pp-btn is-primary" type="button" data-action="prepare-ledger-training-position">Prepare ${Utils.esc(position)}</button>`;
+      } else if (phase === 'ready') {
+        primary = `<button class="pp-btn is-primary" type="button" data-action="ledger-train-next">Train next (${dispatched + 1}/${total})</button>`;
+      } else if (phase === 'complete') {
+        primary = '<button class="pp-btn is-primary" type="button" data-action="import-training-orders-log" data-sync-action="training-log">Sync order history</button>';
+      } else {
+        const waiting = phase === 'cooldown' ? 'Waiting for Torn…' : phase.startsWith('restore') ? 'Restoring position…' : 'Checking position…';
+        primary = `<button class="pp-btn" type="button" disabled>${waiting}</button>`;
+      }
+      const needsRestore = !!session.positionChanged && !session.restored && phase !== 'complete' && !phase.startsWith('restore');
+      const message = phase === 'complete'
+        ? `${dispatched} train action${dispatched === 1 ? '' : 's'} dispatched and the original position restored. Sync order history to confirm them in the ledger.`
+        : `${dispatched}/${total} dispatched · ${remaining} remaining · Requested position: ${position}. Each Train next press performs exactly one Torn action.`;
+      return `<div class="pp-empty" data-ledger-training-session>
+        <strong>Training ${Utils.esc(session.orderId || 'order')} · ${Utils.esc(session.playerName || session.playerId || 'staff')}</strong><br>
+        <span>${Utils.esc(message)}</span>
+        ${session.error ? `<br><span class="pp-bad">${Utils.esc(session.error)}</span>` : ''}
+        <div class="pp-row-actions" style="margin-top:8px">
+          ${primary}
+          ${needsRestore ? '<button class="pp-btn is-danger" type="button" data-action="restore-ledger-training-position">Restore original position</button>' : ''}
+          <button class="pp-btn" type="button" data-action="dismiss-ledger-training">${phase === 'complete' ? 'Close' : 'Cancel'}</button>
+        </div>
+      </div>`;
+    },
+
+    renderLedgerTraining(message) {
+      Store.save(UI.state);
+      const root = UI.currentRoot();
+      if (root && root.ownerDocument) {
+        const scroll = UI.scrollSnapshot(root).filter((item) => item.selector !== '.pp-timeline');
+        UI.render(root, root.ownerDocument);
+        UI.restoreScroll(root, scroll);
+      }
+      if (message) UI.toast(message);
+    },
+
+    startLedgerTraining(id) {
+      const entry = (UI.state.ledger || []).find((item) => String(item.id || '') === String(id || ''));
+      if (!entry) return;
+      const totals = Ledger.totals(entry, UI.state.settings);
+      if (!entry.playerId) {
+        UI.toast('Sync employees before training this order so Torn has a linked user ID.');
+        return;
+      }
+      if (totals.remaining <= 0) {
+        UI.toast('This training order has no remaining trains.');
+        return;
+      }
+      const eligibility = Planner.slotEligibility({ playerId: entry.playerId, playerName: entry.playerName }, UI.state, Utils.todayInput());
+      if (!eligibility.eligible) {
+        UI.toast(`${entry.playerName || entry.playerId} cannot receive a train today. ${eligibility.reason || 'The employee is not currently eligible.'}`);
+        return;
+      }
+      const active = UI.ledgerTrainingSession();
+      if (active && active.entryId !== entry.id && active.positionChanged && !active.restored && active.phase !== 'complete') {
+        UI.toast('Restore the active employee position before starting another order.');
+        return;
+      }
+      UI.state.ui.ledgerTrainingSession = {
+        entryId: entry.id,
+        orderId: entry.orderId || '',
+        playerId: String(entry.playerId || ''),
+        playerName: String(entry.playerName || ''),
+        requestedPosition: String(entry.requestedPosition || '').trim(),
+        total: totals.remaining,
+        dispatched: 0,
+        originalRank: '',
+        targetRank: '',
+        positionChanged: false,
+        restored: false,
+        phase: 'prepare',
+        createdAt: Utils.nowIso(),
+        error: ''
+      };
+      UI.navigateTornTraining(UI.trainingPageUrl());
+      UI.renderLedgerTraining(`Training session prepared for ${entry.playerName || entry.playerId}. Review it, then prepare the requested position.`);
+    },
+
+    ledgerTrainingPositionContext(session) {
+      const active = session || UI.ledgerTrainingSession();
+      if (!active || !/^\d+$/.test(String(active.playerId || ''))) return null;
+      for (const win of UI.trainingWindowCandidates()) {
+        if (!UI.isTrainingEmployeesWindow(win)) continue;
+        const doc = win.document;
+        const select = doc.querySelector(`select.employee-rank[name="${active.playerId}rank"]`);
+        if (!select) continue;
+        const form = select.closest('form') || doc.querySelector('form[action*="companies.php"][action*="step=employees"][action*="update=true"]');
+        const submit = form
+          ? Array.from(form.querySelectorAll('button,input[type="submit"]')).find((node) => /submit\s+changes/i.test(String(node.textContent || node.value || '')))
+          : null;
+        const requested = UI.ledgerPositionKey(active.requestedPosition);
+        const options = Array.from(select.options || []);
+        const target = requested
+          ? options.find((option) => UI.ledgerPositionKey(option.textContent || option.label) === requested)
+          : options.find((option) => String(option.value) === String(select.value));
+        return { win, doc, select, form, submit, target, options };
+      }
+      return null;
+    },
+
+    setTornPositionValue(context, value) {
+      if (!context || !context.select) return false;
+      const select = context.select;
+      try {
+        const proto = context.win && context.win.HTMLSelectElement && context.win.HTMLSelectElement.prototype;
+        const descriptor = proto ? Object.getOwnPropertyDescriptor(proto, 'value') : null;
+        if (descriptor && descriptor.set) descriptor.set.call(select, String(value));
+        else select.value = String(value);
+        ['input', 'change'].forEach((type) => {
+          try { select.dispatchEvent(new context.win.Event(type, { bubbles: true })); } catch (error) {}
+        });
+        return String(select.value) === String(value);
+      } catch (error) {
+        return false;
+      }
+    },
+
+    prepareLedgerTrainingPosition() {
+      const session = UI.ledgerTrainingSession();
+      if (!session) return;
+      const context = UI.ledgerTrainingPositionContext(session);
+      if (!context) {
+        session.phase = 'error';
+        session.error = 'Open Torn company Employees in this browser, then press Prepare again.';
+        UI.navigateTornTraining(UI.trainingPageUrl());
+        UI.renderLedgerTraining(session.error);
+        return;
+      }
+      if (session.requestedPosition && !context.target) {
+        session.phase = 'error';
+        session.error = `Torn does not offer the requested position “${session.requestedPosition}” for this company.`;
+        UI.renderLedgerTraining(session.error);
+        return;
+      }
+      session.originalRank = session.originalRank || String(context.select.value || '');
+      session.targetRank = String((context.target && context.target.value) || context.select.value || '');
+      session.error = '';
+      if (!session.targetRank || session.targetRank === session.originalRank) {
+        session.phase = 'ready';
+        session.restored = true;
+        UI.renderLedgerTraining('Position is ready. Press Train next once for each train.');
+        return;
+      }
+      if (!context.submit || !UI.setTornPositionValue(context, session.targetRank)) {
+        session.phase = 'error';
+        session.error = 'Could not prepare Torn’s employee position form.';
+        UI.renderLedgerTraining(session.error);
+        return;
+      }
+      session.phase = 'position-verifying';
+      session.positionChanged = true;
+      session.restored = false;
+      Store.save(UI.state);
+      UI.clickTornNode(context.win, context.submit);
+      UI.renderLedgerTraining(`Submitted ${session.requestedPosition || 'the requested position'} to Torn; verifying before training.`);
+      setTimeout(() => UI.verifyLedgerTrainingPosition(), 1400);
+    },
+
+    verifyLedgerTrainingPosition() {
+      const session = UI.ledgerTrainingSession();
+      if (!session || session.phase !== 'position-verifying') return;
+      const context = UI.ledgerTrainingPositionContext(session);
+      if (context && String(context.select.value || '') === String(session.targetRank || '')) {
+        session.phase = 'ready';
+        session.error = '';
+        UI.renderLedgerTraining(`${session.requestedPosition || 'Requested position'} confirmed. Press Train next once per train.`);
+        return;
+      }
+      session.phase = 'error';
+      session.error = 'Torn did not confirm the requested position. Check the employee row before training.';
+      UI.renderLedgerTraining(session.error);
+    },
+
+    ledgerTrainNext() {
+      const session = UI.ledgerTrainingSession();
+      if (!session || session.phase !== 'ready') return;
+      const target = { playerId: session.playerId, playerName: session.playerName };
+      const context = UI.trainingActionContext(target);
+      if (!context || !context.link) {
+        session.phase = 'error';
+        session.error = 'No enabled Torn Train control was found for this employee.';
+        UI.renderLedgerTraining(session.error);
+        return;
+      }
+      if (!UI.clickTornNode(context.win, context.link)) {
+        session.phase = 'error';
+        session.error = 'Torn rejected the Train click.';
+        UI.renderLedgerTraining(session.error);
+        return;
+      }
+      session.dispatched = Utils.clamp(Utils.int(session.dispatched, 0) + 1, 0, Utils.int(session.total, 0));
+      session.phase = 'cooldown';
+      session.error = '';
+      UI.renderLedgerTraining(`One train dispatched for ${session.playerName || session.playerId}; waiting for Torn to update.`);
+      setTimeout(() => {
+        const current = UI.ledgerTrainingSession();
+        if (!current || current.entryId !== session.entryId || current.phase !== 'cooldown') return;
+        if (Utils.int(current.dispatched, 0) >= Utils.int(current.total, 0)) UI.restoreLedgerTrainingPosition();
+        else {
+          current.phase = 'ready';
+          UI.renderLedgerTraining('Ready for the next manual Train click.');
+        }
+      }, 1400);
+    },
+
+    restoreLedgerTrainingPosition() {
+      const session = UI.ledgerTrainingSession();
+      if (!session) return;
+      if (!session.positionChanged || !session.originalRank || session.originalRank === session.targetRank) {
+        session.restored = true;
+        session.phase = 'complete';
+        session.completedAt = Utils.nowIso();
+        UI.renderLedgerTraining('Training actions dispatched. Sync order history to confirm them in the ledger.');
+        return;
+      }
+      const context = UI.ledgerTrainingPositionContext(session);
+      const original = context && context.options.find((option) => String(option.value) === String(session.originalRank));
+      if (!context || !original || !context.submit || !UI.setTornPositionValue(context, session.originalRank)) {
+        session.phase = 'error';
+        session.error = 'Could not restore the original position automatically. Restore it in Torn before closing this session.';
+        UI.renderLedgerTraining(session.error);
+        return;
+      }
+      session.phase = 'restore-verifying';
+      session.error = '';
+      Store.save(UI.state);
+      UI.clickTornNode(context.win, context.submit);
+      UI.renderLedgerTraining('Submitted the original employee position to Torn; verifying the restore.');
+      setTimeout(() => UI.verifyLedgerTrainingRestore(), 1400);
+    },
+
+    verifyLedgerTrainingRestore() {
+      const session = UI.ledgerTrainingSession();
+      if (!session || session.phase !== 'restore-verifying') return;
+      const context = UI.ledgerTrainingPositionContext(session);
+      if (context && String(context.select.value || '') === String(session.originalRank || '')) {
+        session.restored = true;
+        session.phase = 'complete';
+        session.completedAt = Utils.nowIso();
+        session.error = '';
+        UI.renderLedgerTraining('Original position restored. Sync order history to confirm the dispatched trains.');
+        return;
+      }
+      session.phase = 'error';
+      session.error = 'Torn did not confirm the original position. Restore it manually before closing this session.';
+      UI.renderLedgerTraining(session.error);
+    },
+
+    dismissLedgerTraining() {
+      const session = UI.ledgerTrainingSession();
+      if (!session) return;
+      if (session.positionChanged && !session.restored && session.phase !== 'complete') {
+        UI.restoreLedgerTrainingPosition();
+        return;
+      }
+      UI.state.ui.ledgerTrainingSession = null;
+      UI.renderLedgerTraining();
+    },
+
+    ledgerRowElement(id) {
+      const root = UI.currentRoot();
+      if (!root || !root.querySelectorAll) return null;
+      return Array.from(root.querySelectorAll('[data-ledger-row]'))
+        .find((row) => String(row.dataset.ledgerRow || '') === String(id || '')) || null;
+    },
+
+    refreshLedgerRow(id) {
+      const row = UI.ledgerRowElement(id);
+      const entry = (UI.state.ledger || []).find((item) => String(item.id || '') === String(id || ''));
+      if (!row || !entry) return false;
+      const visibleIndex = row.cells && row.cells[0]
+        ? Math.max(0, Utils.int(row.cells[0].textContent, 1) - 1)
+        : 0;
+      row.outerHTML = UI.ledgerRow(entry, visibleIndex);
+      return true;
+    },
+
+    startLedgerInstructionEdit(id) {
+      const entry = (UI.state.ledger || []).find((item) => String(item.id || '') === String(id || ''));
+      if (!entry) return false;
+      const previousId = String(UI.state.ui.editLedgerId || '');
+      UI.state.ui.editLedgerId = String(entry.id || '');
+      if (previousId && previousId !== UI.state.ui.editLedgerId) UI.refreshLedgerRow(previousId);
+      UI.refreshLedgerRow(entry.id);
+      const row = UI.ledgerRowElement(entry.id);
+      const firstField = row && row.querySelector && row.querySelector('[data-ledger-edit-field]');
+      if (firstField && typeof firstField.focus === 'function') firstField.focus();
+      return true;
+    },
+
+    cancelLedgerInstructionEdit(id) {
+      const entryId = String(id || UI.state.ui.editLedgerId || '');
+      if (!entryId) return false;
+      if (String(UI.state.ui.editLedgerId || '') === entryId) UI.state.ui.editLedgerId = '';
+      UI.refreshLedgerRow(entryId);
+      return true;
+    },
+
+    saveLedgerInstructionEdit(id, values) {
+      const entry = (UI.state.ledger || []).find((item) => String(item.id || '') === String(id || ''));
+      if (!entry) return false;
+      let draft = values && typeof values === 'object' && !Array.isArray(values) ? values : null;
+      if (!draft) {
+        const row = UI.ledgerRowElement(entry.id);
+        if (!row || !row.querySelector) return false;
+        const value = (name) => {
+          const field = row.querySelector(`[data-ledger-edit-field="${name}"]`);
+          return field ? field.value : entry[name];
+        };
+        draft = {
+          primaryStat: value('primaryStat'),
+          secondaryStat: value('secondaryStat'),
+          comment: value('comment'),
+          requestedPosition: value('requestedPosition')
+        };
+      }
+      const primaryStat = UI.trainingStatKey(Object.prototype.hasOwnProperty.call(draft, 'primaryStat') ? draft.primaryStat : entry.primaryStat);
+      const secondaryStat = UI.trainingStatKey(Object.prototype.hasOwnProperty.call(draft, 'secondaryStat') ? draft.secondaryStat : entry.secondaryStat);
+      if (primaryStat && secondaryStat && primaryStat === secondaryStat) {
+        UI.toast('Primary and secondary training stats must be different.');
+        return false;
+      }
+      entry.primaryStat = primaryStat;
+      entry.secondaryStat = secondaryStat;
+      entry.comment = String(Object.prototype.hasOwnProperty.call(draft, 'comment') ? draft.comment : entry.comment || '').trim().slice(0, 500);
+      entry.requestedPosition = String(Object.prototype.hasOwnProperty.call(draft, 'requestedPosition') ? draft.requestedPosition : entry.requestedPosition || '').trim().slice(0, 120);
+      entry.updatedAt = Utils.nowIso();
+      const savedOverride = !Store.ledgerIsManual(entry) && Store.saveTrainingOrderInstructionOverride(UI.state, entry);
+      UI.state.ui.editLedgerId = '';
+      UI.recordLedgerPending();
+      UI.scheduleLedgerCloudSave(100);
+      Store.save(UI.state);
+      if (savedOverride) UI.scheduleSettingsCloudSave(250);
+      UI.scheduleWorkspaceMirrorSave('ledger-instructions', 1800);
+      UI.refreshLedgerRow(entry.id);
+      UI.toast(`Training instructions updated for ${entry.orderId || entry.playerName || 'order'}.`);
+      return true;
+    },
+
     deleteLedger(id) {
       const removed = UI.state.ledger.find((entry) => entry.id === id);
       if (!removed) return;
       const dismissedImportedOrder = Store.dismissTrainingOrder(UI.state, removed);
+      const removedInstructionOverride = Store.removeTrainingOrderInstructionOverride(UI.state, removed);
+      if (String(UI.state.ui.editLedgerId || '') === String(id || '')) UI.state.ui.editLedgerId = '';
       UI.state.ledger = UI.state.ledger.filter((entry) => entry.id !== id);
       Planner.build(UI.state);
       UI.recordLedgerPending();
@@ -15301,7 +15783,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       UI.updateLedgerSummary();
       Store.save(UI.state);
       Store.updateSyncCache(UI.state, ['trainingLog', 'planner']);
-      if (dismissedImportedOrder) UI.scheduleSettingsCloudSave(250);
+      if (dismissedImportedOrder || removedInstructionOverride) UI.scheduleSettingsCloudSave(250);
       UI.scheduleWorkspaceMirrorSave('ledger-delete', 1800);
       UI.toast(`Training order ${removed.orderId || ''} deleted.`.trim());
     },
@@ -15648,6 +16130,14 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const target = UI.resolveTrainingSlot(UI.trainingQueueTarget(prepared));
       if (!target || !target.playerId) {
         UI.toast(`No Torn user ID detected for ${target && target.playerName ? target.playerName : 'the active queue member'}. Sync employees first.`);
+        return;
+      }
+      const eligibility = Planner.slotEligibility(target, UI.state, prepared.date || Utils.todayInput());
+      if (!eligibility.eligible) {
+        Planner.build(UI.state);
+        const refreshed = UI.prepareTrainingQueue({ force: true });
+        if (!refreshed) UI.state.planner.trainingQueue = null;
+        UI.saveRender(`${target.playerName || target.playerId} was removed from the active queue. ${eligibility.reason || 'The employee is not currently eligible for training.'}`);
         return;
       }
       prepared.slots[target.queueIndex] = Object.assign({}, prepared.slots[target.queueIndex], {
@@ -16303,6 +16793,12 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const staffHistoryResult = await UI.syncCompanyStaffLogs({ embedded: true, syncId, deferUpload: true });
         if (!staffHistoryResult || !staffHistoryResult.ok) warnings.push(staffHistoryResult && staffHistoryResult.message || 'Staff history was unavailable for this key.');
 
+        UI.syncStep(syncId, 'Refreshing training-order purchase history.', 93);
+        const trainingOrderHistoryResult = await UI.importTrainingOrdersFromLog({ embedded: true, syncId });
+        if (!trainingOrderHistoryResult || !trainingOrderHistoryResult.ok) {
+          warnings.push(trainingOrderHistoryResult && trainingOrderHistoryResult.message || 'Training order history was unavailable for this key.');
+        }
+
         // Collect every Torn source before publishing one coherent workspace
         // snapshot. This keeps new staff-history and restock data in the same
         // API update as the news and reports that depend on them.
@@ -16318,12 +16814,15 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const newsMessage = delta.length
           ? `Daily sync complete. ${delta.length} new company news entr${delta.length === 1 ? 'y' : 'ies'} synced.`
           : 'Daily sync complete. No newer company news was found.';
+        const trainingOrderMessage = trainingOrderHistoryResult && trainingOrderHistoryResult.ok
+          ? ` Training order history synced across ${trainingOrderHistoryResult.pages || 0} page${trainingOrderHistoryResult.pages === 1 ? '' : 's'}.`
+          : '';
         const message = warnings.length
-          ? `${newsMessage} Completed with warnings. ${warnings.join(' ')}`
-          : `${newsMessage} Staff history refreshed.`;
+          ? `${newsMessage}${trainingOrderMessage} Completed with warnings. ${warnings.join(' ')}`
+          : `${newsMessage} Staff history refreshed.${trainingOrderMessage}`;
         UI.saveRender(message);
         UI.finishSync(syncId, message, { warning: warnings.length > 0 });
-        return { ok: true, partial: warnings.length > 0, message, restocks: restockResult, staffHistory: staffHistoryResult };
+        return { ok: true, partial: warnings.length > 0, message, restocks: restockResult, staffHistory: staffHistoryResult, trainingOrders: trainingOrderHistoryResult };
       } catch (error) {
         UI.failSync(syncId, error);
         UI.toast(error.message);
@@ -16617,7 +17116,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         return new RegExp(`(?:^|[^a-z0-9_])${escaped}(?:$|[^a-z0-9_])`, 'i').test(comment);
       }) || '';
       if (requestedPosition && (!primaryStat || !secondaryStat)) {
-        const roleStats = Wages.effectiveStatKeys({ role: requestedPosition }, UI.state.settings);
+        const roleStats = Wages.trainingStatKeys({ role: requestedPosition }, UI.state.settings);
         if (roleStats.length === 2) {
           if (!primaryStat) primaryStat = roleStats[0];
           if (!secondaryStat) secondaryStat = roleStats.find((key) => key !== primaryStat) || roleStats[1];
@@ -16755,18 +17254,24 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       return { rows, pages };
     },
 
-    async importTrainingOrdersFromLog() {
-      const syncId = 'training-log';
+    async importTrainingOrdersFromLog(importOptions) {
+      const importOpts = importOptions || {};
+      const embedded = !!importOpts.embedded;
+      const syncId = importOpts.syncId || 'training-log';
       const root = UI.currentRoot();
-      const form = root.querySelector('[data-ledger-form]');
+      const form = root && root.querySelector ? root.querySelector('[data-ledger-form]') : null;
       const options = {
         applyDiscount: form && form.applyDiscount ? form.applyDiscount.checked : true,
         manualDiscount: form && form.manualDiscount ? Utils.percent(form.manualDiscount.value, 0) : 0,
         pricePerTrain: form && form.pricePerTrain ? Utils.num(form.pricePerTrain.value, UI.state.settings.trainingPrice) : UI.state.settings.trainingPrice
       };
       const trigger = UI.logImportTrigger();
-      if (!trigger) { UI.toast('Set a log trigger in Settings first.'); return; }
-      UI.beginSync(syncId, 'Import training orders from Torn log');
+      if (!trigger) {
+        const message = 'Set a log trigger in Settings first.';
+        if (!embedded) UI.toast(message);
+        return { ok: false, message, pages: 0 };
+      }
+      if (!embedded) UI.beginSync(syncId, 'Import training orders from Torn log');
       try {
         UI.syncStep(syncId, 'Requesting paginated Torn payment and training-action history.', 10);
         const history = await UI.fetchTrainingOrderHistory(syncId);
@@ -16793,9 +17298,12 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           const dismissedText = stats.dismissed ? ` ${stats.dismissed} previously deleted/refunded order${stats.dismissed === 1 ? ' was' : 's were'} kept dismissed.` : '';
           const message = `No new "${trigger}" training orders found across ${history.pages} history page${history.pages === 1 ? '' : 's'}.${duplicateText}${dismissedText}`;
           Store.save(UI.state);
-          UI.finishSync(syncId, message);
-          UI.toast(message);
-          return;
+          await UI.uploadLedgerCloudSave();
+          if (!embedded) {
+            UI.finishSync(syncId, message);
+            UI.toast(message);
+          }
+          return { ok: true, message, pages: history.pages, changed: false };
         }
         Planner.build(UI.state);
         UI.recordLedgerPending();
@@ -16815,11 +17323,18 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const exactCount = exactRows.reduce((sum, row) => sum + Math.max(0, Utils.int(row.count, 0)), 0);
         const exactText = exactRows.length ? ` Stored ${exactCount} exact train action${exactCount === 1 ? '' : 's'} for reconciliation.` : '';
         const message = `${importText}${repairText}${reconcileText}${exactText}${duplicateText}${dismissedText} Read ${history.pages} history page${history.pages === 1 ? '' : 's'}.`;
-        UI.saveRender(message);
-        UI.finishSync(syncId, message);
+        if (!embedded) {
+          UI.saveRender(message);
+          UI.finishSync(syncId, message);
+        }
+        return { ok: true, message, pages: history.pages, changed: true };
       } catch (error) {
-        UI.failSync(syncId, error);
-        UI.toast(error.message);
+        const message = error && error.message ? error.message : String(error);
+        if (!embedded) {
+          UI.failSync(syncId, error);
+          UI.toast(message);
+        }
+        return { ok: false, message, pages: 0 };
       }
     },
 
@@ -17316,8 +17831,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const riskStrikes = UI.recordStaffRiskStrikes('Employee sync');
         Company.syncTrainingSetup(UI.state);
         Ledger.syncTrainingLog(UI.state);
+        Planner.build(UI.state);
+        const prepared = UI.prepareTrainingQueue({ force: true });
+        if (!prepared) UI.state.planner.trainingQueue = null;
         Store.save(UI.state);
-        Store.updateSyncCache(UI.state, ['employees', 'business', 'trainingLog']);
+        Store.updateSyncCache(UI.state, ['employees', 'business', 'trainingLog', 'planner']);
         if (!opts.deferUpload) await UI.uploadSyncState(syncId, { business: true, staff: UI.staffPayloadForApi({ dailyHistory }) });
         const message = `Synced ${UI.state.staff.current.length} employees.${roster.retired.length ? ` Moved ${roster.retired.length} departed employee${roster.retired.length === 1 ? '' : 's'} to Past staff.` : ''}${riskStrikes ? ` ${riskStrikes} staff risk strike${riskStrikes === 1 ? '' : 's'} recorded.` : ''}`;
         if (!embedded) {
