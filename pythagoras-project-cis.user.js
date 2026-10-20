@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.3.3
+// @version      3.3.4
 // @downloadURL  https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.user.js
 // @updateURL    https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.meta.js
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
 // @author       MoDuL [4022159]
 // @match        https://www.torn.com/companies.php*
+// @match        https://www.torn.com/joblist.php*
 // @match        https://www.torn.com/messages.php*
 // @copyright    2026 MoDuL. All rights reserved.
 // @license      All Rights Reserved
@@ -54,7 +55,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.3.3',
+    version: '3.3.4',
     greasyForkScriptId: 580933,
     greasyForkApiUrl: 'https://api.greasyfork.org/en/scripts/580933.json',
     greasyForkPageUrl: 'https://greasyfork.org/en/scripts/580933-pythagoras-project-cis',
@@ -789,6 +790,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     localSaveSeq: 0,
     testimonialsSaveRef: null,
     syncCacheMemory: null,
+    syncCacheWritePromise: Promise.resolve(true),
     serverReportSignatures: new Map(),
     serverReportSignaturesReady: false,
     load() {
@@ -2006,7 +2008,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       Store.syncCacheMemory = null;
       Store.serverReportSignatures = new Map();
       Store.serverReportSignaturesReady = false;
-      [APP.staffEditsKey, APP.ledgerPendingKey, APP.syncCacheKey, APP.notificationDismissalsKey, APP.stockEditsKey].forEach((key) => Store.rawDelete(key));
+      Store.syncCacheWritePromise = Store.queueSyncCacheWrite(() => Store.deleteSyncCacheStorage());
+      [APP.staffEditsKey, APP.ledgerPendingKey, APP.notificationDismissalsKey, APP.stockEditsKey].forEach((key) => Store.rawDelete(key));
     },
     saveProfile(state) {
       const profile = Store.profileFromState(state);
@@ -2182,7 +2185,6 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const adBudgetKnown = adBudget !== null && row.adBudgetKnown !== false && row.ad_budget_known !== false && row.advertisingBudgetKnown !== false;
       return JSON.stringify([
         reportDate,
-        Utils.int(row.timestamp, 0),
         Utils.int(row.customers, 0),
         Utils.int(row.income ?? row.grossIncome ?? row.gross_income, 0),
         wagesKnown ? wages : null,
@@ -2227,12 +2229,99 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         return null;
       }
     },
+    pdaStorageApi() {
+      const usable = (candidate) => candidate && typeof candidate.get === 'function' && typeof candidate.set === 'function'
+        && (typeof candidate.delete === 'function' || typeof candidate.remove === 'function');
+      try { if (typeof PDA_storage !== 'undefined' && usable(PDA_storage)) return PDA_storage; } catch (error) {}
+      try { if (typeof window !== 'undefined' && usable(window.PDA_storage)) return window.PDA_storage; } catch (error) {}
+      return null;
+    },
+    async pdaStorageDelete(api, key) {
+      const remove = api && (api.delete || api.remove);
+      if (typeof remove === 'function') await remove.call(api, key);
+    },
+    syncCachePayloadMatches(raw, cache, payload) {
+      if (typeof raw === 'string' && raw === payload) return true;
+      const parsed = Store.parseSyncCache(raw);
+      return !!(parsed && JSON.stringify(parsed) === JSON.stringify(cache));
+    },
+    async deleteLegacySyncCache() {
+      const gm = Store.gmApi();
+      const remove = gm && (gm.deleteValue || gm.delete);
+      try { if (typeof remove === 'function') await remove.call(gm, APP.syncCacheKey); } catch (error) {
+        console.warn('[Pythagoras Project - CIS] Could not remove the old userscript sync cache.', error);
+      }
+      try { if (typeof GM_deleteValue === 'function') await GM_deleteValue(APP.syncCacheKey); } catch (error) {
+        console.warn('[Pythagoras Project - CIS] Could not remove the old GM sync cache.', error);
+      }
+      try { localStorage.removeItem(APP.syncCacheKey); } catch (error) {
+        console.warn('[Pythagoras Project - CIS] Could not remove the old localStorage sync cache.', error);
+      }
+    },
+    async persistPdaSyncCache(cache, options) {
+      const api = Store.pdaStorageApi();
+      if (!api) return false;
+      const payload = JSON.stringify(cache);
+      const writeAndVerify = async () => {
+        await api.set(APP.syncCacheKey, payload);
+        const saved = await api.get(APP.syncCacheKey);
+        if (!Store.syncCachePayloadMatches(saved, cache, payload)) throw new Error('PDA cache verification failed.');
+      };
+      try {
+        await writeAndVerify();
+      } catch (firstError) {
+        // The sync cache is disposable. Removing the prior value before one
+        // retry avoids Torn PDA quota failures caused by replacing a large row.
+        try {
+          await Store.pdaStorageDelete(api, APP.syncCacheKey);
+          await writeAndVerify();
+        } catch (retryError) {
+          try { await Store.pdaStorageDelete(api, APP.syncCacheKey); } catch (deleteError) {}
+          console.warn('[Pythagoras Project - CIS] Torn PDA sync cache is too large to persist; using the in-memory cache for this session.', retryError || firstError);
+          return false;
+        }
+      }
+      if (options && options.removeLegacy) await Store.deleteLegacySyncCache();
+      return true;
+    },
+    async deleteSyncCacheStorage() {
+      const api = Store.pdaStorageApi();
+      if (api) {
+        try { await Store.pdaStorageDelete(api, APP.syncCacheKey); } catch (error) {
+          console.warn('[Pythagoras Project - CIS] Torn PDA sync cache delete failed.', error);
+        }
+      }
+      await Store.deleteLegacySyncCache();
+    },
+    queueSyncCacheWrite(task) {
+      return Promise.resolve(Store.syncCacheWritePromise).catch(() => false).then(task);
+    },
     loadSyncCache() {
       if (Store.syncCacheMemory) return Store.syncCacheMemory;
       Store.syncCacheMemory = Store.parseSyncCache(Store.rawGet(APP.syncCacheKey));
       return Store.syncCacheMemory;
     },
     async loadSyncCacheAsync() {
+      const api = Store.pdaStorageApi();
+      if (api) {
+        try {
+          const nativeRaw = await api.get(APP.syncCacheKey);
+          const nativeCache = Store.parseSyncCache(nativeRaw);
+          if (nativeCache) {
+            Store.syncCacheMemory = nativeCache;
+            await Store.deleteLegacySyncCache();
+            return nativeCache;
+          }
+        } catch (error) {
+          console.warn('[Pythagoras Project - CIS] Torn PDA sync cache read failed; checking the legacy cache.', error);
+        }
+        const legacyRaw = await Store.rawGetAsync(APP.syncCacheKey);
+        const legacyCache = Store.parseSyncCache(legacyRaw);
+        Store.syncCacheMemory = legacyCache;
+        if (legacyRaw && !legacyCache) await Store.deleteLegacySyncCache();
+        if (legacyCache) await Store.persistPdaSyncCache(legacyCache, { removeLegacy: true });
+        return legacyCache;
+      }
       const cache = Store.parseSyncCache(await Store.rawGetAsync(APP.syncCacheKey));
       Store.syncCacheMemory = cache;
       return cache;
@@ -2240,10 +2329,14 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     saveSyncCache(cache) {
       if (!cache || !cache.slices || !Object.keys(cache.slices).length) {
         Store.syncCacheMemory = null;
-        Store.rawDelete(APP.syncCacheKey);
+        Store.syncCacheWritePromise = Store.queueSyncCacheWrite(() => Store.deleteSyncCacheStorage());
         return;
       }
       Store.syncCacheMemory = cache;
+      if (Store.pdaStorageApi()) {
+        Store.syncCacheWritePromise = Store.queueSyncCacheWrite(() => Store.persistPdaSyncCache(cache, { removeLegacy: true }));
+        return;
+      }
       Store.rawSet(APP.syncCacheKey, JSON.stringify(cache));
     },
     validSyncCacheSlices(state, loadedCache) {
@@ -2326,7 +2419,6 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           adBudgetHistory: Utils.clone(state.company.adBudgetHistory || []),
           adBudgetChangeEvents: Utils.clone(state.company.adBudgetChangeEvents || []),
           adBudgetLogSync: Utils.clone(state.company.adBudgetLogSync || {}),
-          staffLogSync: Utils.clone(state.company.staffLogSync || {}),
           operatingCostHistory: Utils.clone(state.company.operatingCostHistory || []),
           settings: {
             companyId: state.settings.companyId || '',
@@ -2887,7 +2979,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       Store.rawDelete(APP.companiesKey);
       Store.rawDelete(APP.staffEditsKey);
       Store.rawDelete(APP.ledgerPendingKey);
-      Store.rawDelete(APP.syncCacheKey);
+      Store.syncCacheWritePromise = Store.queueSyncCacheWrite(() => Store.deleteSyncCacheStorage());
       Store.rawDelete(APP.notificationDismissalsKey);
       Store.rawDelete(APP.uiPreferencesKey);
       Store.rawDelete(APP.stockEditsKey);
@@ -7924,7 +8016,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     isCompanyPage(win) {
       try {
         const href = (win && win.location && win.location.href) || location.href;
-        return /^https:\/\/www\.torn\.com\/companies\.php(?:[?#]|$)/i.test(href);
+        return /^https:\/\/www\.torn\.com\/(?:companies|joblist)\.php(?:[?#]|$)/i.test(href);
       } catch (error) {
         return false;
       }
@@ -13508,7 +13600,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const preparedReports = UI.reportRowsForApi(parts.reports);
         const reports = Store.changedServerReportRows(preparedReports);
         const unchanged = preparedReports.length - reports.length;
-        if (unchanged) UI.syncStep(id, `Daily reports: ${unchanged.toLocaleString()} already match the Pythagoras API; ${reports.length.toLocaleString()} new or changed.`, 84);
+        UI.syncStep(id, `Report history: ${preparedReports.length.toLocaleString()} stored dates checked; ${unchanged.toLocaleString()} already match the Pythagoras API; ${reports.length.toLocaleString()} new or corrected.`, 84);
         for (let start = 0; start < reports.length; start += 500) {
           const chunk = reports.slice(start, start + 500);
           requests.push({ label: `daily reports ${start + 1}-${start + chunk.length}`, path: '/sync/reports', payload: { reports: chunk }, timeout: 30000, reportRows: chunk });
@@ -15575,7 +15667,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       }
       if (!context.submit || !UI.setTornPositionValue(context, session.targetRank)) {
         session.phase = 'error';
-        session.error = 'Could not prepare Torn’s employee position form.';
+        session.error = "Could not prepare Torn's employee position form.";
         UI.renderLedgerTraining(session.error);
         return;
       }
