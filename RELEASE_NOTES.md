@@ -1,7 +1,5 @@
-## v3.3.4 - Reliable PDA reports and Jobs loading
+## v3.3.5 - Complete daily employee history
 
-- Stops unchanged historical daily reports being re-uploaded when Torn's event time and the reconstructed report timestamp differ, while keeping genuine corrections uploadable.
-- Labels the Daily sync comparison as stored report history so its totals are not mistaken for reports created today.
-- Loads CIS on Torn PDA's Jobs route and avoids the smart-apostrophe normalization that caused `Unexpected identifier 's'` during script parsing.
-- Moves the large disposable startup cache to Torn PDA's native asynchronous storage, verifies legacy-cache migration before removing localStorage data, and retries quota-blocked replacements safely.
-- Preserves the newest daily report dates through the PDA cache round-trip and continues in memory if the device cannot persist the refreshed cache.
+- Makes Daily sync fetch the current employee roster every time, even while the employee cache is still marked fresh, so each completed Torn day receives an efficiency snapshot.
+- Preserves the newly captured employee-efficiency rows through Daily sync's consolidated API upload instead of replacing them with an empty staff-history payload.
+- Reports the captured employee-efficiency date in the completed Daily sync message and reuses the snapshot already collected by a stale full-business refresh without making a duplicate Torn request.

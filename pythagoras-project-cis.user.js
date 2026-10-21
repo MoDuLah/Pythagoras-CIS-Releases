@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.3.4
+// @version      3.3.5
 // @downloadURL  https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.user.js
 // @updateURL    https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.meta.js
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
@@ -55,7 +55,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.3.4',
+    version: '3.3.5',
     greasyForkScriptId: 580933,
     greasyForkApiUrl: 'https://api.greasyfork.org/en/scripts/580933.json',
     greasyForkPageUrl: 'https://greasyfork.org/en/scripts/580933-pythagoras-project-cis',
@@ -16843,11 +16843,13 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const stockStale = UI.syncStatus('stock') !== 'fresh';
         const employeesStale = UI.syncStatus('employees') !== 'fresh';
         let restockResult = null;
+        let employeeDailyHistory = [];
         const warnings = [];
         if (businessStale) {
           UI.syncStep(syncId, 'Business data is stale; refreshing business, employees, stock, and operating costs.', 52);
           const businessResult = await UI.syncBusiness({ embedded: true, syncId, deferUpload: true });
           if (!businessResult || !businessResult.ok) throw new Error(businessResult && businessResult.message || 'Business sync did not complete.');
+          employeeDailyHistory = businessResult.dailyHistory || [];
           restockResult = businessResult.restocks || null;
           if (businessResult.partial) warnings.push('Some optional operating-cost history was unavailable.');
         } else {
@@ -16862,11 +16864,12 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             UI.state.company.adBudgetLogSync = Object.assign({}, UI.state.company.adBudgetLogSync || {}, { lastError: error.message || String(error) });
             console.warn('[Pythagoras Project - CIS] Advertisement-budget log sync skipped.', error);
           }
-          if (employeesStale) {
-            UI.syncStep(syncId, 'Employee data is stale; running employee sync.', 66);
-            const employeeResult = await UI.syncEmployees({ embedded: true, syncId, deferUpload: true });
-            if (!employeeResult || !employeeResult.ok) throw new Error(employeeResult && employeeResult.message || 'Employee sync did not complete.');
-          }
+          UI.syncStep(syncId, employeesStale
+            ? 'Employee data is stale; running employee sync.'
+            : 'Capturing the latest completed employee-efficiency day.', 66);
+          const employeeResult = await UI.syncEmployees({ embedded: true, syncId, deferUpload: true });
+          if (!employeeResult || !employeeResult.ok) throw new Error(employeeResult && employeeResult.message || 'Employee sync did not complete.');
+          employeeDailyHistory = employeeResult.dailyHistory || [];
           if (stockStale) {
             UI.syncStep(syncId, 'Stock data is stale; running stock sync.', 78);
             const stockResult = await UI.syncStock({ embedded: true, syncId, deferUpload: true });
@@ -16898,7 +16901,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         Store.updateSyncCache(UI.state, ['business', 'employees', 'stock', 'news', 'trainingLog']);
         await UI.uploadSyncState(syncId, {
           business: true,
-          staff: true,
+          staff: UI.staffPayloadForApi({ dailyHistory: employeeDailyHistory }),
           stock: true,
           events: delta.concat(staffHistoryResult && staffHistoryResult.ok ? staffHistoryResult.events || [] : []),
           reports: UI.reportDailyRows().filter((row) => row.hasReport)
@@ -16909,12 +16912,15 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const trainingOrderMessage = trainingOrderHistoryResult && trainingOrderHistoryResult.ok
           ? ` Training order history synced across ${trainingOrderHistoryResult.pages || 0} page${trainingOrderHistoryResult.pages === 1 ? '' : 's'}.`
           : '';
+        const employeeHistoryMessage = employeeDailyHistory.length
+          ? ` Employee efficiency snapshot captured for ${employeeDailyHistory[0].date}.`
+          : '';
         const message = warnings.length
-          ? `${newsMessage}${trainingOrderMessage} Completed with warnings. ${warnings.join(' ')}`
-          : `${newsMessage} Staff history refreshed.${trainingOrderMessage}`;
+          ? `${newsMessage}${employeeHistoryMessage}${trainingOrderMessage} Completed with warnings. ${warnings.join(' ')}`
+          : `${newsMessage}${employeeHistoryMessage} Staff history refreshed.${trainingOrderMessage}`;
         UI.saveRender(message);
         UI.finishSync(syncId, message, { warning: warnings.length > 0 });
-        return { ok: true, partial: warnings.length > 0, message, restocks: restockResult, staffHistory: staffHistoryResult, trainingOrders: trainingOrderHistoryResult };
+        return { ok: true, partial: warnings.length > 0, message, restocks: restockResult, dailyHistory: employeeDailyHistory, staffHistory: staffHistoryResult, trainingOrders: trainingOrderHistoryResult };
       } catch (error) {
         UI.failSync(syncId, error);
         UI.toast(error.message);
