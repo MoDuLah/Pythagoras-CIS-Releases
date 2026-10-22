@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.3.6
+// @version      3.3.7
 // @downloadURL  https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.user.js
 // @updateURL    https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.meta.js
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
@@ -22,7 +22,7 @@
 // @grant        GM.setClipboard
 // @grant        GM.getResourceText
 // @grant        unsafeWindow
-// @resource     pythagorasCisStyles https://modulah.github.io/assets/css/pythagoras-project-cis/pythagoras-project-cis-3.3.6.min.css
+// @resource     pythagorasCisStyles https://modulah.github.io/assets/css/pythagoras-project-cis/pythagoras-project-cis-3.3.7.min.css
 // @connect      api.torn.com
 // @connect      pp-api.sokin.xyz
 // @connect      api.greasyfork.org
@@ -55,7 +55,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.3.6',
+    version: '3.3.7',
     greasyForkScriptId: 580933,
     greasyForkApiUrl: 'https://api.greasyfork.org/en/scripts/580933.json',
     greasyForkPageUrl: 'https://greasyfork.org/en/scripts/580933-pythagoras-project-cis',
@@ -238,6 +238,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       plannerPriority: {
         queuePolicy: 'rotation',
         paidFirst: true,
+        riskMode: 'fixed',
         addictionEnabled: true,
         inactivityEnabled: true,
         addictionWeight: 1,
@@ -698,9 +699,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
 
   const Styles = {
     resourceName: 'pythagorasCisStyles',
-    url: 'https://modulah.github.io/assets/css/pythagoras-project-cis/pythagoras-project-cis-3.3.6.min.css',
-    sha256: '2308D53C1891B6E52A51032957C72C2651A9344B6AB8BA53574861E69EB947F5',
-    sri: 'sha256-IwjVPBiRtuUqUQMpV8csJlGpNEtquLpTV0hh5p65R/U=',
+    url: 'https://modulah.github.io/assets/css/pythagoras-project-cis/pythagoras-project-cis-3.3.7.min.css',
+    sha256: '33A2CE83B6B9D0FBFD715E0DB219F6555B56F8BAB26BF929E63FF84C0E602438',
+    sri: 'sha256-M6LOg7a50Pv9cV4Nshn2VVtW+Lqya/kp5j/4TA5gJDg=',
     cssText: '',
     loadPromise: null,
     async matches(css) {
@@ -3157,6 +3158,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const queuePolicy = String(settings.plannerPriority.queuePolicy || DEFAULTS.settings.plannerPriority.queuePolicy || 'rotation').trim();
       settings.plannerPriority.queuePolicy = ['director', 'rotation', 'lowest_stats', 'role_closest', 'role_gap'].includes(queuePolicy) ? queuePolicy : DEFAULTS.settings.plannerPriority.queuePolicy;
       settings.plannerPriority.paidFirst = settings.plannerPriority.paidFirst !== false;
+      settings.plannerPriority.riskMode = String(settings.plannerPriority.riskMode || '').trim().toLowerCase() === 'balance' ? 'balance' : 'fixed';
       if (!settings.companyTypeId && settings.companyTypeName) {
         const typeMatch = Object.entries(Company.typeNames).find(([, name]) => String(name).toLowerCase() === String(settings.companyTypeName).toLowerCase());
         if (typeMatch) settings.companyTypeId = typeMatch[0];
@@ -4913,11 +4915,29 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const detailed = state && state.company && state.company.detailed || {};
       return Utils.clamp(Utils.int(detailed.trainsAvailable, 0), 0, 20);
     },
-    queueSupply(state, referenceDate) {
+    queueSupplyInfo(state, referenceDate, observedAt) {
       const detailed = state && state.company && state.company.detailed || {};
-      const date = Utils.dateInput(referenceDate) || Utils.todayInput();
-      if (date === Utils.todayInput() && detailed.lastSynced) return Planner.availableTrains(state);
-      return Planner.dailySupply(state && state.settings || DEFAULTS.settings);
+      const now = observedAt ? new Date(observedAt) : new Date();
+      const safeNow = Number.isNaN(now.getTime()) ? new Date() : now;
+      const today = safeNow.toISOString().slice(0, 10);
+      const date = Utils.dateInput(referenceDate) || today;
+      const expected = Planner.dailySupply(state && state.settings || DEFAULTS.settings);
+      if (date !== today) return { supply: expected, status: 'planned', note: '' };
+      const resetMinutes = (18 * 60) + 10;
+      const currentMinutes = (safeNow.getUTCHours() * 60) + safeNow.getUTCMinutes();
+      if (currentMinutes < resetMinutes) {
+        return { supply: expected, status: 'upcoming-reset', note: 'Expected after 18:10 TCT' };
+      }
+      const lastSynced = detailed.lastSynced ? new Date(detailed.lastSynced) : null;
+      const liveAfterReset = lastSynced
+        && !Number.isNaN(lastSynced.getTime())
+        && lastSynced.toISOString().slice(0, 10) === today
+        && ((lastSynced.getUTCHours() * 60) + lastSynced.getUTCMinutes()) >= resetMinutes;
+      if (liveAfterReset) return { supply: Planner.availableTrains(state), status: 'live', note: 'Live available trains' };
+      return { supply: expected, status: 'awaiting-sync', note: 'Expected after 18:10 TCT; sync Business for the live count' };
+    },
+    queueSupply(state, referenceDate, observedAt) {
+      return Planner.queueSupplyInfo(state, referenceDate, observedAt).supply;
     },
     paidCapLimit(settings) {
       return Math.min(8 + (settings.trainerAssigned ? 1 : 0), Planner.dailySupply(settings));
@@ -5327,7 +5347,13 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         .forEach((entry) => {
           const remaining = Ledger.totals(entry, settings).remaining;
           for (let index = 0; index < remaining; index += 1) {
-            slots.push({ entryId: entry.id, playerId: entry.playerId || '', playerName: entry.playerName || 'Unnamed player', type });
+            slots.push({
+              entryId: entry.id,
+              playerId: entry.playerId || '',
+              playerName: entry.playerName || 'Unnamed player',
+              requestedPosition: String(entry.requestedPosition || '').trim(),
+              type
+            });
           }
         });
       return slots;
@@ -5444,6 +5470,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const span = Math.floor((base.getTime() - start.getTime()) / 86400000) + 1;
       return Math.max(1, span);
     },
+    sponsoredRiskMode(state) {
+      const priority = (state && state.settings && state.settings.plannerPriority) || DEFAULTS.settings.plannerPriority;
+      return String(priority.riskMode || '').trim().toLowerCase() === 'balance' ? 'balance' : 'fixed';
+    },
     trainingRisk(person, state, referenceValue) {
       const settings = (state && state.settings && state.settings.notifications) || DEFAULTS.settings.notifications;
       const plannerPriority = (state && state.settings && state.settings.plannerPriority) || DEFAULTS.settings.plannerPriority;
@@ -5457,6 +5487,45 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const inactivityDays = typeof UI !== 'undefined' && UI.personInactiveDays ? UI.personInactiveDays(person) : Utils.int(person && person.inactiveDays, 0);
       const reviewDays = Planner.inactivityReviewDays(referenceValue || Utils.todayInput());
       const recentInactiveDays = Math.min(inactivityDays, reviewDays);
+      const mode = Planner.sponsoredRiskMode(state);
+      if (mode === 'balance') {
+        const effectiveness = typeof UI !== 'undefined' && UI.personEffectiveness
+          ? UI.personEffectiveness(person || {})
+          : Company.effectiveness(person || {});
+        const details = effectiveness && effectiveness.details && typeof effectiveness.details === 'object' ? effectiveness.details : {};
+        const hasOwn = (key) => Object.prototype.hasOwnProperty.call(details, key) && Number.isFinite(Utils.num(details[key], null));
+        const meritFallbackKnown = person && person.merits !== undefined && person.merits !== null && person.merits !== '';
+        const addictionFallbackKnown = person && (person.addiction !== undefined || person.addiction_penalty !== undefined);
+        const meritsKnown = hasOwn('merits') || meritFallbackKnown;
+        const addictionKnown = !addictionEnabled || hasOwn('addiction') || addictionFallbackKnown;
+        const inactivityKnown = !inactivityEnabled || hasOwn('inactivity');
+        const merits = Math.max(0, Utils.num(hasOwn('merits') ? details.merits : (person && person.merits), 0));
+        const addictionImpact = addictionEnabled
+          ? -Math.abs(Utils.num(hasOwn('addiction') ? details.addiction : addiction, 0))
+          : 0;
+        const inactivityImpact = inactivityEnabled ? -Math.abs(Utils.num(details.inactivity, 0)) : 0;
+        const score = Math.round((merits + addictionImpact + inactivityImpact) * 100) / 100;
+        const missing = [];
+        if (!meritsKnown) missing.push('merits');
+        if (!addictionKnown) missing.push('addiction impact');
+        if (!inactivityKnown) missing.push('inactivity impact');
+        const blocked = !!missing.length || score <= 0;
+        return {
+          mode,
+          penalty: blocked ? 1 : 0,
+          level: blocked ? (score < 0 ? 2 : 1) : 0,
+          blocked,
+          score,
+          merits,
+          addictionImpact,
+          inactivityImpact,
+          recentInactiveDays,
+          reviewDays,
+          summary: missing.length
+            ? `merit balance unavailable: missing ${missing.join(', ')}`
+            : `merit balance ${merits} + (${addictionImpact}) + (${inactivityImpact}) = ${score}`
+        };
+      }
       let penalty = 0;
       let level = 0;
       let blocked = false;
@@ -5484,6 +5553,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         reasons.push(`inactive ${recentInactiveDays}d`);
       }
       return {
+        mode,
         penalty,
         level,
         blocked,
@@ -5499,7 +5569,19 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         if (Utils.int(row.riskLevel, 0) >= 2) sum.danger += 1;
         else sum.warn += 1;
         return sum;
-      }, { total: 0, warn: 0, danger: 0, reviewDays: Planner.inactivityReviewDays(referenceValue || Utils.todayInput()) });
+      }, { mode: Planner.sponsoredRiskMode(state), total: 0, warn: 0, danger: 0, reviewDays: Planner.inactivityReviewDays(referenceValue || Utils.todayInput()) });
+    },
+    sponsoredAvailability(state, referenceValue) {
+      const rows = Planner.sponsoredRoster(state, { riskAware: true, referenceDate: referenceValue });
+      return rows.reduce((summary, row) => {
+        const eligibility = Planner.trainingEligibility(row.personRef || row, state, referenceValue);
+        if (!eligibility.eligible) summary.held += 1;
+        else if (row.riskBlocked) {
+          summary.blocked += 1;
+          if (row.riskSummary) summary.reasons.push(`${row.playerName}: ${row.riskSummary}`);
+        } else summary.eligible += 1;
+        return summary;
+      }, { mode: Planner.sponsoredRiskMode(state), total: rows.length, eligible: 0, blocked: 0, held: 0, reasons: [] });
     },
     nextSponsored(roster, state, referenceDate) {
       const total = Array.isArray(roster) ? roster.length : 0;
@@ -5576,7 +5658,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const days = [];
       for (let dayIndex = 0; dayIndex < daysToPlan; dayIndex += 1) {
         const dayDate = Utils.addDays(startDate, dayIndex);
-        const supply = Planner.queueSupply(state, dayDate);
+        const supplyInfo = Planner.queueSupplyInfo(state, dayDate);
+        const supply = supplyInfo.supply;
+        const sponsoredAvailability = mode === 'auto' ? Planner.sponsoredAvailability(state, dayDate) : null;
         const slots = [];
         const suggestions = [];
         const fillPaid = () => {
@@ -5599,7 +5683,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           fillSponsored();
           fillPaid();
         }
-        days.push({ date: dayDate, supply, mode, slots, suggestions });
+        days.push({ date: dayDate, supply, supplyStatus: supplyInfo.status, supplyNote: supplyInfo.note, sponsoredAvailability, mode, slots, suggestions });
       }
       state.planner.generatedAt = Utils.nowIso();
       state.planner.days = days;
@@ -10639,6 +10723,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const visibleLedger = UI.visibleLedgerRows();
       const summary = Ledger.summary(visibleLedger, state.settings);
       const today = Utils.todayInput();
+      const plannerSupply = Planner.queueSupplyInfo(state, state.planner.startDate || today);
       const ledgerTab = ['orders', 'add', 'done'].includes(state.ui.ledgerTab) ? state.ui.ledgerTab : 'orders';
       state.ui.ledgerTab = ledgerTab;
       const openCount = visibleLedger.filter((entry) => !Ledger.totals(entry, state.settings).done).length;
@@ -10717,7 +10802,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             <div class="pp-head">
               <div>
                 <h3>Train Schedule</h3>
-                <p>Bought trains follow the allocation selected in Settings. Auto mode skips sponsored staff at the addiction or inactivity threshold and reassigns those trains to eligible staff.</p>
+                <p>Bought trains follow each ledger order and its requested position. Auto mode uses the selected rule only to decide sponsored/free eligibility.</p>
               </div>
                 <button class="pp-btn is-primary" type="button" data-action="build-planner">Build calendar</button>
             </div>
@@ -10727,7 +10812,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
                 ${UI.field('Start date', `<input class="pp-input" type="date" data-planner-field="startDate" value="${Utils.esc(state.planner.startDate || today)}">`, 'span-2')}
                 ${UI.field('Planner mode', UI.plannerModeSelect())}
                 ${UI.field('Days', `<input class="pp-input" inputmode="numeric" data-planner-field="daysToPlan" value="${Utils.esc(state.planner.daysToPlan)}">`)}
-                ${UI.field('Available train slots', `<input class="pp-input" value="${Planner.queueSupply(state, state.planner.startDate || today)} / 20" disabled>`)}
+                ${UI.field('Available train slots', `<input class="pp-input" value="${Utils.esc(`${plannerSupply.supply} / 20${plannerSupply.note ? ` · ${plannerSupply.note}` : ''}`)}" disabled>`)}
                 ${UI.field('Paid cap / day', `<input class="pp-input" value="${Utils.esc(state.settings.maxPaidTrainsPerDay)}" disabled>`)}
               </div>
               ${UI.plannerCalendar()}
@@ -10839,6 +10924,15 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       return `<select class="pp-select" name="plannerQueuePolicy">${options.map(([value, label]) => `<option value="${Utils.esc(value)}" ${current === value ? 'selected' : ''}>${Utils.esc(label)}</option>`).join('')}</select>`;
     },
 
+    plannerRiskModeSelect() {
+      const current = Planner.sponsoredRiskMode(UI.state);
+      const options = [
+        ['fixed', 'Fixed thresholds'],
+        ['balance', 'Merits + negative impacts']
+      ];
+      return `<select class="pp-select" name="plannerRiskMode">${options.map(([value, label]) => `<option value="${value}" ${current === value ? 'selected' : ''}>${label}</option>`).join('')}</select>`;
+    },
+
     plannerStaffValue(person) {
       return String((person && (person.id || person.playerId || person.name || person.playerName)) || '');
     },
@@ -10873,6 +10967,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       return (day.slots || []).map((slot, index) => {
         const titleParts = [];
         if (slot.playerId) titleParts.push(`User ID ${slot.playerId}`);
+        if (slot.requestedPosition) titleParts.push(`Requested position: ${slot.requestedPosition}`);
         if (slot.statNeedSummary) titleParts.push(slot.statNeedSummary);
         if (slot.riskSummary) titleParts.push(`Risk: ${slot.riskSummary}`);
         return `<tr class="pp-day-row ${activeIndex === index ? 'is-active' : ''}">
@@ -10888,10 +10983,13 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (!days.length) return '<div class="pp-empty">No calendar generated yet.</div>';
       const queueView = UI.plannerQueueView();
       return `<div class="pp-calendar">${days.map((day) => {
-        const dayQueue = UI.plannerDayQueue(day);
-        const picked = new Set(day.slots.map((slot) => UI.plannerStaffValue(slot)).filter(Boolean));
+        const locked = queueView && queueView.date === day.date && queueView.lockedAt;
+        const displayDay = locked ? Object.assign({}, day, { slots: queueView.slots, suggestions: [] }) : day;
+        const dayQueue = locked ? queueView.slots : UI.plannerDayQueue(day);
+        const picked = new Set(displayDay.slots.map((slot) => UI.plannerStaffValue(slot)).filter(Boolean));
         const activeIndex = queueView && queueView.date === day.date ? queueView.activeIndex : -1;
-        const title = `${day.date} ${Utils.weekdayShort(day.date)} (${dayQueue.length}/${day.supply})`;
+        const timing = day.supplyStatus === 'upcoming-reset' ? ' · after 18:10 TCT' : (day.supplyStatus === 'awaiting-sync' ? ' · expected' : '');
+        const title = `${day.date} ${Utils.weekdayShort(day.date)} (${dayQueue.length}/${day.supply}${timing})`;
         return `
         <div class="pp-day">
           <div class="pp-day-head">
@@ -10899,8 +10997,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             <button class="pp-btn pp-day-reset" type="button" data-action="reset-planner-day" data-day="${Utils.esc(day.date)}" title="Reset this day's queue">&#8634;</button>
           </div>
           <table class="pp-day-table"><tbody>
-            ${UI.plannerFixedSlotRows(day, activeIndex)}
-            ${UI.manualPlannerSlots(day, picked, activeIndex)}
+            ${UI.plannerFixedSlotRows(displayDay, activeIndex)}
+            ${locked ? '' : UI.manualPlannerSlots(day, picked, activeIndex)}
           </tbody></table>
           ${UI.plannerDayTrainControls(day, queueView)}
         </div>`;
@@ -10948,29 +11046,77 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     },
 
     plannerQueueView() {
+      const active = UI.state.planner.trainingQueue;
+      const positionSession = UI.ledgerTrainingSession();
+      if (active && active.lockedAt && Array.isArray(active.slots) && active.slots.length
+        && positionSession && positionSession.origin === 'planner'
+        && String(positionSession.plannerDate || '') === String(active.date || '')
+        && positionSession.phase !== 'complete') {
+        return {
+          date: active.date,
+          slots: active.slots,
+          activeIndex: Utils.clamp(Utils.int(active.activeIndex, 0), 0, active.slots.length),
+          lockedAt: active.lockedAt
+        };
+      }
       const queue = UI.plannerTrainingQueue();
       if (!queue || !queue.slots.length) return null;
-      const active = UI.state.planner.trainingQueue;
       const sameDay = active && active.date === queue.date;
-      const activeIndex = sameDay ? Utils.clamp(Utils.int(active.activeIndex, 0), 0, queue.slots.length) : 0;
-      return { date: queue.date, slots: queue.slots, activeIndex };
+      const slots = sameDay && active.lockedAt && Array.isArray(active.slots) ? active.slots : queue.slots;
+      const activeIndex = sameDay ? Utils.clamp(Utils.int(active.activeIndex, 0), 0, slots.length) : 0;
+      return { date: queue.date, slots, activeIndex, lockedAt: sameDay ? active.lockedAt || '' : '' };
     },
 
     plannerDayTrainControls(day, queueView) {
       if (!queueView || queueView.date !== day.date || !queueView.slots.length) return '';
       if (queueView.activeIndex >= queueView.slots.length) {
-        return `<div class="pp-train-controls">
-          <span class="pp-note">Queue complete for ${Utils.esc(Utils.dateShort(day.date))}</span>
-          <span></span>
-          <button class="pp-btn" type="button" data-action="open-training-queue-page" title="Open Torn employee training page">&raquo;</button>
+        const positionPrompt = UI.plannerPositionPrompt(day);
+        return `<div class="pp-train-control-stack">
+          ${positionPrompt}
+          <div class="pp-train-controls">
+            <span class="pp-note">Queue complete for ${Utils.esc(Utils.dateShort(day.date))}</span>
+            <span></span>
+            ${positionPrompt
+              ? '<button class="pp-btn" type="button" disabled title="Resolve the position prompt before opening the next queue">&raquo;</button>'
+              : '<button class="pp-btn" type="button" data-action="open-training-queue-page" title="Open Torn employee training page">&raquo;</button>'}
+          </div>
         </div>`;
       }
       const slot = queueView.slots[queueView.activeIndex] || queueView.slots[0];
-      return `<div class="pp-train-controls">
-        <span class="pp-note" title="${Utils.esc(slot.playerId ? `User ID ${slot.playerId}` : 'No user ID detected yet')}">Next: ${Utils.esc(queueView.activeIndex + 1)} / ${Utils.esc(queueView.slots.length)} ${Utils.esc(slot.playerName || 'Unknown staff')}</span>
-        <button class="pp-btn is-primary" type="button" data-action="click-training-action" title="Click the currently loaded Torn Train action and advance the queue" aria-label="Train queued member">+</button>
-        <button class="pp-btn" type="button" data-action="open-training-queue-page" title="Open Torn employee training page and highlight the queued member">&raquo;</button>
+      return `<div class="pp-train-control-stack">
+        ${UI.plannerPositionPrompt(day)}
+        <div class="pp-train-controls">
+          <span class="pp-note" title="${Utils.esc(slot.playerId ? `User ID ${slot.playerId}` : 'No user ID detected yet')}">Next: ${Utils.esc(queueView.activeIndex + 1)} / ${Utils.esc(queueView.slots.length)} ${Utils.esc(slot.playerName || 'Unknown staff')}</span>
+          <button class="pp-btn is-primary" type="button" data-action="click-training-action" title="Check the live position, click the currently loaded Torn Train action, and advance the locked queue" aria-label="Train queued member">+</button>
+          <button class="pp-btn" type="button" data-action="open-training-queue-page" title="Lock this queue, open Torn employee training, and highlight the queued member">&raquo;</button>
+        </div>
       </div>`;
+    },
+
+    plannerPositionPrompt(day) {
+      const session = UI.ledgerTrainingSession();
+      if (!session || session.origin !== 'planner' || String(session.plannerDate || '') !== String(day && day.date || '')) return '';
+      const name = Utils.esc(session.playerName || session.playerId || 'This employee');
+      const current = Utils.esc(session.currentPosition || 'their current position');
+      const requested = Utils.esc(session.requestedPosition || 'the requested position');
+      const original = Utils.esc(session.originalPosition || session.currentPosition || 'the previous position');
+      const phase = String(session.phase || '');
+      if (phase === 'position-confirm') {
+        return `<div class="pp-position-popover"><strong>${name} is in the incorrect position.</strong><span>Current: ${current}<br>Order requires: ${requested}<br>Change the dropdown to ${requested}?</span><span class="pp-toast-actions"><button class="pp-btn is-primary" type="button" data-action="confirm-planner-position-change">OK</button><button class="pp-btn" type="button" data-action="cancel-planner-position-change">Cancel</button></span></div>`;
+      }
+      if (phase === 'position-staged') {
+        return `<div class="pp-position-popover"><strong>${requested} is selected, but not submitted.</strong><span>Verify the Torn dropdown, then press Update to apply it.</span><span class="pp-toast-actions"><button class="pp-btn is-primary" type="button" data-action="apply-planner-position-change">Update</button><button class="pp-btn" type="button" data-action="cancel-planner-position-change">Cancel</button></span></div>`;
+      }
+      if (phase === 'position-verifying') return `<div class="pp-position-popover"><strong>Updating ${name}…</strong><span>Waiting for Torn to confirm ${requested} before training.</span></div>`;
+      if (phase === 'ready') return `<div class="pp-position-popover is-good"><strong>${requested} confirmed.</strong><span>Use + to send the next train. Every + performs exactly one Torn Train action.</span></div>`;
+      if (phase === 'cooldown') return `<div class="pp-position-popover is-good"><strong>Train sent.</strong><span>Waiting for Torn before the next +.</span></div>`;
+      if (phase === 'restore-prompt') {
+        return `<div class="pp-position-popover"><strong>Last queued train sent for ${name}.</strong><span>Restore the previous position, ${original}?</span><span class="pp-toast-actions"><button class="pp-btn is-primary" type="button" data-action="restore-ledger-training-position">Restore</button><button class="pp-btn" type="button" data-action="keep-ledger-training-position">Keep ${requested}</button></span></div>`;
+      }
+      if (phase === 'restore-verifying') return `<div class="pp-position-popover"><strong>Restoring ${name}…</strong><span>Waiting for Torn to confirm ${original}.</span></div>`;
+      if (phase === 'restore-error') return `<div class="pp-position-popover is-bad"><strong>The previous position was not confirmed.</strong><span>${Utils.esc(session.error || `Restore ${original} before continuing.`)}</span><span class="pp-toast-actions"><button class="pp-btn is-primary" type="button" data-action="restore-ledger-training-position">Try restore again</button><button class="pp-btn" type="button" data-action="keep-ledger-training-position">Keep ${requested}</button></span></div>`;
+      if (phase === 'error') return `<div class="pp-position-popover is-bad"><strong>Position check is still on hold.</strong><span>${Utils.esc(session.error || 'Torn did not confirm the requested position.')}</span><span class="pp-toast-actions"><button class="pp-btn is-primary" type="button" data-action="retry-planner-position-change">Try again</button><button class="pp-btn" type="button" data-action="cancel-planner-position-change">Cancel</button></span></div>`;
+      return '';
     },
 
     operationalContext() {
@@ -10978,7 +11124,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const paidQueue = Planner.queue(UI.visibleLedgerRows(), 'paid', state.settings).length;
       const sponsored = Planner.sponsoredRoster(state);
       const risk = Planner.sponsoredRiskSummary(state);
-      const supply = Planner.queueSupply(state, state.planner.startDate || Utils.todayInput());
+      const supplyInfo = Planner.queueSupplyInfo(state, state.planner.startDate || Utils.todayInput());
+      const supply = supplyInfo.supply;
       const paidCapLimit = Planner.paidCapLimit(state.settings);
       const paidLimit = Utils.clamp(Utils.int(state.settings.maxPaidTrainsPerDay, paidCapLimit), 0, paidCapLimit);
       const paidDaily = Math.max(0, Math.min(supply, paidLimit || supply));
@@ -10990,16 +11137,19 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         counts.set(label, (counts.get(label) || 0) + 1);
       });
       const coverage = Array.from(counts.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([role, count]) => `${role}: ${count}`).join('\n') || 'No staff synced yet.';
+      const riskModeLabel = risk.mode === 'balance' ? 'Merit balance' : 'Fixed thresholds';
       const riskTitle = risk.total
-        ? `Auto mode excludes ${risk.total} staff from sponsored/free trains at the current addiction or inactivity threshold. Their slots are reassigned; paid trains remain eligible. ${risk.danger} above threshold, ${risk.warn} at threshold.`
-        : `No staff are currently excluded from Auto sponsored/free trains by addiction or inactivity. Paid trains are always immune.`;
+        ? (risk.mode === 'balance'
+          ? `Auto mode excludes ${risk.total} sponsored/free candidate${risk.total === 1 ? '' : 's'} whose Merits + Addiction + Inactivity balance is not above 0. Paid ledger orders remain eligible and keep their own requested positions.`
+          : `Auto mode excludes ${risk.total} staff from sponsored/free trains at the current addiction or inactivity threshold. Their slots are reassigned; paid ledger orders remain eligible and keep their own requested positions. ${risk.danger} above threshold, ${risk.warn} at threshold.`)
+        : `No staff are currently excluded from Auto sponsored/free trains by ${riskModeLabel.toLowerCase()}. Paid ledger orders remain immune.`;
       return `<div class="pp-operational">
         <div class="pp-operation-note"><strong>${paidQueue.toLocaleString()}</strong>Paid trains waiting</div>
         <div class="pp-operation-note"><strong>${sponsored.length.toLocaleString()}</strong>Free/sponsored candidates</div>
-        <div class="pp-operation-note"><strong>${supply.toLocaleString()} / 20</strong>Available slots / ${paidDaily.toLocaleString()} paid</div>
+        <div class="pp-operation-note" title="${Utils.esc(supplyInfo.note || 'Current planned train capacity')}"><strong>${supply.toLocaleString()} / 20</strong>${supplyInfo.status === 'upcoming-reset' ? 'Expected after 18:10 TCT' : (supplyInfo.status === 'awaiting-sync' ? 'Expected; Business sync needed' : 'Available slots')} / ${paidDaily.toLocaleString()} paid</div>
         <div class="pp-operation-note" title="${Utils.esc(coverage)}"><strong>${paidDays.toLocaleString()}</strong>Paid queue day${paidDays === 1 ? '' : 's'}</div>
         <div class="pp-operation-note" title="Staff in their first ${Planner.trainingHoldDays()} days are held off the schedule, even when they already have paid orders."><strong>${holdCount.toLocaleString()}</strong>New-hire hold</div>
-        <div class="pp-operation-note" title="${Utils.esc(riskTitle)}"><strong>${risk.total.toLocaleString()}</strong>Auto-excluded sponsored</div>
+        <div class="pp-operation-note" title="${Utils.esc(riskTitle)}"><strong>${risk.total.toLocaleString()}</strong>Auto-excluded · ${Utils.esc(riskModeLabel)}</div>
       </div>`;
     },
 
@@ -11009,11 +11159,22 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const mode = Planner.allowedMode(UI.state);
       const staff = UI.plannerSelectableStaff(day.date);
       if (mode === 'auto' || !staff.length) {
+        const availability = day.sponsoredAvailability || Planner.sponsoredAvailability(UI.state, day.date);
+        const unavailable = mode === 'auto' && availability.eligible === 0;
+        const label = unavailable
+          ? (availability.total ? 'No eligible sponsored staff' : 'No sponsored candidates')
+          : 'Available Slot';
+        const reasonParts = [];
+        if (availability.blocked) reasonParts.push(`${availability.blocked} excluded by ${availability.mode === 'balance' ? 'merit balance' : 'fixed thresholds'}`);
+        if (availability.held) reasonParts.push(`${availability.held} on new-hire hold`);
+        const title = unavailable && reasonParts.length
+          ? `${reasonParts.join('; ')}.${availability.reasons.length ? ` ${availability.reasons.slice(0, 3).join('; ')}` : ''}`
+          : '';
         return Array.from({ length: open }, (_, index) => {
           const rowIndex = day.slots.length + index;
           return `<tr class="pp-day-row ${activeIndex === rowIndex ? 'is-active' : ''}">
             <td>${rowIndex + 1}.&nbsp;</td>
-            <td><span class="pp-day-name">Available Slot</span></td>
+            <td><span class="pp-day-name"${title ? ` title="${Utils.esc(title)}"` : ''}>${Utils.esc(label)}</span></td>
             <td></td>
           </tr>`;
         }).join('');
@@ -12274,14 +12435,6 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             <label class="pp-field"><span class="pp-note">Trainer role</span><span><input type="checkbox" name="trainerAutoDetect" ${state.settings.trainerAutoDetect !== false ? 'checked' : ''}> Auto-Detect</span></label>
             <div class="pp-field span-6"><span class="pp-note">Split shares the paid cap equally between active buyers (4 / 4 when the paid cap is 8 and two buyers are waiting). The numbered choices set the oldest/next-buyer share; unused slots safely fall back to the next paid order. Any capacity left after the paid cap remains in sponsored/free rotation.</span></div>
             <div class="pp-field span-6"><span class="pp-note">Detected setup: company rating comes from profile sync and Trainer comes from staff sync when Auto-Detect is enabled. Current trainer bonus: ${state.settings.trainerAssigned ? 'yes' : 'no'}.</span></div>
-            <div class="pp-form-title">Auto sponsored/free rules</div>
-            <div class="pp-priority-grid">
-              ${UI.field('Queue standard', UI.plannerQueuePolicySelect(), 'pp-compact-field')}
-              <label class="pp-field"><span class="pp-note">Paid orders first</span><span><input type="checkbox" name="plannerPaidFirst" ${state.settings.plannerPriority && state.settings.plannerPriority.paidFirst !== false ? 'checked' : ''}> Enabled</span></label>
-              <label class="pp-field"><span class="pp-note">Addiction threshold</span><span><input type="checkbox" name="plannerAddictionEnabled" ${state.settings.plannerPriority && state.settings.plannerPriority.addictionEnabled !== false ? 'checked' : ''}> Skip sponsored/free</span></label>
-              <label class="pp-field"><span class="pp-note">Inactivity threshold</span><span><input type="checkbox" name="plannerInactivityEnabled" ${state.settings.plannerPriority && state.settings.plannerPriority.inactivityEnabled !== false ? 'checked' : ''}> Skip sponsored/free</span></label>
-            </div>
-            <div class="pp-field span-6"><span class="pp-note">In Auto mode, staff at or above the notification thresholds receive no sponsored/free train that day. All eligible staff receive one before repeats; extra trains prefer the eligible member with the lowest total stats. Paid trains ignore both rules. Hybrid and Manual remain editable director choices.</span></div>
           </form>
         </div>
       </section>`;
@@ -12628,15 +12781,28 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     },
     notificationSettingsPanel() {
       const settings = UI.notificationSettings();
+      const state = UI.state;
       return `<section class="pp-panel" data-tour="notification-rules">
         <div class="pp-head">
           <div>
-            <h3>Notification rules</h3>
-            <p>Choose which operational warnings appear above the containers and on the minimized pill.</p>
+            <h3>Automation & notification rules</h3>
+            <p>Control sponsored/free eligibility and operational warnings in one place.</p>
           </div>
         </div>
         <div class="pp-content">
-          <form data-notifications-form class="pp-form">
+          <form data-settings-form class="pp-form">
+            <div class="pp-form-title">Auto sponsored/free rules</div>
+            <div class="pp-priority-grid">
+              ${UI.field('Queue standard', UI.plannerQueuePolicySelect(), 'pp-compact-field')}
+              ${UI.field('Eligibility rule', UI.plannerRiskModeSelect(), 'pp-compact-field')}
+              <label class="pp-field"><span class="pp-note">Paid orders first</span><span><input type="checkbox" name="plannerPaidFirst" ${state.settings.plannerPriority && state.settings.plannerPriority.paidFirst !== false ? 'checked' : ''}> Enabled</span></label>
+              <label class="pp-field"><span class="pp-note">Addiction impact</span><span><input type="checkbox" name="plannerAddictionEnabled" ${state.settings.plannerPriority && state.settings.plannerPriority.addictionEnabled !== false ? 'checked' : ''}> Use for sponsored/free</span></label>
+              <label class="pp-field"><span class="pp-note">Inactivity impact</span><span><input type="checkbox" name="plannerInactivityEnabled" ${state.settings.plannerPriority && state.settings.plannerPriority.inactivityEnabled !== false ? 'checked' : ''}> Use for sponsored/free</span></label>
+            </div>
+            <div class="pp-field span-6"><span class="pp-note"><strong>Fixed thresholds</strong> excludes sponsored/free staff at the notification values below. <strong>Merits + negative impacts</strong> requires Merits + Addiction + Inactivity to be above 0; zero is excluded. All eligible staff receive one train before repeats. Paid trains ignore these eligibility rules and use the position stored on each ledger order.</span></div>
+          </form>
+          <form data-notifications-form class="pp-form pp-rule-notifications">
+            <div class="pp-form-title">Operational notifications</div>
             <div class="pp-notification-grid">
               <div class="pp-notification-rule">
                 ${UI.field('Low-stock threshold %', `<input class="pp-input" name="notifyStockThreshold" inputmode="numeric" value="${Utils.esc(settings.stock.thresholdPercent)}">`)}
@@ -14216,6 +14382,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.3.7 - Merit-aware sponsored training</summary>
+              <ul><li>Sponsored and free trains can reuse the enabled notification thresholds or evaluate each employee dynamically using Merits + Addiction + Inactivity.</li><li>The planner explains eligible, blocked, and three-day-held candidates and keeps the ninth sponsored slot after eight paid trains when somebody qualifies.</li><li>Paid ledger slots keep each order&apos;s requested position and remain independent from sponsored-risk filtering without bypassing the new-hire hold.</li></ul>
+            </details>
+            <details>
               <summary>v3.3.2 - Fair bought-train allocation</summary>
               <ul><li>Training setup now offers FIFO, equal Split, and every oldest/next-buyer combination for the daily paid cap.</li><li>Split assigns four bought trains to each of two buyers when eight paid trains are available, treating multiple open orders from the same player as one buyer.</li><li>Any remaining daily capacity stays in sponsored/free rotation, and unused buyer quota safely falls through to the next paid order.</li></ul>
             </details>
@@ -14875,8 +15045,13 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (action === 'copy-ledger-receipt') UI.copyLedgerReceipt(id, button.ownerDocument && button.ownerDocument.defaultView);
       if (action === 'start-ledger-training') UI.startLedgerTraining(id);
       if (action === 'prepare-ledger-training-position') UI.prepareLedgerTrainingPosition();
+      if (action === 'confirm-planner-position-change') UI.stagePlannerPositionChange();
+      if (action === 'apply-planner-position-change') UI.applyPlannerPositionChange();
+      if (action === 'retry-planner-position-change') UI.retryPlannerPositionChange();
+      if (action === 'cancel-planner-position-change') UI.cancelPlannerPositionChange();
       if (action === 'ledger-train-next') UI.ledgerTrainNext();
       if (action === 'restore-ledger-training-position') UI.restoreLedgerTrainingPosition();
+      if (action === 'keep-ledger-training-position') UI.keepLedgerTrainingPosition();
       if (action === 'dismiss-ledger-training') UI.dismissLedgerTraining();
       if (action === 'edit-person') {
         UI.state.ui.editPersonKey = button.dataset.personKey || '';
@@ -15573,6 +15748,95 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         .toLowerCase();
     },
 
+    trainingOrderForSlot(slot) {
+      if (!slot || String(slot.type || '').toLowerCase() !== 'paid') return null;
+      const entryId = String(slot.entryId || '').trim();
+      if (entryId) {
+        const exact = (UI.state.ledger || []).find((entry) => String(entry.id || '') === entryId);
+        if (exact) {
+          const totals = Ledger.totals(exact, UI.state.settings);
+          return exact.contractType === 'paid' && totals.paid && !totals.done && totals.remaining > 0 ? exact : null;
+        }
+      }
+      const identityMaps = Company.identityMaps(UI.state);
+      const wanted = Company.resolveIdentity({ id: slot.playerId, name: slot.playerName }, UI.state, identityMaps);
+      return (UI.state.ledger || [])
+        .filter((entry) => {
+          const totals = Ledger.totals(entry, UI.state.settings);
+          if (entry.contractType !== 'paid' || !totals.paid || totals.done || totals.remaining <= 0) return false;
+          return Company.resolveIdentity({ id: entry.playerId, name: entry.playerName }, UI.state, identityMaps) === wanted;
+        })
+        .sort((left, right) => String(left.createdAt || '').localeCompare(String(right.createdAt || '')))[0] || null;
+    },
+
+    trainingPositionRequirement(slot) {
+      if (!slot || String(slot.type || '').toLowerCase() !== 'paid') return null;
+      const entry = UI.trainingOrderForSlot(slot);
+      if (!entry) {
+        return { entry: null, requestedPosition: '', currentPosition: '', matches: false, blocked: true, reason: 'This paid slot is no longer linked to an open training order. Rebuild the calendar or sync order history before training.' };
+      }
+      const requestedPosition = String(entry.requestedPosition || '').trim();
+      if (!requestedPosition) return null;
+      const person = Planner.resolveRosterPerson({ id: slot.playerId, name: slot.playerName }, UI.state);
+      let currentPosition = String(person && (person.role || person.currentRole) || slot.role || '').trim();
+      let matches = !!currentPosition && UI.ledgerPositionKey(currentPosition) === UI.ledgerPositionKey(requestedPosition);
+      const live = UI.ledgerTrainingPositionContext({
+        playerId: String(slot.playerId || entry.playerId || ''),
+        requestedPosition
+      });
+      if (live && live.select) {
+        const selected = live.options.find((option) => String(option.value) === String(live.select.value));
+        currentPosition = String(selected && (selected.textContent || selected.label) || currentPosition).trim();
+        matches = !!live.target && String(live.select.value) === String(live.target.value);
+      }
+      return { entry, requestedPosition, currentPosition, matches, blocked: false, live };
+    },
+
+    plannerPositionSessionMatches(session, prepared, target) {
+      if (!session || session.origin !== 'planner' || !prepared || !target) return false;
+      return String(session.plannerDate || '') === String(prepared.date || '')
+        && Utils.int(session.plannerStartIndex, -1) + Utils.int(session.dispatched, 0) === Utils.int(target.queueIndex, -2)
+        && String(session.playerId || '') === String(target.playerId || '')
+        && String(session.entryId || '') === String(target.entryId || '');
+    },
+
+    startPlannerPositionTraining(prepared, target, requirement) {
+      const details = requirement || UI.trainingPositionRequirement(target);
+      if (!details || !details.entry) {
+        UI.saveRender(details && details.reason ? details.reason : 'The paid training order could not be linked safely. Rebuild the calendar before training.');
+        return false;
+      }
+      const active = UI.ledgerTrainingSession();
+      if (UI.plannerPositionSessionMatches(active, prepared, target)) {
+        if (active.phase === 'ready') UI.ledgerTrainNext();
+        else UI.toast('This train is on position hold. Use the safety panel to finish verification or restore the employee first.');
+        return true;
+      }
+      if (active && active.positionChanged && !active.restored && active.phase !== 'complete') {
+        UI.toast('Restore the employee from the active position session before starting another train.');
+        return true;
+      }
+      let total = 0;
+      for (let index = Utils.int(target.queueIndex, 0); index < prepared.slots.length; index += 1) {
+        const slot = prepared.slots[index];
+        if (String(slot.entryId || '') !== String(details.entry.id || '') || String(slot.playerId || '') !== String(target.playerId || '')) break;
+        total += 1;
+      }
+      UI.startLedgerTraining(details.entry.id, {
+        origin: 'planner',
+        total: Math.max(1, total),
+        plannerDate: prepared.date,
+        plannerStartIndex: target.queueIndex,
+        currentPosition: details.currentPosition
+      });
+      const session = UI.ledgerTrainingSession();
+      if (!session) return false;
+      session.phase = 'position-confirm';
+      const current = details.currentPosition || 'unknown';
+      UI.renderLedgerTraining(`${target.playerName || target.playerId} is in ${current}, but the order requests ${details.requestedPosition}. Choose OK or Cancel above the queue + button.`);
+      return true;
+    },
+
     ledgerTrainingPanel() {
       const session = UI.ledgerTrainingSession();
       if (!session) return '';
@@ -15581,27 +15845,42 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const dispatched = Utils.clamp(Utils.int(session.dispatched, 0), 0, total);
       const remaining = Math.max(0, total - dispatched);
       const position = session.requestedPosition || 'the current position';
+      const plannerSession = session.origin === 'planner';
       let primary = '';
-      if (phase === 'prepare' || phase === 'error') {
+      if (plannerSession && phase === 'position-confirm') {
+        primary = '<button class="pp-btn is-primary" type="button" data-action="confirm-planner-position-change">OK — select position</button>';
+      } else if (plannerSession && phase === 'position-staged') {
+        primary = '<button class="pp-btn is-primary" type="button" data-action="apply-planner-position-change">Update position</button>';
+      } else if (plannerSession && phase === 'error') {
+        primary = '<button class="pp-btn is-primary" type="button" data-action="retry-planner-position-change">Try again</button>';
+      } else if (phase === 'restore-prompt' || phase === 'restore-error') {
+        primary = '<button class="pp-btn is-primary" type="button" data-action="restore-ledger-training-position">Restore original position</button>';
+      } else if (phase === 'prepare' || phase === 'error') {
         primary = `<button class="pp-btn is-primary" type="button" data-action="prepare-ledger-training-position">Prepare ${Utils.esc(position)}</button>`;
       } else if (phase === 'ready') {
-        primary = `<button class="pp-btn is-primary" type="button" data-action="ledger-train-next">Train next (${dispatched + 1}/${total})</button>`;
+        primary = plannerSession
+          ? '<button class="pp-btn" type="button" disabled>Use queue + to train</button>'
+          : `<button class="pp-btn is-primary" type="button" data-action="ledger-train-next">Train next (${dispatched + 1}/${total})</button>`;
       } else if (phase === 'complete') {
         primary = '<button class="pp-btn is-primary" type="button" data-action="import-training-orders-log" data-sync-action="training-log">Sync order history</button>';
       } else {
         const waiting = phase === 'cooldown' ? 'Waiting for Torn…' : phase.startsWith('restore') ? 'Restoring position…' : 'Checking position…';
         primary = `<button class="pp-btn" type="button" disabled>${waiting}</button>`;
       }
-      const needsRestore = !!session.positionChanged && !session.restored && phase !== 'complete' && !phase.startsWith('restore');
+      const needsRestore = !!session.positionChanged && !session.restored && phase !== 'complete' && phase !== 'restore-prompt' && phase !== 'restore-error' && !phase.startsWith('restore');
+      const plannerHold = session.origin === 'planner' && !dispatched
+        ? `Planner paused before this train. Current position: ${session.currentPosition || 'unknown'} · Requested position: ${position}. No Torn Train action runs until the requested position is verified.`
+        : '';
       const message = phase === 'complete'
-        ? `${dispatched} train action${dispatched === 1 ? '' : 's'} dispatched and the original position restored. Sync order history to confirm them in the ledger.`
-        : `${dispatched}/${total} dispatched · ${remaining} remaining · Requested position: ${position}. Each Train next press performs exactly one Torn action.`;
+        ? `${dispatched} train action${dispatched === 1 ? '' : 's'} dispatched${session.restoreDeclined ? `; ${position} was kept` : (session.positionChanged ? ' and the original position restored' : '')}. Sync order history to confirm them in the ledger.`
+        : (plannerHold || `${dispatched}/${total} dispatched · ${remaining} remaining · Requested position: ${position}. Each Train next press performs exactly one Torn action.`);
       return `<div class="pp-empty" data-ledger-training-session>
         <strong>Training ${Utils.esc(session.orderId || 'order')} · ${Utils.esc(session.playerName || session.playerId || 'staff')}</strong><br>
         <span>${Utils.esc(message)}</span>
         ${session.error ? `<br><span class="pp-bad">${Utils.esc(session.error)}</span>` : ''}
         <div class="pp-row-actions" style="margin-top:8px">
           ${primary}
+          ${phase === 'restore-prompt' || phase === 'restore-error' ? `<button class="pp-btn" type="button" data-action="keep-ledger-training-position">Keep ${Utils.esc(position)}</button>` : ''}
           ${needsRestore ? '<button class="pp-btn is-danger" type="button" data-action="restore-ledger-training-position">Restore original position</button>' : ''}
           <button class="pp-btn" type="button" data-action="dismiss-ledger-training">${phase === 'complete' ? 'Close' : 'Cancel'}</button>
         </div>
@@ -15619,7 +15898,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (message) UI.toast(message);
     },
 
-    startLedgerTraining(id) {
+    startLedgerTraining(id, options) {
+      const opts = options || {};
       const entry = (UI.state.ledger || []).find((item) => String(item.id || '') === String(id || ''));
       if (!entry) return;
       const totals = Ledger.totals(entry, UI.state.settings);
@@ -15647,8 +15927,13 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         playerId: String(entry.playerId || ''),
         playerName: String(entry.playerName || ''),
         requestedPosition: String(entry.requestedPosition || '').trim(),
-        total: totals.remaining,
+        total: opts.total === undefined ? totals.remaining : Utils.clamp(Utils.int(opts.total, 0), 1, totals.remaining),
         dispatched: 0,
+        origin: opts.origin || 'ledger',
+        plannerDate: opts.plannerDate || '',
+        plannerStartIndex: Utils.int(opts.plannerStartIndex, 0),
+        currentPosition: String(opts.currentPosition || '').trim(),
+        originalPosition: String(opts.currentPosition || '').trim(),
         originalRank: '',
         targetRank: '',
         positionChanged: false,
@@ -15681,6 +15966,103 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         return { win, doc, select, form, submit, target, options };
       }
       return null;
+    },
+
+    stagePlannerPositionChange() {
+      const session = UI.ledgerTrainingSession();
+      if (!session || session.origin !== 'planner') return;
+      const context = UI.ledgerTrainingPositionContext(session);
+      if (!context) {
+        session.phase = 'error';
+        session.error = 'Open Torn company Employees, then use Try again.';
+        UI.navigateTornTraining(UI.trainingPageUrl());
+        UI.renderLedgerTraining();
+        return;
+      }
+      if (!context.target) {
+        session.phase = 'error';
+        session.error = `Torn does not offer the requested position “${session.requestedPosition}” for this company.`;
+        UI.renderLedgerTraining();
+        return;
+      }
+      const selected = context.options.find((option) => String(option.value) === String(context.select.value));
+      session.originalRank = session.originalRank || String(context.select.value || '');
+      session.originalPosition = session.originalPosition || String(selected && (selected.textContent || selected.label) || session.currentPosition || '').trim();
+      session.targetRank = String(context.target.value || '');
+      session.error = '';
+      if (!session.targetRank || session.targetRank === String(context.select.value || '')) {
+        session.phase = 'ready';
+        session.restored = true;
+        UI.renderLedgerTraining();
+        return;
+      }
+      if (!UI.setTornPositionValue(context, session.targetRank)) {
+        session.phase = 'error';
+        session.error = "Could not select the requested position in Torn's dropdown.";
+        UI.renderLedgerTraining();
+        return;
+      }
+      session.phase = 'position-staged';
+      session.restored = false;
+      Store.save(UI.state);
+      UI.renderLedgerTraining();
+    },
+
+    applyPlannerPositionChange() {
+      const session = UI.ledgerTrainingSession();
+      if (!session || session.origin !== 'planner' || session.phase !== 'position-staged') return;
+      const context = UI.ledgerTrainingPositionContext(session);
+      if (!context || !context.submit || !session.targetRank || String(context.select.value || '') !== String(session.targetRank)) {
+        session.phase = 'error';
+        session.error = 'The requested position is not selected in Torn. Use Try again before updating.';
+        UI.renderLedgerTraining();
+        return;
+      }
+      session.phase = 'position-verifying';
+      session.positionChanged = true;
+      session.restored = false;
+      session.error = '';
+      Store.save(UI.state);
+      if (!UI.clickTornNode(context.win, context.submit)) {
+        session.phase = 'error';
+        session.error = 'Torn rejected the position Update.';
+        UI.renderLedgerTraining();
+        return;
+      }
+      UI.renderLedgerTraining();
+      setTimeout(() => UI.verifyLedgerTrainingPosition(), 1400);
+    },
+
+    retryPlannerPositionChange() {
+      const session = UI.ledgerTrainingSession();
+      if (!session || session.origin !== 'planner') return;
+      const context = UI.ledgerTrainingPositionContext(session);
+      if (context && session.targetRank && String(context.select.value || '') === String(session.targetRank)) {
+        session.phase = 'ready';
+        session.error = '';
+        UI.renderLedgerTraining();
+        return;
+      }
+      session.phase = 'position-confirm';
+      session.error = '';
+      UI.renderLedgerTraining();
+    },
+
+    cancelPlannerPositionChange() {
+      const session = UI.ledgerTrainingSession();
+      if (!session || session.origin !== 'planner') return;
+      if (session.positionChanged && !session.restored) {
+        session.phase = 'restore-prompt';
+        session.error = '';
+        UI.renderLedgerTraining();
+        return;
+      }
+      const context = UI.ledgerTrainingPositionContext(session);
+      if (context && session.originalRank && String(context.select.value || '') !== String(session.originalRank)) {
+        UI.setTornPositionValue(context, session.originalRank);
+      }
+      UI.state.ui.ledgerTrainingSession = null;
+      UI.renderLedgerTraining('Position change cancelled. No Torn update or train was submitted.');
     },
 
     setTornPositionValue(context, value) {
@@ -15748,7 +16130,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (context && String(context.select.value || '') === String(session.targetRank || '')) {
         session.phase = 'ready';
         session.error = '';
-        UI.renderLedgerTraining(`${session.requestedPosition || 'Requested position'} confirmed. Press Train next once per train.`);
+        UI.renderLedgerTraining(session.origin === 'planner'
+          ? `${session.requestedPosition || 'Requested position'} confirmed. Use the queue + once per train.`
+          : `${session.requestedPosition || 'Requested position'} confirmed. Press Train next once per train.`);
         return;
       }
       session.phase = 'error';
@@ -15760,6 +16144,34 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const session = UI.ledgerTrainingSession();
       if (!session || session.phase !== 'ready') return;
       const target = { playerId: session.playerId, playerName: session.playerName };
+      const eligibility = Planner.slotEligibility(target, UI.state, session.plannerDate || Utils.todayInput());
+      if (!eligibility.eligible) {
+        session.phase = 'error';
+        session.error = eligibility.reason || 'The employee is no longer eligible for training.';
+        UI.renderLedgerTraining(session.error);
+        return;
+      }
+      if (session.requestedPosition) {
+        const position = UI.ledgerTrainingPositionContext(session);
+        if (!position || !session.targetRank || String(position.select.value || '') !== String(session.targetRank || '')) {
+          session.phase = 'error';
+          session.error = `Training remains on hold because Torn no longer shows ${session.requestedPosition} as the employee's current position. Prepare and verify the position again.`;
+          UI.renderLedgerTraining(session.error);
+          return;
+        }
+      }
+      let prepared = null;
+      let plannerTarget = null;
+      if (session.origin === 'planner') {
+        prepared = UI.prepareTrainingQueue();
+        plannerTarget = UI.resolveTrainingSlot(UI.trainingQueueTarget(prepared));
+        if (!UI.plannerPositionSessionMatches(session, prepared, plannerTarget)) {
+          session.phase = 'error';
+          session.error = 'The planner queue changed while the position was being prepared. Restore the employee, rebuild the calendar, and try again.';
+          UI.renderLedgerTraining(session.error);
+          return;
+        }
+      }
       const context = UI.trainingActionContext(target);
       if (!context || !context.link) {
         session.phase = 'error';
@@ -15774,18 +16186,38 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         return;
       }
       session.dispatched = Utils.clamp(Utils.int(session.dispatched, 0) + 1, 0, Utils.int(session.total, 0));
+      if (prepared && plannerTarget) UI.advanceTrainingQueue(prepared, plannerTarget);
       session.phase = 'cooldown';
       session.error = '';
       UI.renderLedgerTraining(`One train dispatched for ${session.playerName || session.playerId}; waiting for Torn to update.`);
       setTimeout(() => {
         const current = UI.ledgerTrainingSession();
         if (!current || current.entryId !== session.entryId || current.phase !== 'cooldown') return;
-        if (Utils.int(current.dispatched, 0) >= Utils.int(current.total, 0)) UI.restoreLedgerTrainingPosition();
+        if (Utils.int(current.dispatched, 0) >= Utils.int(current.total, 0)) {
+          if (current.positionChanged && !current.restored) {
+            current.phase = 'restore-prompt';
+            UI.renderLedgerTraining();
+          } else {
+            current.phase = 'complete';
+            current.completedAt = Utils.nowIso();
+            UI.renderLedgerTraining();
+          }
+        }
         else {
           current.phase = 'ready';
-          UI.renderLedgerTraining('Ready for the next manual Train click.');
+          UI.renderLedgerTraining();
         }
       }, 1400);
+    },
+
+    keepLedgerTrainingPosition() {
+      const session = UI.ledgerTrainingSession();
+      if (!session || !['restore-prompt', 'restore-error'].includes(session.phase)) return;
+      session.restoreDeclined = true;
+      session.phase = 'complete';
+      session.completedAt = Utils.nowIso();
+      session.error = '';
+      UI.renderLedgerTraining(`${session.requestedPosition || 'Requested position'} kept for ${session.playerName || session.playerId}.`);
     },
 
     restoreLedgerTrainingPosition() {
@@ -15801,7 +16233,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const context = UI.ledgerTrainingPositionContext(session);
       const original = context && context.options.find((option) => String(option.value) === String(session.originalRank));
       if (!context || !original || !context.submit || !UI.setTornPositionValue(context, session.originalRank)) {
-        session.phase = 'error';
+        session.phase = 'restore-error';
         session.error = 'Could not restore the original position automatically. Restore it in Torn before closing this session.';
         UI.renderLedgerTraining(session.error);
         return;
@@ -15826,7 +16258,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         UI.renderLedgerTraining('Original position restored. Sync order history to confirm the dispatched trains.');
         return;
       }
-      session.phase = 'error';
+      session.phase = 'restore-error';
       session.error = 'Torn did not confirm the original position. Restore it manually before closing this session.';
       UI.renderLedgerTraining(session.error);
     },
@@ -15834,6 +16266,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     dismissLedgerTraining() {
       const session = UI.ledgerTrainingSession();
       if (!session) return;
+      if (session.origin === 'planner' && session.phase !== 'complete') {
+        UI.cancelPlannerPositionChange();
+        return;
+      }
       if (session.positionChanged && !session.restored && session.phase !== 'complete') {
         UI.restoreLedgerTrainingPosition();
         return;
@@ -15961,6 +16397,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     },
 
     buildPlanner() {
+      const positionSession = UI.ledgerTrainingSession();
+      if (positionSession && positionSession.origin === 'planner' && positionSession.phase !== 'complete') {
+        UI.toast('Finish or cancel the active position prompt before rebuilding the planner queue.');
+        return;
+      }
       const requested = UI.state.planner.mode;
       Planner.build(UI.state);
       const prepared = UI.prepareTrainingQueue({ force: true });
@@ -15975,6 +16416,12 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     resetPlannerDay(day) {
       const date = Utils.dateInput(day);
       if (!date) return;
+      const positionSession = UI.ledgerTrainingSession();
+      if (positionSession && positionSession.origin === 'planner' && positionSession.phase !== 'complete'
+        && String(positionSession.plannerDate || '') === date) {
+        UI.toast('Finish or cancel the active position prompt before resetting this queue.');
+        return;
+      }
       UI.state.planner.manualSlots = UI.state.planner.manualSlots || {};
       Object.keys(UI.state.planner.manualSlots).forEach((key) => {
         if (key.startsWith(`${date}:`)) delete UI.state.planner.manualSlots[key];
@@ -15993,6 +16440,38 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       return 'https://www.torn.com/companies.php?step=your&type=1#/train=&option=employees';
     },
 
+    positionSafeQueueOrder(slots) {
+      const groups = [];
+      const paidGroups = new Map();
+      (Array.isArray(slots) ? slots : []).forEach((slot) => {
+        const entryId = String(slot && slot.entryId || '').trim();
+        if (String(slot && slot.type || '').toLowerCase() === 'paid' && entryId) {
+          const key = `paid:${entryId}`;
+          if (!paidGroups.has(key)) {
+            const group = [];
+            paidGroups.set(key, group);
+            groups.push(group);
+          }
+          paidGroups.get(key).push(slot);
+          return;
+        }
+        groups.push([slot]);
+      });
+      return groups.flat();
+    },
+
+    normaliseTrainingQueueSlots(slots) {
+      return (Array.isArray(slots) ? slots : []).map((slot) => ({
+        identity: slot.identity || Company.resolveIdentity({ id: slot.playerId, name: slot.playerName }, UI.state),
+        entryId: slot.entryId || '',
+        playerId: slot.playerId || '',
+        playerName: slot.playerName || '',
+        requestedPosition: slot.requestedPosition || '',
+        role: slot.role || '',
+        type: slot.type || ''
+      }));
+    },
+
     prepareTrainingQueue(options) {
       const opts = options || {};
       const queue = UI.plannerTrainingQueue();
@@ -16000,22 +16479,23 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const oldQueue = UI.state.planner.trainingQueue || {};
       if (!opts.force && oldQueue.date === queue.date && Array.isArray(oldQueue.slots) && oldQueue.slots.length && !oldQueue.completedAt) {
         oldQueue.activeIndex = Utils.clamp(Utils.int(oldQueue.activeIndex, 0), 0, oldQueue.slots.length);
+        if (opts.lock && !oldQueue.lockedAt) {
+          oldQueue.slots = UI.positionSafeQueueOrder(UI.normaliseTrainingQueueSlots(queue.slots));
+          oldQueue.activeIndex = Utils.clamp(Utils.int(oldQueue.activeIndex, 0), 0, oldQueue.slots.length);
+          oldQueue.lockedAt = Utils.nowIso();
+        }
         UI.state.planner.trainingQueue = oldQueue;
         return oldQueue;
       }
       const sameDay = oldQueue.date === queue.date && Array.isArray(oldQueue.slots);
       const activeIndex = sameDay ? Utils.clamp(Utils.int(oldQueue.activeIndex, 0), 0, queue.slots.length) : 0;
+      const slots = UI.normaliseTrainingQueueSlots(queue.slots);
       UI.state.planner.trainingQueue = {
         date: queue.date,
         at: Utils.nowIso(),
         activeIndex,
-        slots: queue.slots.map((slot) => ({
-          identity: slot.identity || Company.resolveIdentity({ id: slot.playerId, name: slot.playerName }, UI.state),
-          playerId: slot.playerId || '',
-          playerName: slot.playerName || '',
-          role: slot.role || '',
-          type: slot.type || ''
-        }))
+        lockedAt: opts.lock ? Utils.nowIso() : '',
+        slots: opts.lock ? UI.positionSafeQueueOrder(slots) : slots
       };
       return UI.state.planner.trainingQueue;
     },
@@ -16137,6 +16617,12 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     },
 
     openTrainingQueuePage() {
+      const positionSession = UI.ledgerTrainingSession();
+      if (positionSession && positionSession.origin === 'planner' && positionSession.phase !== 'complete') {
+        UI.toast('The current queue is still on a position prompt. Resolve it before locking another queue.');
+        UI.navigateTornTraining(UI.trainingPageUrl());
+        return;
+      }
       const queue = UI.plannerTrainingQueue();
       if (!queue || !queue.slots.length) {
         UI.toast('Build a planner queue before starting training.');
@@ -16146,10 +16632,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         UI.toast('Return to the Torn company page before starting training.');
         return;
       }
-      const prepared = UI.prepareTrainingQueue();
+      const prepared = UI.prepareTrainingQueue({ lock: true });
       Store.updateSyncCache(UI.state, 'planner');
       Store.save(UI.state);
-      UI.toast(`Prepared ${prepared.slots.length} train${prepared.slots.length === 1 ? '' : 's'} for ${Utils.dateShort(prepared.date)}.`);
+      UI.toast(`Locked ${prepared.slots.length} train${prepared.slots.length === 1 ? '' : 's'} for ${Utils.dateShort(prepared.date)}. Use + to check the live position and train one at a time.`);
       UI.navigateTornTraining(UI.trainingPageUrl());
     },
 
@@ -16293,11 +16779,38 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         UI.saveRender(`${target.playerName || target.playerId} was removed from the active queue. ${eligibility.reason || 'The employee is not currently eligible for training.'}`);
         return;
       }
+      if (!prepared.lockedAt) {
+        UI.toast('Click » first to lock this queue and open Torn Employees before using +.');
+        return;
+      }
       prepared.slots[target.queueIndex] = Object.assign({}, prepared.slots[target.queueIndex], {
+        entryId: target.entryId || prepared.slots[target.queueIndex].entryId || '',
         playerId: target.playerId,
-        playerName: target.playerName || prepared.slots[target.queueIndex].playerName
+        playerName: target.playerName || prepared.slots[target.queueIndex].playerName,
+        requestedPosition: target.requestedPosition || prepared.slots[target.queueIndex].requestedPosition || ''
       });
       UI.state.planner.trainingQueue = prepared;
+      const activePositionSession = UI.ledgerTrainingSession();
+      if (activePositionSession && activePositionSession.origin === 'planner') {
+        if (UI.plannerPositionSessionMatches(activePositionSession, prepared, target)) {
+          if (activePositionSession.phase === 'ready') UI.ledgerTrainNext();
+          else UI.toast('This train is on position hold. Finish the safety panel before trying the Train action again.');
+          return;
+        }
+        if (activePositionSession.positionChanged && !activePositionSession.restored && activePositionSession.phase !== 'complete') {
+          UI.toast('Restore the employee from the active position session before continuing the planner queue.');
+          return;
+        }
+      }
+      const positionRequirement = UI.trainingPositionRequirement(target);
+      if (positionRequirement && positionRequirement.blocked) {
+        UI.saveRender(positionRequirement.reason);
+        return;
+      }
+      if (positionRequirement && !positionRequirement.matches) {
+        UI.startPlannerPositionTraining(prepared, target, positionRequirement);
+        return;
+      }
       Store.save(UI.state);
       const context = UI.trainingActionContext(target);
       if (!context || !context.link) {
@@ -16305,16 +16818,16 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         UI.saveRender(`Opened the Employees tab for ${target.playerName || target.playerId}. Press + again once Torn shows the train control.`);
         return;
       }
+      try { if (context.win && context.win.focus) context.win.focus(); } catch (error) {}
+      if (!UI.clickTornNode(context.win, context.link)) {
+        UI.saveRender(`Torn did not accept the Train action for ${target.playerName || target.playerId}. The locked queue was not advanced.`);
+        return;
+      }
       const queueComplete = UI.advanceTrainingQueue(prepared, target);
       Store.save(UI.state);
       const message = queueComplete
         ? `Clicked Torn Train for ${target.playerName || target.playerId}. Queue complete; local training log refreshed. Use Settings sync center for Business, Latest News, and Employees when ready.`
         : `Clicked Torn Train for ${target.playerName || target.playerId}.`;
-      const href = context.link.href || (context.row && context.row.querySelector('a.train-action[href*="trainemp2"]') ? context.row.querySelector('a.train-action[href*="trainemp2"]').href : '');
-      try { if (context.win && context.win.focus) context.win.focus(); } catch (error) {}
-      if (!UI.clickTornNode(context.win, context.link)) {
-        try { context.win.location.href = href; } catch (fallbackError) {}
-      }
       UI.saveRender(message);
     },
 
@@ -18372,6 +18885,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const previousKeyInfo = Object.assign({}, UI.state.settings.keyInfo || {});
       const previousQueuePolicy = Planner.queuePolicy(UI.state);
       const previousPaidFirst = Planner.paidFirstEnabled(UI.state);
+      const previousRiskMode = Planner.sponsoredRiskMode(UI.state);
       const previousPaidAllocation = Planner.paidAllocationMode(UI.state.settings);
       const settingsContext = UI.settingsFormContext(root);
       const rolesForm = root.querySelector('[data-roles-form]');
@@ -18407,6 +18921,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           const queuePolicy = String(data.get('plannerQueuePolicy') || '').trim();
           UI.state.settings.plannerPriority.queuePolicy = ['director', 'rotation', 'lowest_stats', 'role_closest', 'role_gap'].includes(queuePolicy) ? queuePolicy : DEFAULTS.settings.plannerPriority.queuePolicy;
         }
+        if (data.has('plannerRiskMode')) UI.state.settings.plannerPriority.riskMode = String(data.get('plannerRiskMode') || '').trim().toLowerCase() === 'balance' ? 'balance' : 'fixed';
         UI.state.settings.plannerPriority.paidFirst = settingsContext.checked('plannerPaidFirst', UI.state.settings.plannerPriority.paidFirst !== false);
         UI.state.settings.plannerPriority.addictionEnabled = settingsContext.checked('plannerAddictionEnabled', UI.state.settings.plannerPriority.addictionEnabled !== false);
         UI.state.settings.plannerPriority.inactivityEnabled = settingsContext.checked('plannerInactivityEnabled', UI.state.settings.plannerPriority.inactivityEnabled !== false);
@@ -18442,6 +18957,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       Planner.build(UI.state);
       if ((previousQueuePolicy !== Planner.queuePolicy(UI.state)
         || previousPaidFirst !== Planner.paidFirstEnabled(UI.state)
+        || previousRiskMode !== Planner.sponsoredRiskMode(UI.state)
         || previousPaidAllocation !== Planner.paidAllocationMode(UI.state.settings))
         && (UI.state.planner.days || []).length) {
         const prepared = UI.prepareTrainingQueue({ force: true });
