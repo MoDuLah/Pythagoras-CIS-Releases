@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.3.9
+// @version      3.4.0
 // @downloadURL  https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.user.js
 // @updateURL    https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.meta.js
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
@@ -55,7 +55,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.3.9',
+    version: '3.4.0',
     greasyForkScriptId: 580933,
     greasyForkApiUrl: 'https://api.greasyfork.org/en/scripts/580933.json',
     greasyForkPageUrl: 'https://greasyfork.org/en/scripts/580933-pythagoras-project-cis',
@@ -693,7 +693,48 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       setTimeout(() => URL.revokeObjectURL(url), 500);
     },
     sleep(ms) {
-      return new Promise((resolve) => setTimeout(resolve, Math.max(0, Utils.int(ms, 0))));
+      return new Promise((resolve) => {
+        const delay = Math.max(0, Utils.int(ms, 0));
+        // Dedicated-worker timers avoid the minute-long chained timer budget
+        // imposed on hidden pages. Fall back when a browser blocks blob workers.
+        if (!Utils.timerWorker && !Utils.timerWorkerUnavailable) {
+          try {
+            const url = URL.createObjectURL(new Blob(['onmessage = ({data}) => setTimeout(() => postMessage(data.id), data.delay);'], { type: 'text/javascript' }));
+            try { Utils.timerWorker = new Worker(url); } finally { URL.revokeObjectURL(url); }
+            Utils.timerPending = new Map();
+            Utils.timerSequence = 0;
+            Utils.timerWorker.onmessage = ({ data }) => {
+              const pending = Utils.timerPending.get(data);
+              if (pending) { Utils.timerPending.delete(data); pending.resolve(); }
+            };
+            Utils.timerWorker.onerror = () => {
+              Utils.timerWorkerUnavailable = true;
+              Utils.timerWorker.terminate();
+              Utils.timerWorker = null;
+              Utils.timerPending.forEach((pending) => setTimeout(pending.resolve, Math.max(0, pending.due - Date.now())));
+              Utils.timerPending.clear();
+            };
+          } catch (error) { Utils.timerWorkerUnavailable = true; }
+        }
+        if (!Utils.timerWorker) { setTimeout(resolve, delay); return; }
+        const id = ++Utils.timerSequence;
+        Utils.timerPending.set(id, { resolve, due: Date.now() + delay });
+        Utils.timerWorker.postMessage({ id, delay });
+      });
+    },
+    yieldTask() {
+      // Message tasks yield to input/network work without waiting for a visible
+      // animation frame or accumulating a hidden-page timer delay per batch.
+      if (typeof MessageChannel !== 'function') return Utils.sleep(0);
+      return new Promise((resolve) => {
+        const channel = new MessageChannel();
+        channel.port1.onmessage = () => {
+          channel.port1.close();
+          channel.port2.close();
+          resolve();
+        };
+        channel.port2.postMessage(null);
+      });
     }
   };
 
@@ -3389,6 +3430,23 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
   };
 
   const ApiClient = {
+    async fetchWithTimeout(url, options, timeout) {
+      const controller = new AbortController();
+      let settled = false;
+      const deadline = Utils.sleep(timeout || 20000).then(() => {
+        if (settled) return;
+        controller.abort();
+        throw new Error('Request timed out. Please retry the sync.');
+      });
+      try {
+        return await Promise.race([
+          fetch(url, Object.assign({}, options || {}, { signal: controller.signal })).then(async (response) => ({
+            status: response.status, ok: response.ok, text: await response.text()
+          })),
+          deadline
+        ]);
+      } finally { settled = true; }
+    },
     tornQueue: Promise.resolve(),
     tornMinIntervalMs: 2200,
     tornLastRequestKey: 'pp_cis_torn_api_last_request_at',
@@ -3428,7 +3486,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           })) {
           return;
         }
-        fetch(url.toString()).then((response) => response.text()).then((text) => ApiClient.parseResponse(text, resolve, reject)).catch(reject);
+        ApiClient.fetchWithTimeout(url.toString()).then((response) => ApiClient.parseResponse(response.text, resolve, reject)).catch(reject);
       }));
     },
     parseResponse(text, resolve, reject) {
@@ -3460,7 +3518,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           })) {
           return;
         }
-        fetch(url.toString()).then((response) => response.text()).then((text) => ApiClient.parseResponse(text, resolve, reject)).catch(reject);
+        ApiClient.fetchWithTimeout(url.toString()).then((response) => ApiClient.parseResponse(response.text, resolve, reject)).catch(reject);
       }));
     },
     requestV2Url(rawUrl, key) {
@@ -3486,7 +3544,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           })) {
           return;
         }
-        fetch(url.toString()).then((response) => response.text()).then((text) => ApiClient.parseResponse(text, resolve, reject)).catch(reject);
+        ApiClient.fetchWithTimeout(url.toString()).then((response) => ApiClient.parseResponse(response.text, resolve, reject)).catch(reject);
       }));
     },
     gmRequest(details) {
@@ -3624,11 +3682,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           })) {
           return;
         }
-        fetch(url.toString(), {
+        ApiClient.fetchWithTimeout(url.toString(), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
           body
-        }).then((response) => response.json()).then(resolve).catch(() => reject(new Error('Pythagoras API request failed.')));
+        }, timeout || 20000).then((response) => JSON.parse(response.text)).then(resolve, reject);
       });
     }
   };
@@ -6442,7 +6500,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     async reclassifyAsync(events) {
       const parsed = [];
       for (let offset = 0; offset < events.length; offset += 100) {
-        await new Promise((resolve) => setTimeout(resolve, 0));
+        await Utils.yieldTask();
         parsed.push(...events.slice(offset, offset + 100).map(Timeline.reclassifyEvent));
       }
       // Reconcile the complete set once, including duplicates across batch boundaries.
@@ -7461,11 +7519,13 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const installUrl = UpdateChecker.safeUrl(payload.code_url || payload.codeUrl, pageUrl);
       return { version, pageUrl, installUrl, updatedAt: String(payload.code_updated_at || payload.codeUpdatedAt || '') };
     },
-    requestLatest() {
+    requestLatest(force) {
       return new Promise((resolve, reject) => {
+        const url = new URL(APP.greasyForkApiUrl);
+        if (force) url.searchParams.set('_check', String(Date.now()));
         const details = {
           method: 'GET',
-          url: APP.greasyForkApiUrl,
+          url: url.toString(),
           timeout: 12000,
           headers: { Accept: 'application/json' },
           onload(response) {
@@ -7480,10 +7540,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           ontimeout() { reject(new Error('GreasyFork update check timed out.')); }
         };
         if (ApiClient.gmRequest(details)) return;
-        fetch(APP.greasyForkApiUrl, { headers: details.headers })
+        ApiClient.fetchWithTimeout(url.toString(), { headers: details.headers, cache: force ? 'no-store' : 'default' }, 12000)
           .then((response) => {
             if (!response.ok) throw new Error(`GreasyFork update check returned HTTP ${response.status}.`);
-            return response.json();
+            return JSON.parse(response.text);
           })
           .then(resolve, reject);
       });
@@ -7753,7 +7813,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       UI.root.innerHTML = '';
       document.body.appendChild(UI.root);
       UI.startStartupActivity();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await Utils.yieldTask();
       let cachedDashboardOpened = false;
       UI.state = await Store.loadAsync(
         (id, label, status, progress) => UI.startupStep(id, label, status, progress),
@@ -7772,10 +7832,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (UI.state.ui.timelineEnabled !== false && UI.state.staff.timeline.length) {
         UI.state.staff.timeline = await Timeline.reclassifyAsync(UI.state.staff.timeline);
         Timeline.rebuildPeople(UI.state);
-        await new Promise((resolve) => setTimeout(resolve, 0));
+        await Utils.yieldTask();
         UI.state.analytics.weeks = Timeline.analyticsFromEvents(UI.state.staff.timeline, UI.state);
         Ledger.syncTrainingLog(UI.state);
-        await new Promise((resolve) => setTimeout(resolve, 0));
+        await Utils.yieldTask();
       }
       UI.startupStep('history', 'Saved company history prepared', 'done', 92);
       const standalonePopup = UI.prepareStartupState(UI.state);
@@ -8549,8 +8609,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         return `<button class="pp-btn pp-update-status is-error" type="button" data-action="retry-update-check" title="${Utils.esc(title)}" aria-label="${Utils.esc(title)}"><i class="pp-update-dot" aria-hidden="true"></i>Check failed</button>`;
       }
       if (UI.updateCheckStatus === 'current') {
-        const title = `Pythagoras CIS ${APP.version} is the latest GreasyFork version.`;
-        return `<span class="pp-btn pp-update-status is-current" role="status" title="${Utils.esc(title)}"><i class="pp-update-dot" aria-hidden="true"></i>Up to date</span>`;
+        const title = `Pythagoras CIS ${APP.version}. Click to check GreasyFork again.`;
+        return `<button class="pp-btn pp-update-status is-current" type="button" data-action="retry-update-check" title="${Utils.esc(title)}"><i class="pp-update-dot" aria-hidden="true"></i>Up to date</button>`;
       }
       return '<span class="pp-btn pp-update-status is-checking" role="status" title="Checking GreasyFork for a newer Pythagoras CIS release"><i class="pp-update-dot" aria-hidden="true"></i>Checking...</span>';
     },
@@ -8575,7 +8635,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       UI.updateCheckStatus = 'checking';
       UI.syncUpdateButton();
       try {
-        UI.availableUpdate = UpdateChecker.candidate(await UpdateChecker.requestLatest(), APP.version);
+        UI.availableUpdate = UpdateChecker.candidate(await UpdateChecker.requestLatest(force), APP.version);
         UI.updateCheckStatus = UI.availableUpdate ? 'outdated' : 'current';
         UI.syncUpdateButton();
         return UI.availableUpdate;
@@ -13178,6 +13238,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       let workspaceError = '';
       if (UI.state.settings.companyId) {
         try {
+          if (opts.syncId) UI.syncStep(opts.syncId, 'Loading the verified company workspace from Pythagoras API.', 5);
           UI.state = await Store.loadCloudWorkspace(UI.state, { strict: true });
           await Store.saveVerifiedSessionIdentity(UI.state);
         } catch (error) {
@@ -13206,6 +13267,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const key = String(UI.state.settings.apiKey || '').trim();
         if (!key) return { ok: false, message: 'Add an API key first.' };
         try {
+          if (opts.syncId) UI.syncStep(opts.syncId, 'Verifying the current Torn account and company.', 3);
           const data = await ApiClient.keyInfo(key);
           const result = await UI.applyVerifiedWorkspaceIdentity(data, opts);
           return Object.assign({ message: result.workspaceError || '' }, result);
@@ -13259,10 +13321,16 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       }
       try {
         const needsCompanyWorkspace = !['sync-testimonials', 'sync-testimonials-older'].includes(action);
+        const preflightId = 'verify-workspace';
+        if (needsCompanyWorkspace) UI.beginSync(preflightId, action === 'smart-sync' ? 'Daily sync' : action === 'sync-all' ? 'Sync all' : 'Company sync');
         const result = (async () => {
           if (needsCompanyWorkspace) {
-            const identity = await UI.ensureCurrentWorkspace({ notify: true });
-            if (!identity || !identity.ok) return identity;
+            const identity = await UI.ensureCurrentWorkspace({ notify: false, syncId: preflightId });
+            if (!identity || !identity.ok) {
+              UI.failSync(preflightId, new Error(identity && (identity.message || identity.workspaceError) || 'Company verification failed.'));
+              return identity;
+            }
+            UI.finishSync(preflightId, 'Current company verified. Starting the requested sync.');
           }
           if (UI.isSyncBusy()) {
             UI.toast(`${UI.activeSyncLabel()} is already running. Wait for it to finish before starting another sync.`);
@@ -14406,6 +14474,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.4.0 - Background sync and visible verification</summary>
+              <ul><li>Startup history processing and sync request pacing continue in background tabs without chained page-timer delays.</li><li>Sync progress appears immediately and includes Torn identity verification and workspace loading.</li><li>Up to date is clickable and requests a fresh GreasyFork check. Browser-fetch requests have a bounded timeout.</li></ul>
+            </details>
+            <details>
               <summary>v3.3.9 - Accurate daily train availability</summary>
               <ul><li>Daily sync now refreshes the live company profile, employees, and stock every time instead of trusting a 24-hour freshness flag for values that reset each company day.</li><li>The refreshed Torn train count rebuilds today&apos;s planner and active training queue in the same sync, so a cached zero cannot leave the current day blank after 18:10 TCT.</li><li>Business Profile and Available train slots now publish the same current train availability in the consolidated Pythagoras API snapshot.</li></ul>
             </details>
