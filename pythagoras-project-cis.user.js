@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.3.7
+// @version      3.3.8
 // @downloadURL  https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.user.js
 // @updateURL    https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.meta.js
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
@@ -55,7 +55,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.3.7',
+    version: '3.3.8',
     greasyForkScriptId: 580933,
     greasyForkApiUrl: 'https://api.greasyfork.org/en/scripts/580933.json',
     greasyForkPageUrl: 'https://greasyfork.org/en/scripts/580933-pythagoras-project-cis',
@@ -317,7 +317,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       },
       wageRoleRequirements: {}
     },
-    ui: { tab: 'timeline', staffTab: 'current', directorTab: 'current', ledgerTab: 'orders', ledgerTrainingSession: null, editLedgerId: '', settingsSection: 'core', timelineFilter: 'all', timelineGrouped: true, timelineEnabled: true, analyticsYear: 'all', analyticsExpanded: {}, dailyBalanceMode: 'week', dailyBalanceStart: '', dailyBalanceIncludeWages: true, graphIndex: 0, graphScale: 'daily', graphSeries: { income: true, customers: true, wages: true, adBudget: true, profit: true }, staffEeMode: 'total', staffEeMetric: 'workingStats', staffEeRange: '30', staffEeEmployee: 'all', staffEeSeries: { workingStats: true, settledIn: true, book: true, merits: true, directorEducation: true, management: true, wrongGender: true, addiction: true, inactivity: true }, trainingLogStart: '', trainingLogYear: 'all', profileSort: 'name', profileSortDir: 'asc', tableSorts: {}, showApiKey: false, privacyMode: false, tourActive: false, tourStep: 0, startMinimized: false, minimized: false, mode: 'embedded', editPersonKey: '', editDirectorKey: '', personSaveExit: false, plannerQueueHidden: false, collapsedPanels: {}, detailOpenState: {}, reportSections: { summary: true, ledger: true, trainingLog: true, planner: true, analytics: true, balance: true, stock: true, staff: true, pastStaff: false, directors: false, timeline: true, profile: true, details: true, settings: true }, left: '', top: '', restoreWidth: '', restoreHeight: '' }
+    ui: { tab: 'timeline', staffTab: 'current', directorTab: 'current', ledgerTab: 'orders', ledgerTrainingSession: null, plannerPositionRestores: [], editLedgerId: '', settingsSection: 'core', timelineFilter: 'all', timelineGrouped: true, timelineEnabled: true, analyticsYear: 'all', analyticsExpanded: {}, dailyBalanceMode: 'week', dailyBalanceStart: '', dailyBalanceIncludeWages: true, graphIndex: 0, graphScale: 'daily', graphSeries: { income: true, customers: true, wages: true, adBudget: true, profit: true }, staffEeMode: 'total', staffEeMetric: 'workingStats', staffEeRange: '30', staffEeEmployee: 'all', staffEeSeries: { workingStats: true, settledIn: true, book: true, merits: true, directorEducation: true, management: true, wrongGender: true, addiction: true, inactivity: true }, trainingLogStart: '', trainingLogYear: 'all', profileSort: 'name', profileSortDir: 'asc', tableSorts: {}, showApiKey: false, privacyMode: false, tourActive: false, tourStep: 0, startMinimized: false, minimized: false, mode: 'embedded', editPersonKey: '', editDirectorKey: '', personSaveExit: false, plannerQueueHidden: false, collapsedPanels: {}, detailOpenState: {}, reportSections: { summary: true, ledger: true, trainingLog: true, planner: true, analytics: true, balance: true, stock: true, staff: true, pastStaff: false, directors: false, timeline: true, profile: true, details: true, settings: true }, left: '', top: '', restoreWidth: '', restoreHeight: '' }
   };
 
   /* CIS styles are loaded from the versioned GitHub Pages resource. */
@@ -973,7 +973,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             return next;
           }, {}),
           startMinimized: source.startMinimized === true,
-          timelineEnabled: source.timelineEnabled !== false
+          timelineEnabled: source.timelineEnabled !== false,
+          plannerPositionRestores: Array.isArray(source.plannerPositionRestores)
+            ? source.plannerPositionRestores.filter((row) => row && typeof row === 'object' && !Array.isArray(row)).map((row) => Utils.clone(row))
+            : []
         };
         if (source.reportSections && typeof source.reportSections === 'object' && !Array.isArray(source.reportSections)) {
           preferences.reportSections = Object.keys(DEFAULTS.ui.reportSections).reduce((next, key) => {
@@ -1006,6 +1009,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (source.staffEeSeries) state.ui.staffEeSeries = Object.assign({}, DEFAULTS.ui.staffEeSeries, source.staffEeSeries);
       if (Object.prototype.hasOwnProperty.call(source, 'startMinimized')) state.ui.startMinimized = source.startMinimized === true;
       if (Object.prototype.hasOwnProperty.call(source, 'timelineEnabled')) state.ui.timelineEnabled = source.timelineEnabled !== false;
+      if (Array.isArray(source.plannerPositionRestores)) state.ui.plannerPositionRestores = source.plannerPositionRestores.map((row) => Utils.clone(row));
       if (source.reportSections) state.ui.reportSections = Object.assign({}, DEFAULTS.ui.reportSections, source.reportSections);
       return state;
     },
@@ -1025,6 +1029,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           }, {}),
           startMinimized: ui.startMinimized === true,
           timelineEnabled: ui.timelineEnabled !== false,
+          plannerPositionRestores: Array.isArray(ui.plannerPositionRestores) ? ui.plannerPositionRestores.map((row) => Utils.clone(row)) : [],
           reportSections: Object.keys(DEFAULTS.ui.reportSections).reduce((next, key) => {
             next[key] = ui.reportSections && Object.prototype.hasOwnProperty.call(ui.reportSections, key) ? ui.reportSections[key] !== false : DEFAULTS.ui.reportSections[key];
             return next;
@@ -2089,6 +2094,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       copy.settings.apiKey = '';
       if (copy.ui) {
         delete copy.ui.ledgerTrainingSession;
+        delete copy.ui.plannerPositionRestores;
         delete copy.ui.editLedgerId;
       }
       // Key verification belongs to this browser session. Never let an older
@@ -3084,6 +3090,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       delete state.ui.panelSizes;
       state.ui.tableSorts = state.ui.tableSorts || {};
       state.ui.analyticsExpanded = state.ui.analyticsExpanded || {};
+      state.ui.plannerPositionRestores = Array.isArray(state.ui.plannerPositionRestores) ? state.ui.plannerPositionRestores : [];
       state.ui.reportSections = Object.assign({}, DEFAULTS.ui.reportSections, state.ui.reportSections || {});
       state.ui.graphSeries = Object.assign({}, DEFAULTS.ui.graphSeries, state.ui.graphSeries || {});
       state.ui.staffEeSeries = Object.assign({}, DEFAULTS.ui.staffEeSeries, state.ui.staffEeSeries || {});
@@ -10784,7 +10791,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
               </div>
               ${ledgerTab === 'add' ? addOrderForm : `
                 <div class="pp-table-title"><span>${ledgerTab === 'done' ? 'Done orders' : 'Running orders'}</span><span class="pp-note">${ledgerTab === 'done' ? 'Completed orders stay available as a paged history.' : 'Paid and unpaid orders remain here until completed.'}</span></div>
-                ${ledgerTab === 'orders' ? UI.ledgerTrainingPanel() : ''}
+                ${ledgerTab === 'orders' ? `<div data-ledger-training-host>${UI.ledgerTrainingPanel()}</div>` : ''}
                 ${UI.weeklyLimitNotice(state.ledger.length, visibleLedger.length, 'Training orders')}
                 <div data-ledger-table-container="${ledgerTab}">${UI.ledgerTable(ledgerTab)}</div>`}
             </div>
@@ -10804,7 +10811,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
                 <h3>Train Schedule</h3>
                 <p>Bought trains follow each ledger order and its requested position. Auto mode uses the selected rule only to decide sponsored/free eligibility.</p>
               </div>
+              <div class="pp-row-actions">
+                <button class="pp-btn" type="button" data-action="build-today-planner">Build from today</button>
                 <button class="pp-btn is-primary" type="button" data-action="build-planner">Build calendar</button>
+              </div>
             </div>
             <div class="pp-content">
               ${UI.operationalContext()}
@@ -10991,7 +11001,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const timing = day.supplyStatus === 'upcoming-reset' ? ' · after 18:10 TCT' : (day.supplyStatus === 'awaiting-sync' ? ' · expected' : '');
         const title = `${day.date} ${Utils.weekdayShort(day.date)} (${dayQueue.length}/${day.supply}${timing})`;
         return `
-        <div class="pp-day">
+        <div class="pp-day" data-planner-day="${Utils.esc(day.date)}">
           <div class="pp-day-head">
             <h4>${Utils.esc(title)}</h4>
             <button class="pp-btn pp-day-reset" type="button" data-action="reset-planner-day" data-day="${Utils.esc(day.date)}" title="Reset this day's queue">&#8634;</button>
@@ -11000,7 +11010,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             ${UI.plannerFixedSlotRows(displayDay, activeIndex)}
             ${locked ? '' : UI.manualPlannerSlots(day, picked, activeIndex)}
           </tbody></table>
-          ${UI.plannerDayTrainControls(day, queueView)}
+          <div data-planner-training-controls="${Utils.esc(day.date)}">${UI.plannerDayTrainControls(day, queueView)}</div>
         </div>`;
       }).join('')}</div>`;
     },
@@ -11047,7 +11057,12 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
 
     plannerQueueView() {
       const active = UI.state.planner.trainingQueue;
-      const positionSession = UI.ledgerTrainingSession();
+      let positionSession = UI.ledgerTrainingSession();
+      if (active && active.completedAt && UI.pendingPlannerPositionRestores(active.date).length
+        && (!positionSession || positionSession.phase === 'complete')) {
+        UI.promptPlannerPositionRestores(active.date);
+        positionSession = UI.ledgerTrainingSession();
+      }
       if (active && active.lockedAt && Array.isArray(active.slots) && active.slots.length
         && positionSession && positionSession.origin === 'planner'
         && String(positionSession.plannerDate || '') === String(active.date || '')
@@ -11101,6 +11116,15 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const requested = Utils.esc(session.requestedPosition || 'the requested position');
       const original = Utils.esc(session.originalPosition || session.currentPosition || 'the previous position');
       const phase = String(session.phase || '');
+      const restoreRows = UI.pendingPlannerPositionRestores(session.plannerDate);
+      const restoreNames = restoreRows.map((row) => row.playerName || row.playerId).filter(Boolean).join(', ');
+      if (phase === 'queue-restore-prompt') {
+        return `<div class="pp-position-popover"><strong>Queue complete — restore ${restoreRows.length} changed position${restoreRows.length === 1 ? '' : 's'}?</strong><span>${Utils.esc(restoreNames || 'Changed employees')} will return to ${restoreRows.length === 1 ? 'the original position' : 'their original positions'} in one submitted update.</span><span class="pp-toast-actions"><button class="pp-btn is-primary" type="button" data-action="restore-planner-positions">Restore all</button><button class="pp-btn" type="button" data-action="keep-planner-positions">Keep current positions</button></span></div>`;
+      }
+      if (phase === 'queue-restore-verifying') return `<div class="pp-position-popover"><strong>Restoring changed positions…</strong><span>Waiting for Torn to confirm every employee.</span></div>`;
+      if (phase === 'queue-restore-error') {
+        return `<div class="pp-position-popover is-bad"><strong>Not every original position was confirmed.</strong><span>${Utils.esc(session.error || 'Open Torn Employees and retry the restore.')}</span><span class="pp-toast-actions"><button class="pp-btn is-primary" type="button" data-action="restore-planner-positions">Try restore all again</button><button class="pp-btn" type="button" data-action="keep-planner-positions">Keep remaining positions</button></span></div>`;
+      }
       if (phase === 'position-confirm') {
         return `<div class="pp-position-popover"><strong>${name} is in the incorrect position.</strong><span>Current: ${current}<br>Order requires: ${requested}<br>Change the dropdown to ${requested}?</span><span class="pp-toast-actions"><button class="pp-btn is-primary" type="button" data-action="confirm-planner-position-change">OK</button><button class="pp-btn" type="button" data-action="cancel-planner-position-change">Cancel</button></span></div>`;
       }
@@ -14382,6 +14406,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.3.8 - Reliable training queues</summary>
+              <ul><li>Paid multi-train blocks reopen the requested-position prompt if Torn returns an employee to the original position between trains.</li><li>Temporary position changes are collected locally and restored together only after the full queue finishes.</li><li>Training progress refreshes only its own controls, and Build from today recovers a calendar whose saved start date is stale.</li></ul>
+            </details>
+            <details>
               <summary>v3.3.7 - Merit-aware sponsored training</summary>
               <ul><li>Sponsored and free trains can reuse the enabled notification thresholds or evaluate each employee dynamically using Merits + Addiction + Inactivity.</li><li>The planner explains eligible, blocked, and three-day-held candidates and keeps the ninth sponsored slot after eight paid trains when somebody qualifies.</li><li>Paid ledger slots keep each order&apos;s requested position and remain independent from sponsored-risk filtering without bypassing the new-hire hold.</li></ul>
             </details>
@@ -15052,6 +15080,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (action === 'ledger-train-next') UI.ledgerTrainNext();
       if (action === 'restore-ledger-training-position') UI.restoreLedgerTrainingPosition();
       if (action === 'keep-ledger-training-position') UI.keepLedgerTrainingPosition();
+      if (action === 'restore-planner-positions') UI.restorePlannerPositions();
+      if (action === 'keep-planner-positions') UI.keepPlannerPositions();
       if (action === 'dismiss-ledger-training') UI.dismissLedgerTraining();
       if (action === 'edit-person') {
         UI.state.ui.editPersonKey = button.dataset.personKey || '';
@@ -15068,6 +15098,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (action === 'fetch-person-racing-skill') UI.fetchPersonRacingSkill(button.dataset.personKey || '');
       if (action === 'use-train') UI.useTrain(id);
       if (action === 'build-planner') UI.buildPlanner();
+      if (action === 'build-today-planner') UI.buildTodayPlanner();
       if (action === 'reset-planner-day') UI.resetPlannerDay(button.dataset.day || '');
       if (action === 'start-training-queue') UI.startTrainingQueue();
       if (action === 'open-training-queue-page') UI.openTrainingQueuePage();
@@ -15733,6 +15764,77 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       return session && typeof session === 'object' && !Array.isArray(session) ? session : null;
     },
 
+    plannerPositionRestores(date) {
+      const rows = UI.state && UI.state.ui && Array.isArray(UI.state.ui.plannerPositionRestores)
+        ? UI.state.ui.plannerPositionRestores
+        : [];
+      const day = String(date || '');
+      const userId = String(UI.state && UI.state.settings && UI.state.settings.userId || '');
+      const companyId = String(UI.state && UI.state.settings && UI.state.settings.companyId || UI.state && UI.state.company && UI.state.company.profile && UI.state.company.profile.id || '');
+      return rows.filter((row) => row
+        && (!row.userId || String(row.userId) === userId)
+        && (!row.companyId || String(row.companyId) === companyId)
+        && (!day || String(row.plannerDate || '') === day));
+    },
+
+    pendingPlannerPositionRestores(date) {
+      return UI.plannerPositionRestores(date).filter((row) => row && !row.restored && !row.restoreDeclined);
+    },
+
+    rememberPlannerPositionRestore(session) {
+      const active = session || UI.ledgerTrainingSession();
+      if (!active || active.origin !== 'planner' || !active.positionChanged || !active.originalRank
+        || String(active.originalRank) === String(active.targetRank || '')) return null;
+      UI.state.ui.plannerPositionRestores = Array.isArray(UI.state.ui.plannerPositionRestores)
+        ? UI.state.ui.plannerPositionRestores
+        : [];
+      const date = String(active.plannerDate || '');
+      const playerId = String(active.playerId || '');
+      let row = UI.state.ui.plannerPositionRestores.find((item) => String(item && item.plannerDate || '') === date
+        && String(item && item.playerId || '') === playerId);
+      if (!row) {
+        row = {
+          plannerDate: date,
+          userId: String(UI.state.settings.userId || ''),
+          companyId: String(UI.state.settings.companyId || UI.state.company.profile.id || ''),
+          playerId,
+          playerName: String(active.playerName || ''),
+          originalRank: String(active.originalRank || ''),
+          originalPosition: String(active.originalPosition || active.currentPosition || ''),
+          targetRank: String(active.targetRank || ''),
+          requestedPosition: String(active.requestedPosition || ''),
+          restored: false,
+          restoreDeclined: false
+        };
+        UI.state.ui.plannerPositionRestores.push(row);
+      } else {
+        row.playerName = String(active.playerName || row.playerName || '');
+        row.targetRank = String(active.targetRank || row.targetRank || '');
+        row.requestedPosition = String(active.requestedPosition || row.requestedPosition || '');
+        row.restored = false;
+        row.restoreDeclined = false;
+      }
+      return row;
+    },
+
+    promptPlannerPositionRestores(date) {
+      const pending = UI.pendingPlannerPositionRestores(date);
+      if (!pending.length) return false;
+      let session = UI.ledgerTrainingSession();
+      if (!session || session.origin !== 'planner' || String(session.plannerDate || '') !== String(date || '')) {
+        session = {
+          entryId: '', orderId: 'Planner queue', playerId: '', playerName: '', requestedPosition: '',
+          total: 0, dispatched: 0, origin: 'planner', plannerDate: String(date || ''),
+          positionChanged: true, restored: false, queueRestoreOnly: true, error: ''
+        };
+        UI.state.ui.ledgerTrainingSession = session;
+      }
+      session.phase = 'queue-restore-prompt';
+      session.queueRestoreOnly = true;
+      session.error = '';
+      return true;
+    },
+
     ledgerTrainingEntry(session) {
       const active = session || UI.ledgerTrainingSession();
       if (!active) return null;
@@ -15846,8 +15948,12 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const remaining = Math.max(0, total - dispatched);
       const position = session.requestedPosition || 'the current position';
       const plannerSession = session.origin === 'planner';
+      const queueRestore = phase.startsWith('queue-restore');
+      const restoreRows = queueRestore ? UI.pendingPlannerPositionRestores(session.plannerDate) : [];
       let primary = '';
-      if (plannerSession && phase === 'position-confirm') {
+      if (phase === 'queue-restore-prompt' || phase === 'queue-restore-error') {
+        primary = '<button class="pp-btn is-primary" type="button" data-action="restore-planner-positions">Restore all original positions</button>';
+      } else if (plannerSession && phase === 'position-confirm') {
         primary = '<button class="pp-btn is-primary" type="button" data-action="confirm-planner-position-change">OK — select position</button>';
       } else if (plannerSession && phase === 'position-staged') {
         primary = '<button class="pp-btn is-primary" type="button" data-action="apply-planner-position-change">Update position</button>';
@@ -15864,15 +15970,19 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       } else if (phase === 'complete') {
         primary = '<button class="pp-btn is-primary" type="button" data-action="import-training-orders-log" data-sync-action="training-log">Sync order history</button>';
       } else {
-        const waiting = phase === 'cooldown' ? 'Waiting for Torn…' : phase.startsWith('restore') ? 'Restoring position…' : 'Checking position…';
+        const waiting = phase === 'cooldown' ? 'Waiting for Torn…' : (phase.startsWith('restore') || phase.startsWith('queue-restore')) ? 'Restoring position…' : 'Checking position…';
         primary = `<button class="pp-btn" type="button" disabled>${waiting}</button>`;
       }
       const needsRestore = !!session.positionChanged && !session.restored && phase !== 'complete' && phase !== 'restore-prompt' && phase !== 'restore-error' && !phase.startsWith('restore');
       const plannerHold = session.origin === 'planner' && !dispatched
         ? `Planner paused before this train. Current position: ${session.currentPosition || 'unknown'} · Requested position: ${position}. No Torn Train action runs until the requested position is verified.`
         : '';
-      const message = phase === 'complete'
-        ? `${dispatched} train action${dispatched === 1 ? '' : 's'} dispatched${session.restoreDeclined ? `; ${position} was kept` : (session.positionChanged ? ' and the original position restored' : '')}. Sync order history to confirm them in the ledger.`
+      const message = queueRestore
+        ? `Queue complete · ${restoreRows.length} changed employee position${restoreRows.length === 1 ? '' : 's'} still ${restoreRows.length === 1 ? 'needs' : 'need'} restoring.`
+        : phase === 'complete' && session.queueRestoreOnly
+        ? `Queue complete; ${session.restoreDeclined ? 'the remaining employee positions were kept by choice' : 'all changed employees were restored to their original positions'}. Sync order history to confirm the dispatched trains.`
+        : phase === 'complete'
+        ? `${dispatched} train action${dispatched === 1 ? '' : 's'} dispatched${session.restoreDeclined ? `; ${position} was kept` : (session.restorationDeferred ? '; the original position is queued for restoration after the full queue' : (session.positionChanged ? ' and the original position restored' : ''))}. Sync order history to confirm them in the ledger.`
         : (plannerHold || `${dispatched}/${total} dispatched · ${remaining} remaining · Requested position: ${position}. Each Train next press performs exactly one Torn action.`);
       return `<div class="pp-empty" data-ledger-training-session>
         <strong>Training ${Utils.esc(session.orderId || 'order')} · ${Utils.esc(session.playerName || session.playerId || 'staff')}</strong><br>
@@ -15881,8 +15991,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-row-actions" style="margin-top:8px">
           ${primary}
           ${phase === 'restore-prompt' || phase === 'restore-error' ? `<button class="pp-btn" type="button" data-action="keep-ledger-training-position">Keep ${Utils.esc(position)}</button>` : ''}
-          ${needsRestore ? '<button class="pp-btn is-danger" type="button" data-action="restore-ledger-training-position">Restore original position</button>' : ''}
-          <button class="pp-btn" type="button" data-action="dismiss-ledger-training">${phase === 'complete' ? 'Close' : 'Cancel'}</button>
+          ${phase === 'queue-restore-prompt' || phase === 'queue-restore-error' ? '<button class="pp-btn" type="button" data-action="keep-planner-positions">Keep current positions</button>' : ''}
+          ${needsRestore && !queueRestore ? '<button class="pp-btn is-danger" type="button" data-action="restore-ledger-training-position">Restore original position</button>' : ''}
+          ${queueRestore ? '' : `<button class="pp-btn" type="button" data-action="dismiss-ledger-training">${phase === 'complete' ? 'Close' : 'Cancel'}</button>`}
         </div>
       </div>`;
     },
@@ -15890,10 +16001,25 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     renderLedgerTraining(message) {
       Store.save(UI.state);
       const root = UI.currentRoot();
-      if (root && root.ownerDocument) {
-        const scroll = UI.scrollSnapshot(root).filter((item) => item.selector !== '.pp-timeline');
-        UI.render(root, root.ownerDocument);
-        UI.restoreScroll(root, scroll);
+      if (root && root.querySelectorAll) {
+        root.querySelectorAll('[data-ledger-training-host]').forEach((host) => {
+          host.innerHTML = UI.ledgerTrainingPanel();
+        });
+        const session = UI.ledgerTrainingSession();
+        const active = UI.state.planner && UI.state.planner.trainingQueue;
+        const date = String((session && session.plannerDate) || (active && active.date) || '');
+        const day = (UI.state.planner.days || []).find((item) => String(item && item.date || '') === date);
+        const queueView = UI.plannerQueueView();
+        if (day) {
+          root.querySelectorAll('[data-planner-training-controls]').forEach((host) => {
+            if (String(host.dataset.plannerTrainingControls || '') === date) host.innerHTML = UI.plannerDayTrainControls(day, queueView);
+          });
+          root.querySelectorAll('[data-planner-day]').forEach((container) => {
+            if (String(container.dataset.plannerDay || '') !== date) return;
+            const activeIndex = queueView && queueView.date === date ? queueView.activeIndex : -1;
+            container.querySelectorAll('.pp-day-row').forEach((row, index) => row.classList.toggle('is-active', index === activeIndex));
+          });
+        }
       }
       if (message) UI.toast(message);
     },
@@ -16154,8 +16280,12 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (session.requestedPosition) {
         const position = UI.ledgerTrainingPositionContext(session);
         if (!position || !session.targetRank || String(position.select.value || '') !== String(session.targetRank || '')) {
-          session.phase = 'error';
-          session.error = `Training remains on hold because Torn no longer shows ${session.requestedPosition} as the employee's current position. Prepare and verify the position again.`;
+          const selected = position && position.options.find((option) => String(option.value) === String(position.select.value));
+          session.currentPosition = String(selected && (selected.textContent || selected.label) || session.currentPosition || '').trim();
+          session.phase = session.origin === 'planner' ? 'position-confirm' : 'error';
+          session.error = session.origin === 'planner'
+            ? `Torn changed ${session.playerName || session.playerId} back after ${Utils.int(session.dispatched, 0)} of ${Utils.int(session.total, 0)} queued trains. Select ${session.requestedPosition} again to continue; no train was sent.`
+            : `Training remains on hold because Torn no longer shows ${session.requestedPosition} as the employee's current position. Prepare and verify the position again.`;
           UI.renderLedgerTraining(session.error);
           return;
         }
@@ -16194,7 +16324,19 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const current = UI.ledgerTrainingSession();
         if (!current || current.entryId !== session.entryId || current.phase !== 'cooldown') return;
         if (Utils.int(current.dispatched, 0) >= Utils.int(current.total, 0)) {
-          if (current.positionChanged && !current.restored) {
+          if (current.origin === 'planner' && current.positionChanged && !current.restored) {
+            UI.rememberPlannerPositionRestore(current);
+            current.restorationDeferred = true;
+            const queue = UI.state.planner.trainingQueue;
+            if (queue && Utils.int(queue.activeIndex, 0) >= (queue.slots || []).length
+              && UI.promptPlannerPositionRestores(current.plannerDate)) {
+              UI.renderLedgerTraining();
+            } else {
+              current.phase = 'complete';
+              current.completedAt = Utils.nowIso();
+              UI.renderLedgerTraining('Queued the original position for restoration after the full training queue.');
+            }
+          } else if (current.positionChanged && !current.restored) {
             current.phase = 'restore-prompt';
             UI.renderLedgerTraining();
           } else {
@@ -16208,6 +16350,95 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           UI.renderLedgerTraining();
         }
       }, 1400);
+    },
+
+    restorePlannerPositions() {
+      const session = UI.ledgerTrainingSession();
+      if (!session || session.origin !== 'planner' || !String(session.phase || '').startsWith('queue-restore')) return;
+      const pending = UI.pendingPlannerPositionRestores(session.plannerDate);
+      if (!pending.length) {
+        session.restored = true;
+        session.restorationDeferred = false;
+        session.phase = 'complete';
+        session.completedAt = Utils.nowIso();
+        UI.renderLedgerTraining('All changed employee positions are already back at their originals.');
+        return;
+      }
+      const submits = new Map();
+      const failures = [];
+      pending.forEach((row) => {
+        const context = UI.ledgerTrainingPositionContext({ playerId: row.playerId, requestedPosition: '' });
+        const original = context && context.options.find((option) => String(option.value) === String(row.originalRank || ''));
+        if (!context || !original) {
+          failures.push(row.playerName || row.playerId || 'Unknown employee');
+          return;
+        }
+        if (String(context.select.value || '') === String(row.originalRank || '')) {
+          row.restored = true;
+          return;
+        }
+        if (!context.submit || !UI.setTornPositionValue(context, row.originalRank)) {
+          failures.push(row.playerName || row.playerId || 'Unknown employee');
+          return;
+        }
+        submits.set(context.submit, context.win);
+      });
+      if (!submits.size) {
+        if (!failures.length) {
+          session.restored = true;
+          session.restorationDeferred = false;
+          session.phase = 'complete';
+          session.completedAt = Utils.nowIso();
+          session.error = '';
+          UI.renderLedgerTraining('All original employee positions are confirmed.');
+          return;
+        }
+        session.phase = 'queue-restore-error';
+        session.error = `Could not find the original Torn position controls for: ${failures.join(', ')}.`;
+        UI.renderLedgerTraining(session.error);
+        return;
+      }
+      session.phase = 'queue-restore-verifying';
+      session.error = failures.length ? `Still waiting for: ${failures.join(', ')}.` : '';
+      Store.save(UI.state);
+      submits.forEach((win, submit) => UI.clickTornNode(win, submit));
+      UI.renderLedgerTraining('Submitted all available original employee positions to Torn; verifying the queue restore.');
+      setTimeout(() => UI.verifyPlannerPositionRestores(), 1400);
+    },
+
+    verifyPlannerPositionRestores() {
+      const session = UI.ledgerTrainingSession();
+      if (!session || session.phase !== 'queue-restore-verifying') return;
+      const unresolved = [];
+      UI.pendingPlannerPositionRestores(session.plannerDate).forEach((row) => {
+        const context = UI.ledgerTrainingPositionContext({ playerId: row.playerId, requestedPosition: '' });
+        if (context && String(context.select.value || '') === String(row.originalRank || '')) row.restored = true;
+        else unresolved.push(row.playerName || row.playerId || 'Unknown employee');
+      });
+      if (!unresolved.length) {
+        session.restored = true;
+        session.restorationDeferred = false;
+        session.phase = 'complete';
+        session.completedAt = Utils.nowIso();
+        session.error = '';
+        UI.renderLedgerTraining('All changed employees were restored to their original positions.');
+        return;
+      }
+      session.phase = 'queue-restore-error';
+      session.error = `Torn did not confirm the original position for: ${unresolved.join(', ')}.`;
+      UI.renderLedgerTraining(session.error);
+    },
+
+    keepPlannerPositions() {
+      const session = UI.ledgerTrainingSession();
+      if (!session || session.origin !== 'planner' || !String(session.phase || '').startsWith('queue-restore')) return;
+      UI.pendingPlannerPositionRestores(session.plannerDate).forEach((row) => { row.restoreDeclined = true; });
+      session.restoreDeclined = true;
+      session.restorationDeferred = false;
+      session.phase = 'complete';
+      session.completedAt = Utils.nowIso();
+      session.error = '';
+      UI.renderLedgerTraining('Current employee positions kept by choice.');
     },
 
     keepLedgerTrainingPosition() {
@@ -16266,6 +16497,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     dismissLedgerTraining() {
       const session = UI.ledgerTrainingSession();
       if (!session) return;
+      if (String(session.phase || '').startsWith('queue-restore')) {
+        UI.toast('Restore all original positions, or explicitly keep the current positions, before closing this queue.');
+        return;
+      }
       if (session.origin === 'planner' && session.phase !== 'complete') {
         UI.cancelPlannerPositionChange();
         return;
@@ -16402,6 +16637,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         UI.toast('Finish or cancel the active position prompt before rebuilding the planner queue.');
         return;
       }
+      if (UI.pendingPlannerPositionRestores().length) {
+        UI.toast('Finish the locked training queue and restore its changed employee positions before rebuilding the calendar.');
+        return;
+      }
       const requested = UI.state.planner.mode;
       Planner.build(UI.state);
       const prepared = UI.prepareTrainingQueue({ force: true });
@@ -16413,6 +16652,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         : queuedMessage);
     },
 
+    buildTodayPlanner() {
+      UI.state.planner.startDate = Utils.todayInput();
+      UI.buildPlanner();
+    },
+
     resetPlannerDay(day) {
       const date = Utils.dateInput(day);
       if (!date) return;
@@ -16420,6 +16664,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (positionSession && positionSession.origin === 'planner' && positionSession.phase !== 'complete'
         && String(positionSession.plannerDate || '') === date) {
         UI.toast('Finish or cancel the active position prompt before resetting this queue.');
+        return;
+      }
+      if (UI.pendingPlannerPositionRestores(date).length) {
+        UI.toast('Restore the changed employee positions before resetting this queue.');
         return;
       }
       UI.state.planner.manualSlots = UI.state.planner.manualSlots || {};
@@ -16824,9 +17072,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         return;
       }
       const queueComplete = UI.advanceTrainingQueue(prepared, target);
+      const restorePrompt = queueComplete && UI.promptPlannerPositionRestores(prepared.date);
       Store.save(UI.state);
       const message = queueComplete
-        ? `Clicked Torn Train for ${target.playerName || target.playerId}. Queue complete; local training log refreshed. Use Settings sync center for Business, Latest News, and Employees when ready.`
+        ? `Clicked Torn Train for ${target.playerName || target.playerId}. Queue complete; local training log refreshed.${restorePrompt ? ' Restore the changed employee positions before starting another queue.' : ' Use Settings sync center for Business, Latest News, and Employees when ready.'}`
         : `Clicked Torn Train for ${target.playerName || target.playerId}.`;
       UI.saveRender(message);
     },
