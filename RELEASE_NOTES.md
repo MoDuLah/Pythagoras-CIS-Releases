@@ -1,6 +1,5 @@
-## v3.3.8 - Reliable training queues
+## v3.3.9 - Accurate daily train availability
 
-- Reopens the requested-position prompt when Torn returns an employee to the original role between paid trains, without sending the blocked train.
-- Defers every temporary planner position restoration until the whole queue is complete, then restores all changed employees in one submitted update.
-- Refreshes only the training session, current queue controls, and active row during each training phase instead of rebuilding the full CIS interface.
-- Adds Build from today so a saved past or future planner date cannot hide the current day's calendar when the director needs it.
+- Makes Daily sync refresh the live company profile, employees, and stock every time instead of trusting a 24-hour freshness flag for values that reset each company day.
+- Rebuilds today's planner and active training queue from Torn's refreshed train count, so a cached zero cannot leave the current day blank after 18:10 TCT.
+- Keeps Business Profile, Available train slots, and the consolidated Pythagoras API snapshot on the same current availability.

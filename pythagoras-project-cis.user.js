@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.3.8
+// @version      3.3.9
 // @downloadURL  https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.user.js
 // @updateURL    https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.meta.js
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
@@ -55,7 +55,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.3.8',
+    version: '3.3.9',
     greasyForkScriptId: 580933,
     greasyForkApiUrl: 'https://api.greasyfork.org/en/scripts/580933.json',
     greasyForkPageUrl: 'https://greasyfork.org/en/scripts/580933-pythagoras-project-cis',
@@ -14406,6 +14406,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.3.9 - Accurate daily train availability</summary>
+              <ul><li>Daily sync now refreshes the live company profile, employees, and stock every time instead of trusting a 24-hour freshness flag for values that reset each company day.</li><li>The refreshed Torn train count rebuilds today&apos;s planner and active training queue in the same sync, so a cached zero cannot leave the current day blank after 18:10 TCT.</li><li>Business Profile and Available train slots now publish the same current train availability in the consolidated Pythagoras API snapshot.</li></ul>
+            </details>
+            <details>
               <summary>v3.3.8 - Reliable training queues</summary>
               <ul><li>Paid multi-train blocks reopen the requested-position prompt if Torn returns an employee to the original position between trains.</li><li>Temporary position changes are collected locally and restored together only after the full queue finishes.</li><li>Training progress refreshes only its own controls, and Build from today recovers a calendar whose saved start date is stale.</li></ul>
             </details>
@@ -17662,50 +17666,18 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           Store.updateSyncCache(UI.state, 'news');
         }
 
-        const businessStale = UI.syncStatus('business') !== 'fresh';
-        const stockStale = UI.syncStatus('stock') !== 'fresh';
-        const employeesStale = UI.syncStatus('employees') !== 'fresh';
         let restockResult = null;
         let employeeDailyHistory = [];
         const warnings = [];
-        if (businessStale) {
-          UI.syncStep(syncId, 'Business data is stale; refreshing business, employees, stock, and operating costs.', 52);
-          const businessResult = await UI.syncBusiness({ embedded: true, syncId, deferUpload: true });
-          if (!businessResult || !businessResult.ok) throw new Error(businessResult && businessResult.message || 'Business sync did not complete.');
-          employeeDailyHistory = businessResult.dailyHistory || [];
-          restockResult = businessResult.restocks || null;
-          if (businessResult.partial) warnings.push('Some optional operating-cost history was unavailable.');
-        } else {
-          try {
-            UI.syncStep(syncId, 'Checking advertisement-budget change log.', 52);
-            const budgetLog = await UI.syncAdBudgetChangeHistory();
-            if (budgetLog.added) {
-              Store.save(UI.state);
-              Store.updateSyncCache(UI.state, 'business');
-            }
-          } catch (error) {
-            UI.state.company.adBudgetLogSync = Object.assign({}, UI.state.company.adBudgetLogSync || {}, { lastError: error.message || String(error) });
-            console.warn('[Pythagoras Project - CIS] Advertisement-budget log sync skipped.', error);
-          }
-          UI.syncStep(syncId, employeesStale
-            ? 'Employee data is stale; running employee sync.'
-            : 'Capturing the latest completed employee-efficiency day.', 66);
-          const employeeResult = await UI.syncEmployees({ embedded: true, syncId, deferUpload: true });
-          if (!employeeResult || !employeeResult.ok) throw new Error(employeeResult && employeeResult.message || 'Employee sync did not complete.');
-          employeeDailyHistory = employeeResult.dailyHistory || [];
-          if (stockStale) {
-            UI.syncStep(syncId, 'Stock data is stale; running stock sync.', 78);
-            const stockResult = await UI.syncStock({ embedded: true, syncId, deferUpload: true });
-            if (!stockResult || !stockResult.ok) throw new Error(stockResult && stockResult.message || 'Stock sync did not complete.');
-            restockResult = stockResult.restocks || null;
-            if (stockResult.partial) warnings.push('Some exact restocking history was unavailable.');
-          } else {
-            UI.syncStep(syncId, 'Checking exact restocking orders.', 78);
-            restockResult = await UI.syncStockCosts({ automatic: true });
-            UI.syncStep(syncId, restockResult.message, 88);
-            if (!restockResult.ok) warnings.push(restockResult.message);
-          }
-        }
+        // Company profile values such as available trains reset at 18:10 TCT.
+        // A 24-hour notification freshness window must never suppress their
+        // refresh during an explicit Daily sync.
+        UI.syncStep(syncId, 'Refreshing live business, employees, stock, and operating costs.', 52);
+        const businessResult = await UI.syncBusiness({ embedded: true, syncId, deferUpload: true });
+        if (!businessResult || !businessResult.ok) throw new Error(businessResult && businessResult.message || 'Business sync did not complete.');
+        employeeDailyHistory = businessResult.dailyHistory || [];
+        restockResult = businessResult.restocks || null;
+        if (businessResult.partial) warnings.push('Some optional operating-cost history was unavailable.');
 
         UI.syncStep(syncId, 'Refreshing exact training, wage, role, and hire history.', 90);
         const staffHistoryResult = await UI.syncCompanyStaffLogs({ embedded: true, syncId, deferUpload: true });
