@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.4.0
+// @version      3.4.1
 // @downloadURL  https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.user.js
 // @updateURL    https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.meta.js
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
@@ -55,7 +55,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.4.0',
+    version: '3.4.1',
     greasyForkScriptId: 580933,
     greasyForkApiUrl: 'https://api.greasyfork.org/en/scripts/580933.json',
     greasyForkPageUrl: 'https://greasyfork.org/en/scripts/580933-pythagoras-project-cis',
@@ -1721,13 +1721,13 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           ?? rawMeta.advertisement_budget_known;
         const row = {
           date,
-          observedAt: String(raw.observedAt || raw.observed_at || raw.updatedAt || raw.updated_at || raw.created_at || rawMeta.observedAt || rawMeta.observed_at || '').trim() || Utils.nowIso(),
+          observedAt: String(raw.observedAt || raw.observed_at || raw.operating_observed_at || raw.updatedAt || raw.updated_at || raw.created_at || rawMeta.observedAt || rawMeta.observed_at || '').trim() || Utils.nowIso(),
           wages: Math.max(0, Math.round(wages === null ? 0 : wages)),
           // Older releases backfilled these totals from the current roster. They
           // cannot establish historical pay, even when labelled wagesKnown.
-          wagesKnown: wages !== null && wagesKnownFlag !== false && !wagesInvalidated && (raw.wageEvidenceVersion ?? rawMeta.wageEvidenceVersion) === 3,
+          wagesKnown: wages !== null && wagesKnownFlag !== false && !wagesInvalidated && Utils.int(raw.wageEvidenceVersion ?? raw.wage_evidence_version ?? rawMeta.wageEvidenceVersion, 0) === 3,
           wagesInvalidated,
-          wageEvidenceVersion: (raw.wageEvidenceVersion ?? rawMeta.wageEvidenceVersion) === 3 ? 3 : 0,
+          wageEvidenceVersion: Utils.int(raw.wageEvidenceVersion ?? raw.wage_evidence_version ?? rawMeta.wageEvidenceVersion, 0) === 3 ? 3 : 0,
           adBudget: Math.max(0, Math.round(adBudget === null ? 0 : adBudget)),
           adBudgetKnown: adBudget !== null && adBudgetKnownFlag !== false,
           source: String(raw.source || rawMeta.source || 'daily-operating-snapshot').trim() || 'daily-operating-snapshot'
@@ -2132,6 +2132,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     },
     cloudState(state) {
       const copy = Store.sanitizedState(state);
+      if (copy.company) delete copy.company.syncTransfer;
       copy.settings.apiKey = '';
       if (copy.ui) {
         delete copy.ui.ledgerTrainingSession;
@@ -2265,6 +2266,62 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         adBudgetKnown ? adBudget : null,
         adBudgetKnown
       ]);
+    },
+    contentSignature(value, omitObservedAt) {
+      const normalize = (item) => {
+        if (Array.isArray(item)) return item.map(normalize);
+        if (!item || typeof item !== 'object') return item;
+        const result = {};
+        Object.keys(item).sort().forEach((key) => {
+          if (['lastSynced', 'updatedAt', 'checkedAt', 'generatedAt', 'businessSyncedAt', 'syncWatermarks', 'syncTransfer', 'workspaceRevision'].includes(key) || (omitObservedAt && ['observedAt', 'syncedAt'].includes(key))) return;
+          result[key] = normalize(item[key]);
+        });
+        return result;
+      };
+      return JSON.stringify(normalize(value));
+    },
+    async contentDigest(value, omitObservedAt) {
+      const bytes = new TextEncoder().encode(Store.contentSignature(value, omitObservedAt));
+      const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+      return Array.from(digest, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    },
+    async uploadDelta(state, request) {
+      const acknowledged = Store.syncTransfer(state).acknowledged;
+      const updates = [];
+      const fields = request.path === '/sync/staff' ? ['members', 'snapshots', 'dailyHistory']
+        : request.path === '/sync/events' ? ['events'] : [];
+      if (fields.length) {
+        const payload = Object.assign({}, request.payload);
+        for (const field of fields) {
+          payload[field] = [];
+          for (const row of request.payload[field] || []) {
+            const key = `${request.path}:${field}:${row.userId || row.id || row.eventId || row.sourceEventId}:${row.date || (field === 'snapshots' ? Utils.tctWorkingDayKey() : '')}`;
+            const signature = await Store.contentDigest(row, field === 'dailyHistory' || field === 'snapshots');
+            if (acknowledged[key] === signature) continue;
+            payload[field].push(row);
+            updates.push([key, signature]);
+          }
+        }
+        return { payload, updates, empty: fields.every((field) => !payload[field].length) };
+      }
+      if (['/sync/business', '/sync/stock'].includes(request.path)) {
+        const signature = await Store.contentDigest(request.payload, request.path === '/sync/stock');
+        updates.push([request.path, signature]);
+        return { payload: request.payload, updates, empty: acknowledged[request.path] === signature };
+      }
+      return { payload: request.payload, updates, empty: false };
+    },
+    syncTransfer(state) {
+      state.company.syncTransfer = state.company.syncTransfer || { acknowledged: {} };
+      state.company.syncTransfer.acknowledged = state.company.syncTransfer.acknowledged || {};
+      return state.company.syncTransfer;
+    },
+    acceptSyncReceipt(state, receipt) {
+      if (!receipt) return;
+      const transfer = Store.syncTransfer(state);
+      const parts = String(transfer.workspaceRevision || '').split(':');
+      transfer.workspaceRevision = parts[0] === String(receipt.previous) && parts.length === 2
+        ? `${receipt.revision}:${parts[1]}` : '';
     },
     reportSourceEventId(raw) {
       const row = raw && typeof raw === 'object' ? raw : {};
@@ -2469,6 +2526,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const cloneSlice = (key) => slices[key] ? Utils.clone(slices[key]) : null;
       const business = cloneSlice('business');
       if (business) {
+        if (business.syncTransfer) state.company.syncTransfer = Utils.clone(business.syncTransfer);
         if (business.companyProfile) state.company.profile = Store.merge(state.company.profile || {}, business.companyProfile);
         if (business.companyDetailed) state.company.detailed = Store.merge(state.company.detailed || {}, business.companyDetailed);
         if (Array.isArray(business.adBudgetHistory)) state.company.adBudgetHistory = Store.mergeAdBudgetHistory(state.company.adBudgetHistory || [], business.adBudgetHistory);
@@ -2519,6 +2577,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (!state) return {};
       if (kind === 'business') {
         return {
+          syncTransfer: Utils.clone(Store.syncTransfer(state)),
           companyProfile: Utils.clone(state.company.profile || {}),
           companyDetailed: Utils.clone(state.company.detailed || {}),
           adBudgetHistory: Utils.clone(state.company.adBudgetHistory || []),
@@ -2612,15 +2671,31 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (!Store.canUseCloudWorkspace(state)) return state;
       try {
         const base = Store.workspaceBaseUrl(state);
+        const transfer = Store.syncTransfer(state);
+        const requiredSlices = ['business', 'employees', 'stock', 'news', 'trainingLog', 'planner'];
+        const cached = Store.loadSyncCache();
+        const slices = Store.syncCacheMatches(state, cached) ? Store.validSyncCacheSlices(state, cached) : {};
+        const complete = requiredSlices.every((kind) => !!slices[kind]);
         const data = await ApiClient.postJson(`${base}/api/cis/bootstrap`, Store.workspacePayload(state, {
           company: state.company.profile || {},
+          syncProtocol: 1,
+          knownRevision: complete ? transfer.workspaceRevision || '' : '',
           includeTimeline: state.ui.timelineEnabled !== false
         }), 30000);
+        if (data && data.ok && data.unchanged && complete) {
+          state.entitlement = Store.merge(state.entitlement || {}, data.entitlement || {});
+          state.sync.workspaceLoadError = '';
+          Store.captureServerReportSignatures(transfer.reports || []);
+          return state;
+        }
         if (!data || !data.ok || !data.data) {
           if (options && options.strict) throw new Error(data && data.reason || 'Cloud workspace could not be loaded.');
           return state;
         }
-        return Store.applyCloudBootstrap(state, data);
+        const next = Store.applyCloudBootstrap(state, data);
+        next.company.syncTransfer = { workspaceRevision: data.workspaceRevision || '', reports: data.data.dailyReports || [], acknowledged: {} };
+        Store.updateSyncCache(next, ['business', 'employees', 'stock', 'news', 'trainingLog', 'planner']);
+        return next;
       } catch (error) {
         console.warn('[Pythagoras Project - CIS] Cloud workspace load failed.', error);
         if (options && options.strict) throw error;
@@ -2636,7 +2711,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const companyId = String(state.settings.companyId || state.company.profile.id || PageData.companyId() || '').trim();
       if (!companyId) throw new Error('Company ID is required before uploading parsed sync data.');
       const path = `/api/cis/company/${encodeURIComponent(companyId)}${suffix}`;
-      return Store.cisApi(state, path, Object.assign({ companyId }, payload || {}), timeout || 30000);
+      const result = await Store.cisApi(state, path, Object.assign({ companyId, syncProtocol: 1 }, payload || {}), timeout || 30000);
+      if (result && result.ok) Store.acceptSyncReceipt(state, result.syncReceipt);
+      return result;
     },
     async saveCloudWorkspace(state, options) {
       if (!Store.canUseCloudWorkspace(state)) return null;
@@ -2660,8 +2737,12 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const detailed = state.company && state.company.detailed || {};
       const profile = state.company && state.company.profile || {};
       const companyName = String(profile.name || profile.companyName || detailed.name || detailed.companyName || '').trim();
+      const cloudState = Store.cloudState(state);
+      const transfer = Store.syncTransfer(state);
+      const signature = await Store.contentDigest(cloudState);
+      if (!(options && options.snapshot) && transfer.acknowledged.mirror === signature) return { unchanged: true };
       const result = await Store.cisCompanyApi(state, '/sync/workspace', {
-        state: Store.cloudState(state),
+        state: cloudState,
         companyName,
         company: {
           id: profile.id || detailed.id || state.settings.companyId || PageData.companyId() || '',
@@ -2676,6 +2757,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         snapshotReason: options && options.reason || 'autosave'
       }, options && options.timeout || 30000);
       if (!result || !result.ok) throw new Error(result && result.reason || 'Workspace mirror save failed.');
+      transfer.acknowledged.mirror = signature;
+      Store.updateSyncCache(state, 'business');
       return result.saved || null;
     },
     async deleteCloudWorkspace(state, options) {
@@ -10357,12 +10440,16 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const context = { staff: UI.balanceStaffPool() };
       const dates = new Set(UI.reportDailyRows().filter((row) => row && row.hasReport && row.date <= Utils.todayInput()).map((row) => row.date));
       dates.add(Utils.todayInput());
-      const rows = Array.from(dates).map((date) => {
-        const adBudget = UI.balanceAdBudgetOn(date);
+      const budgets = Store.normaliseAdBudgetHistory(UI.state.company.adBudgetHistory || []).sort((a,b) => a.date.localeCompare(b.date));
+      let budgetIndex = 0;
+      let adBudget = null;
+      const observedAt = Utils.nowIso();
+      const rows = Array.from(dates).sort().map((date) => {
+        while (budgetIndex < budgets.length && budgets[budgetIndex].date <= date) adBudget = budgets[budgetIndex++].advertisingBudget;
         const wages = UI.dailyWageTotalOn(date, context, { force: true });
         return {
           date,
-          observedAt: Utils.nowIso(),
+          observedAt,
           wages,
           wagesKnown: wages !== null,
           wagesInvalidated: wages === null && UI.wageHistoryGapOn(date, context),
@@ -13575,6 +13662,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           output.adBudget = costs.adBudgetKnown ? Utils.num(costs.adBudget, 0) : undefined;
           output.advertisingBudget = costs.adBudgetKnown ? Utils.num(costs.adBudget, 0) : undefined;
           output.adBudgetKnown = costs.adBudgetKnown === true;
+          output.observedAt = costs.observedAt || undefined;
         }
         byDate.set(reportDate, output);
       });
@@ -13797,9 +13885,14 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     },
     async uploadSettingsCloudSave() {
       if (!Store.canUseCloudWorkspace(UI.state)) return;
+      if (UI.isSyncBusy()) return;
       try {
-        const result = await Store.cisCompanyApi(UI.state, '/sync/business', UI.businessPayloadForApi(), 30000);
+        const delta = await Store.uploadDelta(UI.state, { path: '/sync/business', payload: UI.businessPayloadForApi() });
+        if (delta.empty) return;
+        const result = await Store.cisCompanyApi(UI.state, '/sync/business', delta.payload, 30000);
         if (!result || !result.ok) throw new Error(result && result.reason || 'Settings cloud sync failed.');
+        delta.updates.forEach(([key, signature]) => { Store.syncTransfer(UI.state).acknowledged[key] = signature; });
+        Store.updateSyncCache(UI.state, 'business');
       } catch (error) {
         console.warn('[Pythagoras Project - CIS] Settings cloud sync failed.', error);
         UI.toast(`Settings saved locally; cloud sync failed: ${error && error.message ? error.message : error}`);
@@ -13822,8 +13915,12 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       try {
         Ledger.prepare(UI.state);
         const orders = UI.state.ledger || [];
+        const transfer = Store.syncTransfer(UI.state);
+        const signature = await Store.contentDigest(orders);
+        if (transfer.acknowledged.ledger === signature) { UI.clearLedgerPending(); return; }
         const result = await Store.cisCompanyApi(UI.state, '/training-orders', { orders, replace: true }, 45000);
         if (!result || !result.ok) throw new Error(result && result.reason || 'Training orders cloud sync failed.');
+        transfer.acknowledged.ledger = signature;
         UI.clearLedgerPending();
       } catch (error) {
         console.warn('[Pythagoras Project - CIS] Training orders cloud sync failed.', error);
@@ -13834,10 +13931,12 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (!Store.canUseCloudWorkspace(UI.state)) return;
       UI.workspaceMirrorReason = reason || UI.workspaceMirrorReason || 'autosave';
       clearTimeout(UI.workspaceMirrorTimer);
+      if (UI.isSyncBusy()) return;
       UI.workspaceMirrorTimer = setTimeout(() => UI.uploadWorkspaceMirrorSave(), delay == null ? 1800 : delay);
     },
     async uploadWorkspaceMirrorSave() {
       if (!Store.canUseCloudWorkspace(UI.state)) return;
+      if (UI.isSyncBusy()) return;
       if (UI.workspaceMirrorInFlight) {
         UI.scheduleWorkspaceMirrorSave(UI.workspaceMirrorReason || 'autosave', 1500);
         return;
@@ -13851,8 +13950,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         UI.workspaceMirrorInFlight = false;
       }
     },
-    businessPayloadForApi() {
-      UI.captureOperatingCostHistory('business-sync');
+    businessPayloadForApi(options) {
+      if (!(options && options.costsAlreadyCaptured)) UI.captureOperatingCostHistory('business-sync');
       const profile = UI.state.company.profile || {};
       const detailed = UI.state.company.detailed || {};
       const sanitized = Store.cloudState(UI.state);
@@ -13893,7 +13992,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const requests = [];
       const carriesReportRows = Array.isArray(parts.reports) && parts.reports.length > 0;
       if (parts.business) {
-        const businessPayload = UI.businessPayloadForApi();
+        const businessPayload = UI.businessPayloadForApi({ costsAlreadyCaptured: carriesReportRows });
         // When this sync also carries report deltas, those rows are the single
         // source for operating-cost updates. Avoid sending the full history in
         // the business request and then sending it again as report batches.
@@ -13939,14 +14038,25 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const summary = {};
       for (let index = 0; index < requests.length; index += 1) {
         const request = requests[index];
+        const delta = await Store.uploadDelta(UI.state, request);
+        if (delta.empty) continue;
         const progress = Math.min(97, Math.max(job.progress || 0, 84) + Math.round((index / requests.length) * 12));
         UI.syncStep(id, `uploading ${request.label} to Pythagoras API.`, progress);
-        const result = await Store.cisCompanyApi(UI.state, request.path, request.payload, request.timeout);
+        const result = await Store.cisCompanyApi(UI.state, request.path, delta.payload, request.timeout);
         if (!result || !result.ok) throw new Error(result && result.reason || `${request.label} upload failed.`);
-        if (request.reportRows) Store.markServerReportRows(request.reportRows);
+        if (request.reportRows) {
+          const accepted = result.reports || request.reportRows;
+          Store.markServerReportRows(accepted);
+          const transfer = Store.syncTransfer(UI.state);
+          const reports = new Map((transfer.reports || []).map((row) => [Utils.dateInput(row.reportDate || row.report_date || row.date), row]));
+          accepted.forEach((row) => reports.set(Utils.dateInput(row.reportDate || row.report_date || row.date), row));
+          transfer.reports = Array.from(reports.values());
+        }
+        delta.updates.forEach(([key, signature]) => { Store.syncTransfer(UI.state).acknowledged[key] = signature; });
         summary[request.label] = result.saved || result.summary || true;
       }
       await Store.saveVerifiedSessionIdentity(UI.state);
+      Store.updateSyncCache(UI.state, 'business');
       UI.syncStep(id, 'Pythagoras API accepted the parsed data.', 98);
       return summary;
     },
@@ -13966,6 +14076,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       UI.syncLogMessage(`${job.label}: ${message || 'complete.'}`, { elapsedMs: totalMs });
       UI.updateSyncUi();
       const keepVisible = UI.activitySyncId === id ? 4800 : 2500;
+      if (id !== 'verify-workspace') UI.scheduleWorkspaceMirrorSave('sync-complete', 1000);
       if (UI.activitySyncId === id) UI.scheduleActivityDismiss({ kind: 'sync', id, statuses: ['done', 'warning'] }, keepVisible);
       else setTimeout(() => {
         if (UI.syncJobs[id] && ['done', 'warning'].includes(UI.syncJobs[id].status)) delete UI.syncJobs[id];
@@ -13985,6 +14096,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       UI.syncJobs[id] = job;
       UI.syncLogMessage(`${job.label}: failed - ${error && error.message ? error.message : error}`, { elapsedMs: totalMs });
       UI.updateSyncUi();
+      if (id !== 'verify-workspace') UI.scheduleSettingsCloudSave(1000);
       const keepVisible = UI.activitySyncId === id ? 9000 : 3000;
       if (UI.activitySyncId === id) UI.scheduleActivityDismiss({ kind: 'sync', id, statuses: ['error'] }, keepVisible);
       else setTimeout(() => {
@@ -14474,6 +14586,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.4.1 - Incremental sync and daily staff retention</summary>
+              <ul><li>Checks a small server revision before downloading the saved workspace and skips unchanged acknowledged uploads.</li><li>Saves one latest staff snapshot per employee and company date while preserving daily Employee Efficiency history.</li><li>Round-trips report wage evidence correctly, avoids repeated history calculations, and defers workspace autosaves until sync completes.</li></ul>
+            </details>
+            <details>
               <summary>v3.4.0 - Background sync and visible verification</summary>
               <ul><li>Startup history processing and sync request pacing continue in background tabs without chained page-timer delays.</li><li>Sync progress appears immediately and includes Torn identity verification and workspace loading.</li><li>Up to date is clickable and requests a fresh GreasyFork check. Browser-fetch requests have a bounded timeout.</li></ul>
             </details>
