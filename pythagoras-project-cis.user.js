@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pythagoras Project - CIS
 // @namespace    https://torn.com/
-// @version      3.4.1
+// @version      3.4.3
 // @downloadURL  https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.user.js
 // @updateURL    https://update.greasyfork.org/scripts/580933/Pythagoras%20Project%20-%20CIS.meta.js
 // @description  Company Intelligence System for Torn company training, staff, analytics, and local reporting.
@@ -55,7 +55,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     ownerUserId: '4022159',
     testimonialThreadId: '16558556',
     testimonialThreadUrl: 'https://www.torn.com/forums.php#/p=threads&f=67&t=16558556&b=0&a=0',
-    version: '3.4.1',
+    version: '3.4.3',
     greasyForkScriptId: 580933,
     greasyForkApiUrl: 'https://api.greasyfork.org/en/scripts/580933.json',
     greasyForkPageUrl: 'https://greasyfork.org/en/scripts/580933-pythagoras-project-cis',
@@ -693,13 +693,14 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       setTimeout(() => URL.revokeObjectURL(url), 500);
     },
     sleep(ms) {
-      return new Promise((resolve) => {
+      let cancel = () => {};
+      const promise = new Promise((resolve) => {
         const delay = Math.max(0, Utils.int(ms, 0));
         // Dedicated-worker timers avoid the minute-long chained timer budget
         // imposed on hidden pages. Fall back when a browser blocks blob workers.
         if (!Utils.timerWorker && !Utils.timerWorkerUnavailable) {
           try {
-            const url = URL.createObjectURL(new Blob(['onmessage = ({data}) => setTimeout(() => postMessage(data.id), data.delay);'], { type: 'text/javascript' }));
+            const url = URL.createObjectURL(new Blob(['const timers = new Map(); onmessage = ({data}) => { if (data.cancel) { clearTimeout(timers.get(data.id)); timers.delete(data.id); return; } timers.set(data.id, setTimeout(() => { timers.delete(data.id); postMessage(data.id); }, data.delay)); };'], { type: 'text/javascript' }));
             try { Utils.timerWorker = new Worker(url); } finally { URL.revokeObjectURL(url); }
             Utils.timerPending = new Map();
             Utils.timerSequence = 0;
@@ -716,11 +717,22 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             };
           } catch (error) { Utils.timerWorkerUnavailable = true; }
         }
-        if (!Utils.timerWorker) { setTimeout(resolve, delay); return; }
+        if (!Utils.timerWorker) {
+          const timer = setTimeout(resolve, delay);
+          cancel = () => { clearTimeout(timer); resolve(); };
+          return;
+        }
         const id = ++Utils.timerSequence;
         Utils.timerPending.set(id, { resolve, due: Date.now() + delay });
         Utils.timerWorker.postMessage({ id, delay });
+        cancel = () => {
+          Utils.timerPending.delete(id);
+          if (Utils.timerWorker) Utils.timerWorker.postMessage({ id, cancel: true });
+          resolve();
+        };
       });
+      promise.cancel = () => cancel();
+      return promise;
     },
     yieldTask() {
       // Message tasks yield to input/network work without waiting for a visible
@@ -2809,6 +2821,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         playerId: row.user_id ? String(row.user_id) : String(meta.playerId || meta.userId || ''),
         playerName: meta.playerName || meta.name || '',
         position: row.position || meta.position || meta.role || '',
+        positionSource: meta.positionSource || '',
+        positionNewsId: meta.positionNewsId || '',
         amount: row.amount || meta.amount || 0,
         customers: row.customers || meta.customers || 0,
         income: row.income || meta.income || 0,
@@ -3516,7 +3530,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     async fetchWithTimeout(url, options, timeout) {
       const controller = new AbortController();
       let settled = false;
-      const deadline = Utils.sleep(timeout || 20000).then(() => {
+      const timeoutTask = Utils.sleep(timeout || 20000);
+      const deadline = timeoutTask.then(() => {
         if (settled) return;
         controller.abort();
         throw new Error('Request timed out. Please retry the sync.');
@@ -3528,7 +3543,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           })),
           deadline
         ]);
-      } finally { settled = true; }
+      } finally {
+        settled = true;
+        if (typeof timeoutTask.cancel === 'function') timeoutTask.cancel();
+      }
     },
     tornQueue: Promise.resolve(),
     tornMinIntervalMs: 2200,
@@ -3633,17 +3651,49 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     gmRequest(details) {
       const gm = Store.gmApi();
       const modernRequest = gm && (gm.xmlHttpRequest || gm.xmlhttpRequest);
+      const legacyRequest = typeof GM_xmlhttpRequest === 'function' ? GM_xmlhttpRequest : null;
+      if (typeof modernRequest !== 'function' && !legacyRequest) return false;
+      let settled = false;
+      let handle;
+      let deadline;
+      const finish = (callback, value) => {
+        if (settled) return;
+        settled = true;
+        if (deadline && typeof deadline.cancel === 'function') deadline.cancel();
+        if (typeof callback === 'function') callback(value);
+      };
+      const wrapped = Object.assign({}, details, {
+        onload: (value) => finish(details.onload, value),
+        onerror: (value) => finish(details.onerror || details.ontimeout, value),
+        onabort: (value) => finish(details.onabort || details.onerror || details.ontimeout, value),
+        ontimeout: (value) => finish(details.ontimeout || details.onerror, value)
+      });
+      const watch = (request) => {
+        handle = request;
+        // Some managers expose a promise in addition to callbacks. Either may
+        // arrive first; a rejected promise must not leave the sync unresolved.
+        if (request && typeof request.then === 'function') request.then(wrapped.onload, wrapped.onerror);
+        // Do not rely solely on the extension's timeout callback. In particular,
+        // fetch-backed manager requests may ignore details.timeout entirely.
+        if (settled) return;
+        deadline = Utils.sleep(details.timeout || 20000);
+        deadline.then(() => {
+          if (settled) return;
+          wrapped.ontimeout({ error: 'Request deadline exceeded' });
+          try { if (handle && typeof handle.abort === 'function') handle.abort(); } catch (error) {}
+        });
+      };
       try {
         if (typeof modernRequest === 'function') {
-          modernRequest.call(gm, details);
+          watch(modernRequest.call(gm, wrapped));
           return true;
         }
       } catch (error) {
         console.warn('[Pythagoras Project - CIS] GM.xmlHttpRequest failed.', error);
       }
       try {
-        if (typeof GM_xmlhttpRequest === 'function') {
-          GM_xmlhttpRequest(details);
+        if (legacyRequest) {
+          watch(legacyRequest(wrapped));
           return true;
         }
       } catch (error) {
@@ -6111,7 +6161,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           userId: actionUser || targetId,
           companyId: actionCompany,
           playerName: person.name || actionUser || targetId,
-          position: person.role || '',
+          position: Timeline.logTrainingPosition(rowData),
+          positionSource: Timeline.logTrainingPosition(rowData) ? 'log' : 'unknown',
           count: 1,
           statsReceived: Timeline.workingStats(rowData.working_stats_received),
           title: details.title || 'Company train send'
@@ -6147,7 +6198,12 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         return null;
       }).filter(Boolean).sort((a, b) => a.timestamp - b.timestamp);
     },
-    trainingRowsFromStaffActions(actions, person) {
+    logTrainingPosition(data) {
+      const value = data && (data.position || data.position_name || data.role || data.role_name || data.job_position);
+      const position = Timeline.cleanRoleText(value && typeof value === 'object' ? value.name || value.title || value.label : value);
+      return position && !/^\d+$/.test(position) ? position : '';
+    },
+    trainingRowsFromStaffActions(actions, person, state) {
       const byKey = new Map();
       (actions || []).filter((action) => action.type === 'training').forEach((action) => {
         const date = Utils.dayKey(action.timestamp);
@@ -6161,7 +6217,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           userId: action.userId || person.id || '',
           playerName: person.name || action.playerName || action.userId || '',
           aliases: Company.aliasList(person, action.playerName),
-          position: action.position || person.role || 'Employee',
+          position: action.position || 'Employee',
           count: 0,
           exactCount: 0,
           eventIds: [],
@@ -6180,7 +6236,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           timestamp: Utils.int(action.timestamp, 0),
           userId: String(action.userId || person.id || '').trim(),
           playerName: person.name || action.playerName || action.userId || '',
-          position: action.position || person.role || 'Employee',
+          position: action.position || 'Employee',
+          positionSource: action.positionSource || (action.position ? 'log' : 'unknown'),
           count: actionCount
         });
         row.statsReceived.man += Utils.num(action.statsReceived && action.statsReceived.man, 0);
@@ -6188,7 +6245,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         row.statsReceived.end += Utils.num(action.statsReceived && action.statsReceived.end, 0);
         byKey.set(key, row);
       });
-      return Array.from(byKey.values()).sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(a.playerName).localeCompare(String(b.playerName)));
+      const rows = Array.from(byKey.values()).sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(a.playerName).localeCompare(String(b.playerName)));
+      return state ? Timeline.repairTrainingPositions(rows, state) : rows;
     },
     companyTrainingRowsFromUserLog(data, state) {
       const people = Company.dedupePeople([]
@@ -6200,10 +6258,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const person = peopleById.get(String(action.userId || '').trim()) || {};
         return Object.assign({}, action, {
           playerName: person.name || action.playerName || action.userId || '',
-          position: person.role || action.position || 'Employee'
+          position: action.position || '',
+          positionSource: action.positionSource || 'unknown'
         });
       });
-      return Timeline.trainingRowsFromStaffActions(actions, {});
+      return Timeline.trainingRowsFromStaffActions(actions, {}, state);
     },
     trainingNewsForPerson(person, state) {
       const id = String(person && person.id || '').trim();
@@ -6572,13 +6631,22 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       return Timeline.dedupeEvents(events.map(Timeline.reclassifyEvent));
     },
     reclassifyEvent(event) {
-      return Object.assign({}, event, Timeline.parseEvent({
+      Timeline.parsedEventCache = Timeline.parsedEventCache || new WeakMap();
+      const input = {
         id: event.id,
-        sourceEventId: event.sourceEventId || event.tornEventId || event.apiEventId || event.newsId || event.news_id || '',
+        sourceEventId: event.sourceEventId || event.tornEventId || event.apiEventId || event.newsId || event.news_id || event.id || '',
         text: event.text || event.plainText || '',
         timestamp: event.timestamp || 0,
         action: event.action || event.type || ''
-      }));
+      };
+      const signature = JSON.stringify(input);
+      const previous = Timeline.parsedEventCache.get(event);
+      const parsed = previous && previous.signature === signature ? previous.parsed : Timeline.parseEvent(input);
+      const cached = { signature, parsed };
+      const result = Object.assign({}, event, parsed);
+      Timeline.parsedEventCache.set(event, cached);
+      Timeline.parsedEventCache.set(result, cached);
+      return result;
     },
     async reclassifyAsync(events) {
       const parsed = [];
@@ -6606,7 +6674,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const person = (userId && staffById.get(userId)) || staffByName.get(Company.nameKey(name)) || {};
         if (userId && person && person.id) person.aliases = Company.aliasList(person, name);
         const identity = userId || person.id ? `id:${userId || person.id}` : Company.personKey({ name });
-        const position = event.position || person.role || 'Employee';
+        const position = event.position || 'Employee';
         const key = `${date}:${identity}`;
         const embeddedExactEvents = Array.isArray(event.exactEvents) ? event.exactEvents.filter(Boolean) : [];
         const exact = event.exactTraining === true || event.source === 'user_log' || Utils.int(event.exactCount, 0) > 0 || embeddedExactEvents.length > 0 || /^user-log:/i.test(Timeline.sourceEventId(event));
@@ -6638,6 +6706,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             userId: userId || person.id || '',
             playerName: person.name || name,
             position,
+            positionSource: event.positionSource || (exact ? 'unknown' : 'company_news'),
+            positionNewsId: event.positionNewsId || '',
             count: eventCount
           }];
           row.exactEvents.push(...exactEvents.map((item) => Object.assign({}, item)));
@@ -6669,6 +6739,51 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         return row;
       }).sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(a.playerName).localeCompare(String(b.playerName)));
     },
+    repairTrainingPositions(rows, state) {
+      const maps = Company.identityMaps(state);
+      const newsByKey = new Map();
+      (state && state.staff && state.staff.timeline || []).forEach((event) => {
+        // Synthetic exact-log copies may contain the old current-role guess.
+        // Only original company news can corroborate that historical position.
+        if (!event || Timeline.displayType(event) !== 'training' || !event.position
+          || event.exactTraining || ['user_log', 'mixed'].includes(event.source)
+          || /^user-log[:\-]/i.test(String(event.sourceEventId || event.id || ''))) return;
+        const key = Timeline.trainingAccessKey(event, state, maps);
+        if (!newsByKey.has(key)) newsByKey.set(key, []);
+        newsByKey.get(key).push(event);
+      });
+      return (rows || []).map((row) => {
+        const news = newsByKey.get(Timeline.trainingAccessKey(row, state, maps)) || [];
+        const exactEvents = (Array.isArray(row.exactEvents) ? row.exactEvents : []).map((event) => {
+          if (event.positionSource === 'log' && event.position) return Object.assign({}, event);
+          const timestamp = Utils.int(event.timestamp, 0);
+          const matches = news.map((item) => ({ item, gap: Math.abs(Utils.int(item.timestamp, 0) - timestamp) }))
+            .filter((item) => timestamp && item.gap <= 2).sort((a,b) => a.gap - b.gap);
+          const closest = matches.length ? matches.filter((item) => item.gap === matches[0].gap) : [];
+          const positions = new Set(closest.map(({item}) => Company.nameKey(item.position)));
+          if (positions.size === 1) return Object.assign({}, event, {
+            position: closest[0].item.position,
+            positionSource: 'company_news',
+            positionNewsId: Timeline.sourceEventId(closest[0].item) || closest[0].item.id || ''
+          });
+          // Evidence retained by a newer client survives a partial news window.
+          if (event.positionSource === 'company_news' && event.position) return Object.assign({}, event);
+          return Object.assign({}, event, { position: 'Employee', positionSource: 'unknown', positionNewsId: '' });
+        });
+        const positions = Array.from(new Set(exactEvents.map((event) => event.position).filter(Boolean)));
+        // Legacy aggregate-only rows are usable only when the complete day's
+        // news corroborates a single role, not the employee's current profile.
+        const newsPositions = Array.from(new Set(news.map((event) => event.position)));
+        const covered = news.reduce((sum,event) => sum + Store.trainingEventCount(event, {raw:true}),0) >= Math.max(1,Utils.int(row.exactCount || row.count,1));
+        const position = positions.length ? (positions.length === 1 ? positions[0] : 'Multiple positions')
+          : (newsPositions.length === 1 && covered ? newsPositions[0]
+            : (['log','company_news'].includes(row.positionSource) ? row.position : 'Employee'));
+        return Object.assign({}, row, { position, exactEvents,
+          positionSource: positions.length ? (exactEvents.every((event) => event.positionSource !== 'unknown') ? 'historical' : 'unknown')
+            : (newsPositions.length === 1 && covered ? 'company_news' : row.positionSource || 'unknown')
+        });
+      });
+    },
     mergeTrainingRows(rows, state) {
       const byKey = new Map();
       const identityMaps = Company.identityMaps(state);
@@ -6692,6 +6807,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           const eventKey = eventId
             ? `id:${eventId}`
             : `event:${Utils.int(event.timestamp, 0)}:${String(event.userId || '')}:${Utils.int(event.count, 1)}:${index}`;
+          const previousEvent = exactEvents.get(eventKey);
+          const strength = (item) => item && item.positionSource === 'log' ? 2 : (item && item.positionSource === 'company_news' ? 1 : 0);
+          if (strength(previousEvent) > strength(event)) return;
           exactEvents.set(eventKey, Object.assign({}, event));
         });
         const next = Object.assign({}, previous, {
@@ -6715,7 +6833,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         }
         byKey.set(key, next);
       });
-      return Array.from(byKey.values()).sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(a.playerName).localeCompare(String(b.playerName)));
+      return Timeline.repairTrainingPositions(Array.from(byKey.values()), state).sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(a.playerName).localeCompare(String(b.playerName)));
     },
     eventMatchesPerson(event, person) {
       if (!event || !person) return false;
@@ -6945,6 +7063,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             userId: String(event.userId || row.userId || ''),
             playerName: event.playerName || row.playerName || '',
             position: event.position || row.position || 'Employee',
+            positionSource: event.positionSource || 'unknown',
+            positionNewsId: event.positionNewsId || '',
             trainCount: Math.max(1, Utils.int(event.count, 1)),
             source: 'user_log',
             exactTraining: true,
@@ -6962,6 +7082,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         userId: String(row.userId || ''),
         playerName: row.playerName || '',
         position: row.position || 'Employee',
+        positionSource: row.positionSource || 'unknown',
         trainCount: exactCount,
         source: 'user_log',
         exactTraining: true,
@@ -6973,7 +7094,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (!state || !state.staff) return storedEvents;
       const identityMaps = Company.identityMaps(state);
       const exactByKey = new Map();
-      (Array.isArray(state.trainingLog) ? state.trainingLog : []).forEach((row) => {
+      Timeline.repairTrainingPositions(Array.isArray(state.trainingLog) ? state.trainingLog : [], state).forEach((row) => {
         if (!row || !['user_log', 'mixed'].includes(String(row.source || ''))) return;
         const exactCount = Math.max(0, Utils.int(row.exactCount, 0) || Utils.int(row.count, 0));
         const key = Timeline.trainingAccessKey(row, state, identityMaps);
@@ -11139,10 +11260,13 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const days = UI.state.planner.days;
       if (!days.length) return '<div class="pp-empty">No calendar generated yet.</div>';
       const queueView = UI.plannerQueueView();
-      return `<div class="pp-calendar">${days.map((day) => {
+      const promptDay = queueView
+        ? days.find((day) => String(day && day.date || '') === String(queueView.date || ''))
+        : null;
+      return `<div class="pp-position-overlay" data-planner-position-overlay style="position:fixed;right:20px;bottom:76px;z-index:1000003;width:min(360px,calc(100vw - 36px))">${promptDay ? UI.plannerPositionPrompt(promptDay) : ''}</div><div class="pp-calendar">${days.map((day) => {
         const locked = queueView && queueView.date === day.date && queueView.lockedAt;
-        const displayDay = locked ? Object.assign({}, day, { slots: queueView.slots, suggestions: [] }) : day;
-        const dayQueue = locked ? queueView.slots : UI.plannerDayQueue(day);
+        const dayQueue = locked ? queueView.slots : UI.positionSafeQueueOrder(UI.plannerDayQueue(day));
+        const displayDay = Object.assign({}, day, { slots: dayQueue, suggestions: locked ? [] : day.suggestions });
         const picked = new Set(displayDay.slots.map((slot) => UI.plannerStaffValue(slot)).filter(Boolean));
         const activeIndex = queueView && queueView.date === day.date ? queueView.activeIndex : -1;
         const timing = day.supplyStatus === 'upcoming-reset' ? ' · after 18:10 TCT' : (day.supplyStatus === 'awaiting-sync' ? ' · expected' : '');
@@ -11199,7 +11323,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const available = days.filter((day) => day && day.date && !completed[day.date]);
       const current = available.find((day) => day.date >= today && UI.plannerDayQueue(day).length) || available.find((day) => UI.plannerDayQueue(day).length);
       if (!current) return null;
-      return { date: current.date, slots: UI.plannerDayQueue(current) };
+      return { date: current.date, slots: UI.positionSafeQueueOrder(UI.plannerDayQueue(current)) };
     },
 
     plannerQueueView() {
@@ -11218,7 +11342,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           date: active.date,
           slots: active.slots,
           activeIndex: Utils.clamp(Utils.int(active.activeIndex, 0), 0, active.slots.length),
-          lockedAt: active.lockedAt
+          lockedAt: active.lockedAt,
+          preflightStatus: active.preflightStatus || '',
+          preflightError: active.preflightError || '',
+          preflightCheckedAt: active.preflightCheckedAt || ''
         };
       }
       const queue = UI.plannerTrainingQueue();
@@ -11226,31 +11353,49 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const sameDay = active && active.date === queue.date;
       const slots = sameDay && active.lockedAt && Array.isArray(active.slots) ? active.slots : queue.slots;
       const activeIndex = sameDay ? Utils.clamp(Utils.int(active.activeIndex, 0), 0, slots.length) : 0;
-      return { date: queue.date, slots, activeIndex, lockedAt: sameDay ? active.lockedAt || '' : '' };
+      return {
+        date: queue.date,
+        slots,
+        activeIndex,
+        lockedAt: sameDay ? active.lockedAt || '' : '',
+        preflightStatus: sameDay ? active.preflightStatus || '' : '',
+        preflightError: sameDay ? active.preflightError || '' : '',
+        preflightCheckedAt: sameDay ? active.preflightCheckedAt || '' : ''
+      };
     },
 
     plannerDayTrainControls(day, queueView) {
       if (!queueView || queueView.date !== day.date || !queueView.slots.length) return '';
       if (queueView.activeIndex >= queueView.slots.length) {
-        const positionPrompt = UI.plannerPositionPrompt(day);
         return `<div class="pp-train-control-stack">
-          ${positionPrompt}
           <div class="pp-train-controls">
             <span class="pp-note">Queue complete for ${Utils.esc(Utils.dateShort(day.date))}</span>
             <span></span>
-            ${positionPrompt
+            ${UI.plannerPositionPrompt(day)
               ? '<button class="pp-btn" type="button" disabled title="Resolve the position prompt before opening the next queue">&raquo;</button>'
               : '<button class="pp-btn" type="button" data-action="open-training-queue-page" title="Open Torn employee training page">&raquo;</button>'}
           </div>
         </div>`;
       }
       const slot = queueView.slots[queueView.activeIndex] || queueView.slots[0];
+      const preflightRequired = !!queueView.lockedAt
+        && (queueView.preflightStatus ? queueView.preflightStatus !== 'ready' : queueView.activeIndex === 0);
+      const preflightText = queueView.preflightStatus === 'checking'
+        ? 'Checking every paid position before train 1…'
+        : queueView.preflightStatus === 'action-required'
+          ? 'Position change required before train 1'
+          : queueView.preflightStatus === 'error'
+            ? `Position check paused: ${queueView.preflightError || 'Open Torn Employees and retry.'}`
+            : queueView.preflightStatus === 'paused'
+              ? 'Position check paused — use » to retry'
+              : preflightRequired
+                ? 'Paid-position check required before train 1'
+                : '';
       return `<div class="pp-train-control-stack">
-        ${UI.plannerPositionPrompt(day)}
         <div class="pp-train-controls">
-          <span class="pp-note" title="${Utils.esc(slot.playerId ? `User ID ${slot.playerId}` : 'No user ID detected yet')}">Next: ${Utils.esc(queueView.activeIndex + 1)} / ${Utils.esc(queueView.slots.length)} ${Utils.esc(slot.playerName || 'Unknown staff')}</span>
-          <button class="pp-btn is-primary" type="button" data-action="click-training-action" title="Check the live position, click the currently loaded Torn Train action, and advance the locked queue" aria-label="Train queued member">+</button>
-          <button class="pp-btn" type="button" data-action="open-training-queue-page" title="Lock this queue, open Torn employee training, and highlight the queued member">&raquo;</button>
+          <span class="pp-note" title="${Utils.esc(slot.playerId ? `User ID ${slot.playerId}` : 'No user ID detected yet')}">${preflightText ? Utils.esc(preflightText) : `Next: ${Utils.esc(queueView.activeIndex + 1)} / ${Utils.esc(queueView.slots.length)} ${Utils.esc(slot.playerName || 'Unknown staff')}`}</span>
+          <button class="pp-btn is-primary" type="button" ${preflightRequired ? 'disabled' : 'data-action="click-training-action"'} title="${preflightRequired ? 'Complete the paid-position check before training' : 'Recheck the live position, click the currently loaded Torn Train action, and advance the locked queue'}" aria-label="Train queued member">+</button>
+          <button class="pp-btn" type="button" data-action="open-training-queue-page" title="${preflightRequired ? 'Open Torn Employees and retry the paid-position check' : 'Lock this queue, open Torn employee training, and highlight the queued member'}">&raquo;</button>
         </div>
       </div>`;
     },
@@ -11395,10 +11540,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
     },
 
     trainingLogRole(row, context) {
-      const meta = context || UI.trainingLogRoleContext();
-      const identity = Company.resolveIdentity(row, UI.state, meta.identityMaps);
-      const person = meta.byIdentity.get(identity) || {};
-      const role = person.role || row.position || 'Employee';
+      const role = row.position || 'Employee';
       return { role: UI.roleLabel(role), color: UI.roleColor(role) };
     },
 
@@ -13910,21 +14052,27 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       clearTimeout(UI.ledgerCloudTimer);
       UI.ledgerCloudTimer = setTimeout(() => UI.uploadLedgerCloudSave(), delay == null ? 900 : delay);
     },
-    async uploadLedgerCloudSave() {
+    async uploadLedgerCloudSave(options) {
       if (!Store.canUseCloudWorkspace(UI.state)) return;
+      const opts = options || {};
       try {
+        if (opts.syncId) UI.syncStep(opts.syncId, 'Checking training-order upload changes.', 83);
         Ledger.prepare(UI.state);
         const orders = UI.state.ledger || [];
         const transfer = Store.syncTransfer(UI.state);
         const signature = await Store.contentDigest(orders);
-        if (transfer.acknowledged.ledger === signature) { UI.clearLedgerPending(); return; }
+        if (transfer.acknowledged.ledger === signature) { UI.clearLedgerPending(); return { ok: true, unchanged: true }; }
+        if (opts.syncId) UI.syncStep(opts.syncId, 'Uploading training orders to Pythagoras API.', 83);
         const result = await Store.cisCompanyApi(UI.state, '/training-orders', { orders, replace: true }, 45000);
         if (!result || !result.ok) throw new Error(result && result.reason || 'Training orders cloud sync failed.');
         transfer.acknowledged.ledger = signature;
         UI.clearLedgerPending();
+        return result;
       } catch (error) {
         console.warn('[Pythagoras Project - CIS] Training orders cloud sync failed.', error);
+        if (opts.strict) throw error;
         UI.toast(`Training orders saved locally; cloud sync failed: ${error && error.message ? error.message : error}`);
+        return { ok: false, reason: error && error.message || 'Training orders cloud sync failed.' };
       }
     },
     scheduleWorkspaceMirrorSave(reason, delay) {
@@ -14586,6 +14734,15 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         <div class="pp-content">
           <div class="pp-changelog">
             <details open>
+              <summary>v3.4.3 - Pre-flight training positions and grouped queues</summary>
+              <ul><li>Training day cards group paid trains by their exact ledger order before the queue is locked, matching the succession used for execution.</li><li>Locking a queue checks every paid recipient&apos;s first required position before train 1 and keeps + disabled until the live Torn positions are confirmed.</li><li>Requested-position changes are prepared before training, retained for one queue-end restoration pass, and still rechecked immediately before every individual train.</li><li>The yellow position safety window floats independently instead of expanding the first calendar column.</li></ul>
+            </details>
+            <details>
+              <summary>v3.4.2 - Bounded background requests and training-history work</summary>
+              <ul><li>Userscript-manager requests have an independent deadline and handle both promise and callback completion.</li><li>Payment-history preparation runs in message-task batches and reuses unchanged parsed events within the session.</li><li>Separates payment parsing, history reconciliation, planner preparation and ledger uploading in sync progress, and reports ledger upload failures as warnings.</li></ul>
+              <ul><li>Historical trains retain their source position or recover it from matching Torn company news instead of inheriting today's staff role. Existing saved exact rows are repaired without changing counts or timestamps.</li></ul>
+            </details>
+            <details>
               <summary>v3.4.1 - Incremental sync and daily staff retention</summary>
               <ul><li>Checks a small server revision before downloading the saved workspace and skips unchanged acknowledged uploads.</li><li>Saves one latest staff snapshot per employee and company date while preserving daily Employee Efficiency history.</li><li>Round-trips report wage evidence correctly, avoids repeated history calculations, and defers workspace autosaves until sync completes.</li></ul>
             </details>
@@ -15883,7 +16040,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
             return { ok: true, message, added: 0, nextUrl };
           }
           const updated = Object.assign({}, person);
-          const trainingRows = Timeline.trainingRowsFromStaffActions(actions, person);
+          const trainingRows = Timeline.trainingRowsFromStaffActions(actions, person, UI.state);
           actions.forEach((action) => {
             if (action.type === 'hire' && action.timestamp) {
               updated.hireHistory = Company.hireHistoryWithJoin(updated, action.timestamp, action.id);
@@ -16203,6 +16360,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         const day = (UI.state.planner.days || []).find((item) => String(item && item.date || '') === date);
         const queueView = UI.plannerQueueView();
         if (day) {
+          root.querySelectorAll('[data-planner-position-overlay]').forEach((host) => {
+            host.innerHTML = UI.plannerPositionPrompt(day);
+          });
           root.querySelectorAll('[data-planner-training-controls]').forEach((host) => {
             if (String(host.dataset.plannerTrainingControls || '') === date) host.innerHTML = UI.plannerDayTrainControls(day, queueView);
           });
@@ -16356,6 +16516,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (!session || session.origin !== 'planner') return;
       const context = UI.ledgerTrainingPositionContext(session);
       if (context && session.targetRank && String(context.select.value || '') === String(session.targetRank)) {
+        if (session.preflight) {
+          session.phase = 'position-verifying';
+          UI.verifyLedgerTrainingPosition();
+          return;
+        }
         session.phase = 'ready';
         session.error = '';
         UI.renderLedgerTraining();
@@ -16378,6 +16543,11 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       const context = UI.ledgerTrainingPositionContext(session);
       if (context && session.originalRank && String(context.select.value || '') !== String(session.originalRank)) {
         UI.setTornPositionValue(context, session.originalRank);
+      }
+      const queue = UI.state.planner && UI.state.planner.trainingQueue;
+      if (session.preflight && queue && String(queue.date || '') === String(session.plannerDate || '')) {
+        queue.preflightStatus = 'paused';
+        queue.preflightError = 'The paid-position check was cancelled before training started.';
       }
       UI.state.ui.ledgerTrainingSession = null;
       UI.renderLedgerTraining('Position change cancelled. No Torn update or train was submitted.');
@@ -16446,6 +16616,23 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       if (!session || session.phase !== 'position-verifying') return;
       const context = UI.ledgerTrainingPositionContext(session);
       if (context && String(context.select.value || '') === String(session.targetRank || '')) {
+        if (session.preflight) {
+          if (session.positionChanged && !session.restored) {
+            UI.rememberPlannerPositionRestore(session);
+            session.restorationDeferred = true;
+          }
+          const date = String(session.plannerDate || '');
+          const queue = UI.state.planner && UI.state.planner.trainingQueue;
+          if (queue && String(queue.date || '') === date) {
+            queue.preflightStatus = 'checking';
+            queue.preflightError = '';
+          }
+          UI.state.ui.ledgerTrainingSession = null;
+          Store.save(UI.state);
+          UI.renderLedgerTraining(`${session.requestedPosition || 'Requested position'} confirmed. Continuing the remaining paid-position checks before train 1.`);
+          UI.schedulePlannerPositionPreflight(date, 0);
+          return;
+        }
         session.phase = 'ready';
         session.error = '';
         UI.renderLedgerTraining(session.origin === 'planner'
@@ -16900,6 +17087,86 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       return groups.flat();
     },
 
+    plannerPositionPreflightTargets(queue) {
+      const seen = new Set();
+      const targets = [];
+      (queue && Array.isArray(queue.slots) ? queue.slots : []).forEach((slot, queueIndex) => {
+        if (!slot || String(slot.type || '').toLowerCase() !== 'paid') return;
+        const target = UI.resolveTrainingSlot(Object.assign({}, slot, { queueIndex, queueLength: queue.slots.length }));
+        const key = String(target && (target.playerId || target.identity) || '').trim()
+          || Company.nameKey(target && target.playerName || '');
+        if (!key || seen.has(key)) return;
+        seen.add(key);
+        targets.push(target);
+      });
+      return targets;
+    },
+
+    runPlannerPositionPreflight(date) {
+      const queue = UI.state.planner && UI.state.planner.trainingQueue;
+      if (!queue || !queue.lockedAt || String(queue.date || '') !== String(date || '')) return { ready: false, stopped: true };
+      const activeSession = UI.ledgerTrainingSession();
+      if (activeSession && activeSession.origin === 'planner' && activeSession.preflight && activeSession.phase === 'complete') {
+        UI.state.ui.ledgerTrainingSession = null;
+      } else if (activeSession && activeSession.origin === 'planner' && activeSession.phase !== 'complete') {
+        queue.preflightStatus = activeSession.preflight ? 'action-required' : (queue.preflightStatus || 'paused');
+        return { ready: false, actionRequired: true };
+      }
+      queue.preflightStatus = 'checking';
+      queue.preflightError = '';
+      const targets = UI.plannerPositionPreflightTargets(queue);
+      for (let index = 0; index < targets.length; index += 1) {
+        const target = targets[index];
+        const details = UI.trainingPositionRequirement(target);
+        if (details && details.blocked) {
+          queue.preflightStatus = 'error';
+          queue.preflightError = details.reason || 'A paid order could not be linked safely.';
+          UI.renderLedgerTraining(queue.preflightError);
+          return { ready: false, error: queue.preflightError };
+        }
+        if (!details) continue;
+        if (!details.live || !details.live.select) return { ready: false, waiting: true };
+        if (!details.matches) {
+          UI.startPlannerPositionTraining(queue, target, details);
+          const session = UI.ledgerTrainingSession();
+          if (session) {
+            session.preflight = true;
+            session.preflightIndex = index;
+            session.preflightTotal = targets.length;
+          }
+          queue.preflightStatus = 'action-required';
+          queue.preflightError = '';
+          Store.save(UI.state);
+          UI.renderLedgerTraining(`${target.playerName || target.playerId} needs ${details.requestedPosition} before the queue starts.`);
+          return { ready: false, actionRequired: true, target, details };
+        }
+      }
+      queue.preflightStatus = 'ready';
+      queue.preflightError = '';
+      queue.preflightCheckedAt = Utils.nowIso();
+      Store.save(UI.state);
+      UI.renderLedgerTraining('Every paid position is confirmed. The queue is ready to start.');
+      return { ready: true, checked: targets.length };
+    },
+
+    schedulePlannerPositionPreflight(date, attempt) {
+      const retry = Math.max(0, Utils.int(attempt, 0));
+      setTimeout(() => {
+        const result = UI.runPlannerPositionPreflight(date);
+        if (!result || !result.waiting) return;
+        if (retry < 10) {
+          UI.schedulePlannerPositionPreflight(date, retry + 1);
+          return;
+        }
+        const queue = UI.state.planner && UI.state.planner.trainingQueue;
+        if (!queue || String(queue.date || '') !== String(date || '')) return;
+        queue.preflightStatus = 'error';
+        queue.preflightError = 'Torn Employees did not expose every paid employee position. Keep that tab open and use » to retry.';
+        Store.save(UI.state);
+        UI.renderLedgerTraining(queue.preflightError);
+      }, retry ? 500 : 350);
+    },
+
     normaliseTrainingQueueSlots(slots) {
       return (Array.isArray(slots) ? slots : []).map((slot) => ({
         identity: slot.identity || Company.resolveIdentity({ id: slot.playerId, name: slot.playerName }, UI.state),
@@ -16924,6 +17191,10 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           oldQueue.activeIndex = Utils.clamp(Utils.int(oldQueue.activeIndex, 0), 0, oldQueue.slots.length);
           oldQueue.lockedAt = Utils.nowIso();
         }
+        if (opts.preflight && oldQueue.lockedAt && oldQueue.preflightStatus !== 'ready') {
+          oldQueue.preflightStatus = 'pending';
+          oldQueue.preflightError = '';
+        }
         UI.state.planner.trainingQueue = oldQueue;
         return oldQueue;
       }
@@ -16935,6 +17206,9 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         at: Utils.nowIso(),
         activeIndex,
         lockedAt: opts.lock ? Utils.nowIso() : '',
+        preflightStatus: opts.preflight ? 'pending' : (opts.lock ? 'ready' : ''),
+        preflightError: '',
+        preflightCheckedAt: '',
         slots: opts.lock ? UI.positionSafeQueueOrder(slots) : slots
       };
       return UI.state.planner.trainingQueue;
@@ -17072,11 +17346,13 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         UI.toast('Return to the Torn company page before starting training.');
         return;
       }
-      const prepared = UI.prepareTrainingQueue({ lock: true });
+      const prepared = UI.prepareTrainingQueue({ lock: true, preflight: true });
       Store.updateSyncCache(UI.state, 'planner');
       Store.save(UI.state);
-      UI.toast(`Locked ${prepared.slots.length} train${prepared.slots.length === 1 ? '' : 's'} for ${Utils.dateShort(prepared.date)}. Use + to check the live position and train one at a time.`);
+      UI.renderLedgerTraining();
+      UI.toast(`Locked ${prepared.slots.length} train${prepared.slots.length === 1 ? '' : 's'} for ${Utils.dateShort(prepared.date)}. Checking every paid position before train 1.`);
       UI.navigateTornTraining(UI.trainingPageUrl());
+      UI.schedulePlannerPositionPreflight(prepared.date, 0);
     },
 
     openStockPage() {
@@ -17221,6 +17497,13 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
       }
       if (!prepared.lockedAt) {
         UI.toast('Click » first to lock this queue and open Torn Employees before using +.');
+        return;
+      }
+      const preflightRequired = prepared.preflightStatus
+        ? prepared.preflightStatus !== 'ready'
+        : Utils.int(prepared.activeIndex, 0) === 0;
+      if (preflightRequired) {
+        UI.toast('Finish the paid-position check before sending train 1. Use » to reopen Torn Employees and retry the check.');
         return;
       }
       prepared.slots[target.queueIndex] = Object.assign({}, prepared.slots[target.queueIndex], {
@@ -17721,7 +18004,7 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         grouped.forEach((memberActions, id) => {
           const person = byId.get(id);
           const updates = {};
-          const training = Timeline.trainingRowsFromStaffActions(memberActions, person);
+          const training = Timeline.trainingRowsFromStaffActions(memberActions, person, UI.state);
           if (training.length) {
             UI.state.trainingLog = Timeline.mergeTrainingRows((UI.state.trainingLog || []).concat(training), UI.state);
             exactTrainingRows.push(...training);
@@ -17880,6 +18163,8 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         // Collect every Torn source before publishing one coherent workspace
         // snapshot. This keeps new staff-history and restock data in the same
         // API update as the news and reports that depend on them.
+        UI.syncStep(syncId, 'Preparing the consolidated API upload.', 84);
+        await Utils.yieldTask();
         Store.save(UI.state);
         Store.updateSyncCache(UI.state, ['business', 'employees', 'stock', 'news', 'trainingLog']);
         await UI.uploadSyncState(syncId, {
@@ -18359,18 +18644,24 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
         UI.syncStep(syncId, 'Parsing payment log rows.', 82);
         const stats = { trigger: 0, duplicate: 0, empty: 0 };
         const candidates = [];
-        history.rows.forEach(([rowId, item]) => {
-          const kind = Utils.int(item && item.details && item.details.id || item && item.log || 0, 0);
-          if (kind !== 4810) return;
-          const result = UI.buildTrainingOrderFromLog(item, rowId, options);
-          if (result.entry || result.candidate) candidates.push(result.entry || result.candidate);
-          if (result.skipped) stats[result.skipped] = (stats[result.skipped] || 0) + 1;
-        });
+        for (let offset = 0; offset < history.rows.length; offset += 100) {
+          await Utils.yieldTask();
+          history.rows.slice(offset, offset + 100).forEach(([rowId, item]) => {
+            const kind = Utils.int(item && item.details && item.details.id || item && item.log || 0, 0);
+            if (kind !== 4810) return;
+            const result = UI.buildTrainingOrderFromLog(item, rowId, options);
+            if (result.entry || result.candidate) candidates.push(result.entry || result.candidate);
+            if (result.skipped) stats[result.skipped] = (stats[result.skipped] || 0) + 1;
+          });
+        }
+        UI.syncStep(syncId, 'Reconciling payment events with saved orders.', 82);
         const orderRepair = Ledger.reconcileImportedEvents(UI.state, candidates);
         const exactRows = Timeline.companyTrainingRowsFromUserLog({ log: Object.fromEntries(history.rows) }, UI.state);
         if (exactRows.length) UI.state.trainingLog = Timeline.mergeTrainingRows((UI.state.trainingLog || []).concat(exactRows), UI.state);
         const usedBefore = UI.state.ledger.reduce((sum, entry) => sum + Math.max(0, Utils.int(entry.usedTrains, 0)), 0);
-        UI.state.staff.timeline = Timeline.reclassify(UI.state.staff.timeline || []);
+        UI.syncStep(syncId, 'Preparing saved training history.', 82);
+        UI.state.staff.timeline = await Timeline.reclassifyAsync(UI.state.staff.timeline || []);
+        UI.syncStep(syncId, 'Reconciling exact trains with training orders.', 82);
         Ledger.syncTrainingLog(UI.state);
         const usedAfter = UI.state.ledger.reduce((sum, entry) => sum + Math.max(0, Utils.int(entry.usedTrains, 0)), 0);
         const reconciledTrains = Math.max(0, usedAfter - usedBefore);
@@ -18379,17 +18670,19 @@ Unauthorized copying, modification, redistribution, or commercial use is prohibi
           const dismissedText = stats.dismissed ? ` ${stats.dismissed} previously deleted/refunded order${stats.dismissed === 1 ? ' was' : 's were'} kept dismissed.` : '';
           const message = `No new "${trigger}" training orders found across ${history.pages} history page${history.pages === 1 ? '' : 's'}.${duplicateText}${dismissedText}`;
           Store.save(UI.state);
-          await UI.uploadLedgerCloudSave();
+          await UI.uploadLedgerCloudSave({ syncId, strict: true });
           if (!embedded) {
             UI.finishSync(syncId, message);
             UI.toast(message);
           }
           return { ok: true, message, pages: history.pages, changed: false };
         }
+        UI.syncStep(syncId, 'Updating the training planner.', 83);
+        await Utils.yieldTask();
         Planner.build(UI.state);
         UI.recordLedgerPending();
         Store.save(UI.state);
-        await UI.uploadLedgerCloudSave();
+        await UI.uploadLedgerCloudSave({ syncId, strict: true });
         const importText = orderRepair.added
           ? `Imported ${orderRepair.added} training order${orderRepair.added === 1 ? '' : 's'} from log.`
           : `No new "${trigger}" training orders found.`;
